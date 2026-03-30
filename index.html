@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luka Ono — Tennis Level Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue:    #3B4FE0;
+    --blue-lt: #5B6EF5;
+    --blue-dk: #2535BB;
+    --off-white: #F0EFEB;
+    --white:   #FFFFFF;
+    --black:   #0A0A0A;
+    --dark:    #111218;
+    --atp:   #3B4FE0;
+    --chal:  #1CC8A0;
+    --itf:   #F5A623;
+    --border-light: rgba(59,79,224,0.15);
+    --text-dark:  #0A0A0A;
+    --text-mid:   #444;
+    --text-muted: #888;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--off-white); color: var(--text-dark); font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.6; overflow-x: hidden; }
+
+  /* HERO */
+  .hero { background: var(--blue); color: var(--white); padding: 0 48px; display: grid; grid-template-columns: 1fr; align-items: end; min-height: 240px; position: relative; overflow: hidden; }
+  .hero::before { content: 'LUKA.ONO'; position: absolute; right: -20px; top: -30px; font-family: 'Bebas Neue', sans-serif; font-size: 220px; color: rgba(255,255,255,0.05); letter-spacing: -4px; line-height: 1; pointer-events: none; white-space: nowrap; }
+  .hero-left { padding: 48px 0 36px; position: relative; z-index: 1; }
+  .hero-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+  .hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(60px, 7vw, 96px); line-height: 0.92; letter-spacing: 0.01em; color: var(--white); margin-bottom: 18px; }
+  .hero-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.06em; }
+
+  /* PLAYER STRIP */
+  .player-strip { background: var(--white); border-bottom: 3px solid var(--blue); padding: 26px 48px; display: grid; grid-template-columns: repeat(6,1fr); gap: 16px; align-items: center; }
+  .stat-pill { text-align: center; }
+  .stat-pill-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--blue); line-height: 1; letter-spacing: 0.02em; display: block; }
+  .stat-pill-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; display: block; }
+  .stat-divider { width: 1px; height: 44px; background: rgba(59,79,224,0.12); margin: 0 auto; }
+
+  /* LEVEL LEGEND */
+  .level-legend { background: var(--dark); color: var(--white); padding: 13px 48px; display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+  .ll-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); }
+  .ll-item { display: flex; align-items: center; gap: 7px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.05em; }
+  .ll-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .ll-note { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.22); letter-spacing: 0.07em; }
+
+  /* WRAPPER */
+  .wrapper { max-width: 1160px; margin: 0 auto; padding: 56px 48px 100px; }
+
+  /* SECTION */
+  .section { margin-bottom: 68px; animation: fadeUp 0.5s ease both; }
+  .section:nth-child(1){animation-delay:0.05s} .section:nth-child(2){animation-delay:0.1s}
+  .section:nth-child(3){animation-delay:0.15s} .section:nth-child(4){animation-delay:0.2s}
+  .section:nth-child(5){animation-delay:0.25s}
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid var(--blue); }
+  .sec-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--blue); font-weight: 600; }
+  .sec-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.05em; color: var(--text-dark); }
+  .sec-badge { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 3px; background: rgba(59,79,224,0.09); color: var(--blue); border: 1px solid rgba(59,79,224,0.18); }
+
+  /* TABLE */
+  .ctable { width: 100%; border-collapse: collapse; }
+  .ctable thead tr { background: var(--dark); }
+  .ctable th { padding: 12px 18px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 400; }
+  .th-atp{color:var(--atp)!important} .th-chal{color:var(--chal)!important} .th-itf{color:var(--itf)!important}
+  .th-hdr{color:rgba(255,255,255,0.35)!important}
+  .ctable td { padding: 13px 18px; border-bottom: 1px solid rgba(0,0,0,0.06); vertical-align: top; background: var(--white); }
+  .ctable tr:hover td { background: rgba(59,79,224,0.025); }
+  .row-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--text-muted); min-width: 190px; }
+  .grp-row td { background: rgba(59,79,224,0.05)!important; padding: 7px 18px 5px; }
+  .grp-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); font-weight: 600; }
+  .val { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.02em; line-height: 1; display: block; }
+  .val-atp{color:var(--atp)} .val-chal{color:var(--chal)} .val-itf{color:var(--itf)}
+  .val-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-muted); margin-top: 3px; display: block; line-height: 1.5; }
+
+  /* BARS */
+  .bar-block { margin-top: 20px; background: var(--white); border: 1px solid rgba(0,0,0,0.07); border-radius: 4px; padding: 20px 26px; }
+  .bar-block-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 10px; width: 80px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: rgba(0,0,0,0.07); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-val { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; width: 38px; text-align: right; flex-shrink: 0; }
+
+  /* RALLY OVERALL */
+  .rally-overall { background: var(--white); border: 1px solid rgba(0,0,0,0.07); border-radius: 4px; padding: 22px 26px; margin-bottom: 16px; }
+  .ro-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 18px; }
+  .ro-row { margin-bottom: 12px; }
+  .ro-level { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; margin-bottom: 5px; }
+  .ro-bar { display: flex; height: 26px; border-radius: 3px; overflow: hidden; gap: 1px; }
+  .ro-seg { display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; color: var(--white); }
+
+  /* RALLY CARDS */
+  .rally-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .rally-card { background: var(--white); border: 1px solid rgba(0,0,0,0.07); border-radius: 4px; overflow: hidden; }
+  .rc-header { padding: 13px 16px 10px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .rc-title { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.06em; }
+  .rc-sub { font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
+  .rc-body { padding: 16px; }
+  .rc-col-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .stacked { display: flex; flex-direction: column; height: 86px; border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+  .stk-seg { display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; font-weight: 600; color: var(--white); }
+  .rc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .rc-note { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: var(--text-muted); line-height: 1.6; }
+
+  /* SV GRID */
+  .sv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .sv-card { background: var(--white); border: 1px solid rgba(0,0,0,0.07); border-radius: 4px; padding: 18px 22px; }
+  .sv-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+  .sv-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+  .sv-lv { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; width: 26px; flex-shrink: 0; letter-spacing: 0.06em; }
+  .sv-track { flex: 1; height: 21px; background: rgba(0,0,0,0.05); border-radius: 3px; overflow: hidden; }
+  .sv-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--white); }
+  .sv-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.06); font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: var(--text-muted); line-height: 1.7; }
+
+  /* ASYMMETRY */
+  .asym-card { background: var(--dark); color: var(--white); border-radius: 4px; padding: 30px 36px; margin-top: 14px; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 20px; align-items: center; }
+  .asym-item { text-align: center; }
+  .asym-val { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1; letter-spacing: 0.02em; display: block; }
+  .asym-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.38); margin-top: 6px; display: block; }
+  .asym-desc { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 5px; display: block; line-height: 1.55; }
+  .asym-arrow { font-family: 'IBM Plex Mono', monospace; font-size: 18px; color: rgba(255,255,255,0.15); text-align: center; }
+
+  /* SERVE BREAKDOWN */
+  .sb-wrap { background: var(--white); border: 1px solid rgba(0,0,0,0.07); border-radius: 4px; padding: 20px 26px; margin-top: 14px; }
+  .sb-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--blue); margin-bottom: 12px; }
+  .sb-bar { display: flex; height: 30px; border-radius: 3px; overflow: hidden; gap: 1px; margin-bottom: 8px; }
+  .sb-seg { display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; font-weight: 600; }
+  .sb-note { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-muted); line-height: 1.7; }
+
+  /* INSIGHTS */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .insight-card { background: var(--white); border: 1px solid rgba(0,0,0,0.07); border-radius: 4px; padding: 20px 22px; border-left: 4px solid transparent; }
+  .ic-blue{border-left-color:var(--blue)} .ic-teal{border-left-color:var(--chal)}
+  .ic-amber{border-left-color:var(--itf)} .ic-dark{border-left-color:var(--dark)}
+  .ins-tag { font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; display: block; }
+  .ins-head { font-family: 'Bebas Neue', sans-serif; font-size: 19px; letter-spacing: 0.04em; color: var(--text-dark); margin-bottom: 9px; line-height: 1.1; }
+  .ins-body { font-size: 12px; color: var(--text-mid); line-height: 1.7; }
+  .ins-body strong { color: var(--text-dark); font-weight: 600; }
+
+  /* RANK CONTEXT */
+  .rank-context { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; align-items: center; }
+  .rc-pill { background: var(--white); border: 1px solid rgba(0,0,0,0.09); border-radius: 40px; padding: 9px 18px; display: flex; align-items: center; gap: 9px; }
+  .rc-pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .rc-pill-main { font-family: 'Bebas Neue', sans-serif; font-size: 18px; line-height: 1; letter-spacing: 0.02em; }
+  .rc-pill-sub { font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: var(--text-muted); letter-spacing: 0.09em; display: block; }
+  .rc-arrow { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); }
+
+  /* LUKA BOX */
+  .luka-box { background: var(--blue); color: var(--white); border-radius: 4px; padding: 34px 38px; margin-top: 48px; position: relative; overflow: hidden; }
+  .luka-box::before { content: 'LUKA'; position: absolute; right: -16px; bottom: -40px; font-family: 'Bebas Neue', sans-serif; font-size: 190px; color: rgba(255,255,255,0.06); line-height: 1; pointer-events: none; }
+  .luka-box-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+  .luka-box-tag::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.14); }
+  .luka-box h2 { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 0.04em; margin-bottom: 24px; }
+  .luka-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; z-index: 1; }
+  .lp { display: flex; gap: 10px; background: rgba(255,255,255,0.09); border-radius: 4px; padding: 14px; }
+  .lp-num { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: rgba(255,255,255,0.28); line-height: 1; flex-shrink: 0; margin-top: 2px; }
+  .lp-text { font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.65; }
+  .lp-text strong { color: var(--white); font-weight: 600; }
+
+  /* FOOTER */
+  footer { background: var(--dark); color: rgba(255,255,255,0.32); padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.08em; }
+  .footer-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; color: rgba(255,255,255,0.18); letter-spacing: 0.08em; }
+
+  /* RESPONSIVE */
+  @media(max-width:780px){
+    .hero{padding:28px 20px} .player-strip{grid-template-columns:repeat(3,1fr);padding:16px 20px}
+    .level-legend{padding:12px 20px;gap:16px} .wrapper{padding:36px 20px 80px}
+    .rally-grid,.sv-grid,.insight-grid,.luka-points{grid-template-columns:1fr}
+    .asym-card{grid-template-columns:1fr;gap:12px} .asym-arrow{display:none}
+    .rank-context{flex-direction:column;align-items:flex-start} footer{padding:14px 20px;flex-direction:column;gap:4px}
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">@luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005</div>
+    <h1>LUKA ONO<br>ANALYTICS</h1>
+    <div class="hero-sub">ATP × CHALLENGER × ITF — STRUCTURAL LEVEL COMPARISON · MARCH 2026</div>
+  </div>
+</header>
+
+<!-- PLAYER STRIP -->
+<div class="player-strip">
+  <div class="stat-pill">
+    <span class="stat-pill-val">21</span>
+    <span class="stat-pill-label">Age · DOB Jan 2005</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-pill">
+    <span class="stat-pill-val">#439</span>
+    <span class="stat-pill-label">ITF Pro Career High</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-pill">
+    <span class="stat-pill-val">#1805</span>
+    <span class="stat-pill-label">ATP Doubles Career High</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-pill">
+    <span class="stat-pill-val">30+</span>
+    <span class="stat-pill-label">ITF Future Tournaments</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-pill">
+    <span class="stat-pill-val">2</span>
+    <span class="stat-pill-label">Challenger Appearances</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-pill">
+    <span class="stat-pill-val">RH · 2HBH</span>
+    <span class="stat-pill-label">Style · 180cm / 75kg</span>
+  </div>
+</div>
+
+<!-- LEVEL LEGEND -->
+<div class="level-legend">
+  <span class="ll-label">LEVEL KEY:</span>
+  <div class="ll-item"><div class="ll-dot" style="background:var(--atp)"></div>ATP TOUR (top 100)</div>
+  <div class="ll-item"><div class="ll-dot" style="background:var(--chal)"></div>CHALLENGER (rank 100–500)</div>
+  <div class="ll-item"><div class="ll-dot" style="background:var(--itf)"></div>ITF M25/M15 — Luka's current level</div>
+  <span class="ll-note">[E] empirically established · [I] evidence-based inference</span>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div class="wrapper">
+
+  <!-- Ranking context -->
+  <div class="rank-context">
+    <div class="rc-pill">
+      <div class="rc-pill-dot" style="background:var(--itf)"></div>
+      <div>
+        <span class="rc-pill-main" style="color:var(--itf)">ITF / M25</span>
+        <span class="rc-pill-sub">Current · ITF Pro #439 CH · ATP Doubles #1805 CH</span>
+      </div>
+    </div>
+    <div class="rc-arrow">——→</div>
+    <div class="rc-pill">
+      <div class="rc-pill-dot" style="background:var(--chal)"></div>
+      <div>
+        <span class="rc-pill-main" style="color:var(--chal)">CHALLENGER</span>
+        <span class="rc-pill-sub">Next structural target · rank ~100–500</span>
+      </div>
+    </div>
+    <div class="rc-arrow">——→</div>
+    <div class="rc-pill">
+      <div class="rc-pill-dot" style="background:var(--atp)"></div>
+      <div>
+        <span class="rc-pill-main" style="color:var(--atp)">ATP TOUR</span>
+        <span class="rc-pill-sub">Long-range aspiration · top 250+</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ 01 POINTS PER GAME ════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <span class="sec-title">Points Played — Per Game, Per Set & Per Match</span>
+      <span class="sec-badge">[E] + [I]</span>
+    </div>
+
+    <table class="ctable">
+      <thead>
+        <tr>
+          <th class="th-hdr">METRIC</th>
+          <th class="th-atp">ATP TOUR</th>
+          <th class="th-chal">CHALLENGER</th>
+          <th class="th-itf">ITF M25/M15</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="grp-row"><td colspan="4"><span class="grp-label">PER GAME</span></td></tr>
+        <tr>
+          <td class="row-label">Pts/game — service [E]</td>
+          <td><span class="val val-atp">4.2–4.8</span><span class="val-sub">Fast resolution via serve dominance</span></td>
+          <td><span class="val val-chal">4.5–5.2</span><span class="val-sub">More deuces, weaker 1st serve</span></td>
+          <td><span class="val val-itf">4.8–5.8</span><span class="val-sub">High deuce frequency [I]</span></td>
+        </tr>
+        <tr>
+          <td class="row-label">Pts/game — return [E]</td>
+          <td><span class="val val-atp">4.0–4.6</span><span class="val-sub">Server resolves points fast</span></td>
+          <td><span class="val val-chal">4.4–5.0</span></td>
+          <td><span class="val val-itf">4.7–5.5</span><span class="val-sub">Near-symmetric contest [I]</span></td>
+        </tr>
+        <tr>
+          <td class="row-label">Avg pts/game — all [E]</td>
+          <td><span class="val val-atp">~4.5</span></td>
+          <td><span class="val val-chal">~4.8</span></td>
+          <td><span class="val val-itf">~5.2</span></td>
+        </tr>
+        <tr class="grp-row"><td colspan="4"><span class="grp-label">PER SET</span></td></tr>
+        <tr>
+          <td class="row-label">Avg games/set [E/I]</td>
+          <td><span class="val val-atp">~9.5</span></td>
+          <td><span class="val val-chal">~9.8</span></td>
+          <td><span class="val val-itf">~10.2</span></td>
+        </tr>
+        <tr>
+          <td class="row-label">Service hold rate [E]</td>
+          <td><span class="val val-atp">~91%</span><span class="val-sub">Break ~1.2–1.5×/set</span></td>
+          <td><span class="val val-chal">~83%</span><span class="val-sub">Break ~1.5–2.0×/set</span></td>
+          <td><span class="val val-itf">~68%</span><span class="val-sub">Break ~2.0–2.8×/set</span></td>
+        </tr>
+        <tr>
+          <td class="row-label">Sets → tiebreak [I]</td>
+          <td><span class="val val-atp">20–25%</span></td>
+          <td><span class="val val-chal">22–27%</span></td>
+          <td><span class="val val-itf">25–30%</span></td>
+        </tr>
+        <tr>
+          <td class="row-label">Pts/set — avg [E]</td>
+          <td><span class="val val-atp">45–50</span></td>
+          <td><span class="val val-chal">47–53</span></td>
+          <td><span class="val val-itf">50–58</span></td>
+        </tr>
+        <tr>
+          <td class="row-label">Pts/set — clay [E/I]</td>
+          <td><span class="val val-atp">48–55</span></td>
+          <td><span class="val val-chal">50–58</span></td>
+          <td><span class="val val-itf">53–62</span></td>
+        </tr>
+        <tr class="grp-row"><td colspan="4"><span class="grp-label">PER MATCH (BO3)</span></td></tr>
+        <tr>
+          <td class="row-label">Total pts/match [E/I]</td>
+          <td><span class="val val-atp">100–115</span></td>
+          <td><span class="val val-chal">105–122</span></td>
+          <td><span class="val val-itf">110–130</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bar-block">
+      <div class="bar-block-title">Service Hold Rate [E] — primary structural differentiator across levels</div>
+      <div class="bar-row">
+        <span class="bar-lbl" style="color:var(--atp)">ATP Tour</span>
+        <div class="bar-track"><div class="bar-fill" style="width:91%;background:var(--atp)"></div></div>
+        <span class="bar-val" style="color:var(--atp)">91%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-lbl" style="color:var(--chal)">Challenger</span>
+        <div class="bar-track"><div class="bar-fill" style="width:83%;background:var(--chal)"></div></div>
+        <span class="bar-val" style="color:var(--chal)">83%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-lbl" style="color:var(--itf)">ITF M25/15</span>
+        <div class="bar-track"><div class="bar-fill" style="width:68%;background:var(--itf)"></div></div>
+        <span class="bar-val" style="color:var(--itf)">68%</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 02 RALLY DISTRIBUTION ════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <span class="sec-title">Rally Length Distribution</span>
+      <span class="sec-badge">[E] ATP · [I] Challenger/ITF</span>
+    </div>
+
+    <div class="rally-overall">
+      <div class="ro-title">Overall rally distribution — all points combined (research: AO vs. ITF Milovice Open confirms 60% threshold at both levels)</div>
+      <div class="ro-row">
+        <div class="ro-level" style="color:var(--atp)">ATP TOUR</div>
+        <div class="ro-bar">
+          <div class="ro-seg" style="flex:71;background:var(--atp)">71% · 0–4</div>
+          <div class="ro-seg" style="flex:20;background:rgba(59,79,224,0.4);color:var(--blue)">20% · 5–8</div>
+          <div class="ro-seg" style="flex:9;background:rgba(59,79,224,0.13);color:var(--blue)">9%</div>
+        </div>
+      </div>
+      <div class="ro-row">
+        <div class="ro-level" style="color:var(--chal)">CHALLENGER</div>
+        <div class="ro-bar">
+          <div class="ro-seg" style="flex:65;background:var(--chal)">65% · 0–4</div>
+          <div class="ro-seg" style="flex:22;background:rgba(28,200,160,0.45);color:#075c48">22% · 5–8</div>
+          <div class="ro-seg" style="flex:13;background:rgba(28,200,160,0.13);color:var(--chal)">13%</div>
+        </div>
+      </div>
+      <div class="ro-row">
+        <div class="ro-level" style="color:var(--itf)">ITF M25/M15</div>
+        <div class="ro-bar">
+          <div class="ro-seg" style="flex:62;background:var(--itf)">62% · 0–4</div>
+          <div class="ro-seg" style="flex:23;background:rgba(245,166,35,0.5);color:#6b4200">23% · 5–8</div>
+          <div class="ro-seg" style="flex:15;background:rgba(245,166,35,0.13);color:var(--itf)">15%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rally-grid">
+      <!-- ATP -->
+      <div class="rally-card">
+        <div class="rc-header">
+          <div class="rc-title" style="color:var(--atp)">ATP TOUR</div>
+          <div class="rc-sub">Serve crushes 0–4 bucket · Return games structurally longer · Advantage gone by touch 5–6</div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-cols">
+            <div>
+              <div class="rc-col-lbl">On Serve</div>
+              <div class="stacked">
+                <div class="stk-seg" style="flex:75;background:var(--atp)">75%</div>
+                <div class="stk-seg" style="flex:18;background:rgba(59,79,224,0.4);color:var(--blue)">18%</div>
+                <div class="stk-seg" style="flex:7;background:rgba(59,79,224,0.12);color:var(--blue)">7%</div>
+              </div>
+            </div>
+            <div>
+              <div class="rc-col-lbl">On Return</div>
+              <div class="stacked">
+                <div class="stk-seg" style="flex:65;background:var(--atp)">65%</div>
+                <div class="stk-seg" style="flex:23;background:rgba(59,79,224,0.4);color:var(--blue)">23%</div>
+                <div class="stk-seg" style="flex:12;background:rgba(59,79,224,0.12);color:var(--blue)">12%</div>
+              </div>
+            </div>
+          </div>
+          <div class="rc-note">58% of 1st serves create immediate advantage. Serve effectiveness: ace 16% + unreturned 22% + attack 20%.</div>
+        </div>
+      </div>
+
+      <!-- Challenger -->
+      <div class="rally-card">
+        <div class="rc-header">
+          <div class="rc-title" style="color:var(--chal)">CHALLENGER</div>
+          <div class="rc-sub">Serve gap shrinking vs ATP · 5–8 shot window increasingly decisive · Battleground level</div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-cols">
+            <div>
+              <div class="rc-col-lbl">On Serve</div>
+              <div class="stacked">
+                <div class="stk-seg" style="flex:69;background:var(--chal)">69%</div>
+                <div class="stk-seg" style="flex:20;background:rgba(28,200,160,0.4);color:#075c48">20%</div>
+                <div class="stk-seg" style="flex:11;background:rgba(28,200,160,0.12);color:var(--chal)">11%</div>
+              </div>
+            </div>
+            <div>
+              <div class="rc-col-lbl">On Return</div>
+              <div class="stacked">
+                <div class="stk-seg" style="flex:61;background:var(--chal)">61%</div>
+                <div class="stk-seg" style="flex:25;background:rgba(28,200,160,0.4);color:#075c48">25%</div>
+                <div class="stk-seg" style="flex:14;background:rgba(28,200,160,0.12);color:var(--chal)">14%</div>
+              </div>
+            </div>
+          </div>
+          <div class="rc-note">Medium rally quality (shots 3–6) separates Challenger match winners from first-round exits.</div>
+        </div>
+      </div>
+
+      <!-- ITF -->
+      <div class="rally-card">
+        <div class="rc-header" style="border-left:3px solid var(--itf)">
+          <div class="rc-title" style="color:var(--itf)">ITF M25/M15 · LUKA</div>
+          <div class="rc-sub">Serve/return distributions near-identical · Winners driven by construction quality not serve weapons</div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-cols">
+            <div>
+              <div class="rc-col-lbl">On Serve</div>
+              <div class="stacked">
+                <div class="stk-seg" style="flex:63;background:var(--itf)">63%</div>
+                <div class="stk-seg" style="flex:22;background:rgba(245,166,35,0.5);color:#6b4200">22%</div>
+                <div class="stk-seg" style="flex:15;background:rgba(245,166,35,0.12);color:var(--itf)">15%</div>
+              </div>
+            </div>
+            <div>
+              <div class="rc-col-lbl">On Return</div>
+              <div class="stacked">
+                <div class="stk-seg" style="flex:59;background:var(--itf)">59%</div>
+                <div class="stk-seg" style="flex:26;background:rgba(245,166,35,0.5);color:#6b4200">26%</div>
+                <div class="stk-seg" style="flex:15;background:rgba(245,166,35,0.12);color:var(--itf)">15%</div>
+              </div>
+            </div>
+          </div>
+          <div class="rc-note">Winning = constructing through shots 5–6. Not just executing shots 1–2. Short points still dominate but source is errors, not weapons.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ 03 SERVE VS RETURN ════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <span class="sec-title">Serve vs. Return — Points Won %</span>
+      <span class="sec-badge">[E] ATP · [I] Challenger/ITF</span>
+    </div>
+
+    <div class="sv-grid">
+      <div class="sv-card">
+        <div class="sv-title">1st Serve Points Won %</div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--atp)">ATP</span><div class="sv-track"><div class="sv-fill" style="width:73%;background:var(--atp)">73%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--chal)">CH</span><div class="sv-track"><div class="sv-fill" style="width:65%;background:var(--chal)">65%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--itf)">ITF</span><div class="sv-track"><div class="sv-fill" style="width:60%;background:var(--itf)">60%</div></div></div>
+      </div>
+
+      <div class="sv-card">
+        <div class="sv-title">2nd Serve Points Won %</div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--atp)">ATP</span><div class="sv-track"><div class="sv-fill" style="width:52%;background:var(--atp)">52%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--chal)">CH</span><div class="sv-track"><div class="sv-fill" style="width:48%;background:var(--chal)">48%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--itf)">ITF</span><div class="sv-track"><div class="sv-fill" style="width:44%;background:var(--itf)">44%</div></div></div>
+      </div>
+
+      <div class="sv-card">
+        <div class="sv-title">Total Service Points Won % [E]</div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--atp)">ATP</span><div class="sv-track"><div class="sv-fill" style="width:64%;background:var(--atp)">64%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--chal)">CH</span><div class="sv-track"><div class="sv-fill" style="width:58%;background:var(--chal)">58%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--itf)">ITF</span><div class="sv-track"><div class="sv-fill" style="width:54%;background:var(--itf)">54%</div></div></div>
+        <div class="sv-note">Research [E]: rank 1–100 = 0.64 pts won · rank 500+ = 0.49</div>
+      </div>
+
+      <div class="sv-card">
+        <div class="sv-title">1st Serve % In</div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--atp)">ATP</span><div class="sv-track"><div class="sv-fill" style="width:63%;background:var(--atp)">63%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--chal)">CH</span><div class="sv-track"><div class="sv-fill" style="width:60%;background:var(--chal)">60%</div></div></div>
+        <div class="sv-row"><span class="sv-lv" style="color:var(--itf)">ITF</span><div class="sv-track"><div class="sv-fill" style="width:56%;background:var(--itf)">~56%</div></div></div>
+        <div class="sv-note">Set-level SD ~8% — noisy metric. Pressure-routine gaps amplify match-level variance at ITF more than at Tour level.</div>
+      </div>
+    </div>
+
+    <!-- ASYMMETRY INDEX -->
+    <div class="asym-card">
+      <div class="asym-item">
+        <span class="asym-val" style="color:var(--atp)">28pp</span>
+        <span class="asym-label">ATP Tour</span>
+        <span class="asym-desc">Serve & return are structurally<br>different contests at this level</span>
+      </div>
+      <div class="asym-arrow">→</div>
+      <div class="asym-item">
+        <span class="asym-val" style="color:var(--chal)">16pp</span>
+        <span class="asym-label">Challenger</span>
+        <span class="asym-desc">Gap narrowing — serve advantage<br>increasingly contested from shot 3</span>
+      </div>
+      <div class="asym-arrow">→</div>
+      <div class="asym-item">
+        <span class="asym-val" style="color:var(--itf)">9pp</span>
+        <span class="asym-label">ITF M25/M15 · Luka's Level</span>
+        <span class="asym-desc">Near-symmetric — a service game<br>almost as hard to hold as to break</span>
+      </div>
+    </div>
+
+    <!-- ATP 1st serve breakdown -->
+    <div class="sb-wrap">
+      <div class="sb-title">ATP 1st Serve Effectiveness Breakdown [E] — Tour Average</div>
+      <div class="sb-bar">
+        <div class="sb-seg" style="flex:16;background:var(--blue);color:#fff">ACE 16%</div>
+        <div class="sb-seg" style="flex:22;background:var(--blue-lt);color:#fff">UNRETURNED 22%</div>
+        <div class="sb-seg" style="flex:20;background:rgba(59,79,224,0.35);color:var(--blue)">ATTACK 20%</div>
+        <div class="sb-seg" style="flex:38;background:rgba(0,0,0,0.07);color:var(--text-muted)">NEUTRAL RALLY 38%</div>
+        <div class="sb-seg" style="flex:4;background:rgba(245,166,35,0.25);color:var(--itf)"></div>
+      </div>
+      <div class="sb-note">58% of 1st serves create immediate server advantage · Only 38% enter neutral rally state · 4% leave server at disadvantage</div>
+    </div>
+  </section>
+
+  <!-- ════════ 04 KEY INSIGHTS ════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <span class="sec-title">Key Structural Insights</span>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card ic-blue">
+        <span class="ins-tag">Structural Finding 01 · [E]</span>
+        <div class="ins-head">0–4 Shots Dominate At Every Level</div>
+        <div class="ins-body">Research directly comparing Grand Slam to ITF-level play confirms <strong>~60% of rallies end within 4 shots at both levels</strong>. Short-rally dominance is universal. However, the <em>source</em> shifts critically: ATP short points are driven by serve weapons; ITF short points are driven by rally construction errors — the point ends early because someone missed, not because someone won with a weapon.</div>
+      </div>
+
+      <div class="insight-card ic-teal">
+        <span class="ins-tag">Structural Finding 02 · [E]</span>
+        <div class="ins-head">Serve Asymmetry Collapses Down The Ladder</div>
+        <div class="ins-body">At ATP level, serve and return games are <strong>structurally different contests — ~28pp gap</strong> in points won. At ITF (Luka's current level), that gap narrows to ~9pp. <strong>A service game at ITF is nearly as hard to hold as it is to break.</strong> This is the single most important structural difference between levels, and the primary gap to close on the path from ITF to Challenger norms.</div>
+      </div>
+
+      <div class="insight-card ic-amber">
+        <span class="ins-tag">Structural Finding 03 · [E/I]</span>
+        <div class="ins-head">More Points Per Game ≠ Easier Tennis</div>
+        <div class="ins-body">Higher break frequency and more deuces at ITF means <strong>more points per game and per set than ATP</strong>. Despite similar total match point counts (~100–115 ATP vs. ~110–130 ITF), the glycolytic demand per set is <strong>higher at lower levels</strong> — each point costs more physical work. ITF matches are not metabolically easier. HRV/RPE monitoring may show unexpectedly high per-set stress loads.</div>
+      </div>
+
+      <div class="insight-card ic-dark">
+        <span class="ins-tag">Structural Finding 04 · [E/I]</span>
+        <div class="ins-head">The 5–8 Shot Window Is The Challenger Battleground</div>
+        <div class="ins-body">At Challenger level, the <strong>5–8 shot bucket rises to ~22% of all points</strong> and becomes the primary differentiator vs. ATP. Server advantage dissipates by touch 5–6, and the point becomes symmetric. <strong>Winning medium-length rallies separates Challenger match winners from first-round exits.</strong> This window is typically under-trained relative to its competitive weight in match outcomes.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LUKA DEVELOPMENT BOX -->
+  <div class="luka-box">
+    <div class="luka-box-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
+    <h2>→ DEVELOPMENT PRIORITIES</h2>
+    <div class="luka-points">
+      <div class="lp">
+        <span class="lp-num">01</span>
+        <span class="lp-text"><strong>Build serve hold rate to Challenger norms (≥83%).</strong> Current ITF hold rate (~68%) is a false safety net. At Challenger level, holding below 83% creates structural fragility. Requires placement repeatability, pressure-routine management and 1st serve % consistently above 60%.</span>
+      </div>
+      <div class="lp">
+        <span class="lp-num">02</span>
+        <span class="lp-text"><strong>Train the 5–8 shot construction block explicitly.</strong> Medium rallies are already decisive at ITF and become the central battleground at Challenger. Practice design must extend beyond S+1/R+1 to systematic 3rd and 4th shot pattern development off both wings — particularly backhand-to-forehand transitions.</span>
+      </div>
+      <div class="lp">
+        <span class="lp-num">03</span>
+        <span class="lp-text"><strong>Close the serve/return asymmetry gap from 9pp → 16pp.</strong> This is the defining structural metric separating ITF from Challenger levels — more than ranking points or physical attributes. Serve dominance is the architectural target. The 9pp gap at ITF must expand toward Challenger (~16pp) and eventually ATP (~28pp).</span>
+      </div>
+      <div class="lp">
+        <span class="lp-num">04</span>
+        <span class="lp-text"><strong>Periodize energy systems for ITF metabolic reality.</strong> More deuces, more breaks, more contested points per set = higher glycolytic demand than expected. HRV, RPE and hydration markers during tournaments likely show higher per-set stress than Challenger equivalent. Recovery and nutrition periodization should account for this asymmetry.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-name">LUKA ONO · @luka.ono_</span>
+  <span>Analytical framework: Darren Cahill &amp; Patrick Mouratoglou (tactical) · Olav Aleksander Bu (physiology/biochemistry)<br>[E] Peer-reviewed / ATP published · [I] Evidence-based inference · ITF granular stats limited in published literature</span>
+  <span>March 2026</span>
+</footer>
+
+</body>
+</html>
