@@ -15,11 +15,11 @@ const playerProfile = [
     label: "Age · DOB Jan 2005",
   },
   {
-    value: "#439",
-    label: "ITF Pro Career High",
+    value: "#1.827",
+    label: "ATP Singles Career High",
   },
   {
-    value: "#1805",
+    value: "#1.784",
     label: "ATP Doubles Career High",
   },
   {
@@ -27,7 +27,7 @@ const playerProfile = [
     label: "ITF Future Tournaments",
   },
   {
-    value: findBenchmark("challenger_appearances")?.value ?? "2",
+    value: findBenchmark("challenger_appearances")?.value ?? "4",
     label: "Challenger Appearances",
   },
   {
