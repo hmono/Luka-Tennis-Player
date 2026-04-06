@@ -1,0 +1,113 @@
+{
+  "athlete": "Luka Bojičić Ono",
+  "domain": "Preparo Físico",
+  "data_version": "2026-04",
+  "last_updated": "2026-04-06",
+  "periodization_blocks": [
+    {
+      "block": "load",
+      "duration_weeks": 3,
+      "objective": "Accumulate volume and intensity stimulus",
+      "principle": "Volume over intensity — high-volume low-intensity V2 aerobic base to build metabolic engine"
+    },
+    {
+      "block": "adaptation_deload",
+      "duration_weeks": 1,
+      "objective": "Supercompensation and injury prevention",
+      "principle": "Reduce load to allow structural adaptation before next load block"
+    },
+    {
+      "block": "double_threshold_day",
+      "duration_weeks": null,
+      "objective": "Maximize metabolic efficiency within a single day",
+      "sessions": [
+        { "slot": "morning", "type": "Tactical court session", "lactate_ceiling_mmol": 2.5 },
+        { "slot": "afternoon", "type": "Interval physical session", "lactate_range_mmol": "3.0 – 4.0" }
+      ]
+    }
+  ],
+  "metabolic_zones": [
+    {
+      "zone": 1,
+      "metabolic_state": "Recovery",
+      "training_type": "Active mobility, light jogging",
+      "purpose": "Lactate clearing, psychological reset"
+    },
+    {
+      "zone": 2,
+      "metabolic_state": "Aerobic Base",
+      "training_type": "Steady-state cardio, technical drills",
+      "purpose": "Mitochondrial density, fat oxidation"
+    },
+    {
+      "zone": 3,
+      "metabolic_state": "Threshold",
+      "training_type": "Long-rally drills, sustained movement",
+      "purpose": "Lactate threshold — the Challenger Grinder zone"
+    },
+    {
+      "zone": 4,
+      "metabolic_state": "Anaerobic",
+      "training_type": "0–4 shot explosive patterns, S+1 drills",
+      "purpose": "VO2 Max, explosive power repeatability"
+    }
+  ],
+  "strength_benchmarks": [
+    {
+      "marker": "vo2_max_ml_kg_min",
+      "itf_m25_current": "58 – 62",
+      "challenger_target": "65 – 70",
+      "atp_elite": "> 72"
+    },
+    {
+      "marker": "max_lactate_clearing",
+      "itf_m25_current": "Moderate",
+      "challenger_target": "High",
+      "atp_elite": "Very High"
+    },
+    {
+      "marker": "explosive_power_vertical_jump_cm",
+      "itf_m25_current": "50 – 55",
+      "challenger_target": "60 – 65",
+      "atp_elite": "> 68"
+    },
+    {
+      "marker": "agility_spider_drill_sec",
+      "itf_m25_current": "< 17.5",
+      "challenger_target": "< 16.5",
+      "atp_elite": "< 15.8"
+    },
+    {
+      "marker": "avg_points_per_set",
+      "itf_m25_current": "50 – 58",
+      "challenger_target": "47 – 53",
+      "atp_elite": "45 – 50"
+    }
+  ],
+  "weekly_structure": [
+    {
+      "day_type": "double_threshold",
+      "frequency_per_week": "2 – 3",
+      "sessions": ["Morning: tactical court (Zone 2–3)", "Afternoon: interval physical (Zone 3–4)"],
+      "hrv_requirement": "Stable or above baseline"
+    },
+    {
+      "day_type": "aerobic_base",
+      "frequency_per_week": "1 – 2",
+      "sessions": ["Steady-state cardio (Zone 2)", "Technical drills low-intensity"],
+      "hrv_requirement": "Any status"
+    },
+    {
+      "day_type": "recovery",
+      "frequency_per_week": "1",
+      "sessions": ["Active mobility 15min", "Foam rolling + posterior chain stretch", "Deep tissue / physio screening"],
+      "hrv_requirement": "Declining or critical"
+    },
+    {
+      "day_type": "rest",
+      "frequency_per_week": "1",
+      "sessions": [],
+      "hrv_requirement": "Critical (< 33% recovery)"
+    }
+  ]
+}

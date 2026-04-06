@@ -1,0 +1,122 @@
+{
+  "athlete": "Luka Bojičić Ono",
+  "domain": "Tática & Padrões de Jogo",
+  "data_version": "2026-04",
+  "last_updated": "2026-04-06",
+  "frameworks": [
+    {
+      "coach": "Darren Cahill",
+      "philosophy": "Strategic Simplicity",
+      "application": "Focus on Big Targets under pressure. Reduce unforced errors in the 0–4 shot window by pre-committing to high-percentage Serve+1 patterns."
+    },
+    {
+      "coach": "Juan Carlos Ferrero",
+      "philosophy": "Aggressive Proactivity",
+      "application": "Proactive court positioning. Taking the ball early to steal time from the opponent. Dominating with the FH as the primary weapon."
+    },
+    {
+      "coach": "Patrick Mouratoglou",
+      "philosophy": "Adaptive Intelligence",
+      "application": "Reading the opponent's Technical Breakpoint. Adjusting the 3-shot unit based on the opponent's return profile (e.g., attacking a weak 2nd serve return)."
+    }
+  ],
+  "game_patterns": [
+    {
+      "pattern_group": "Serve+1",
+      "id": "S1_wide_open_court",
+      "description": "Serve wide to pull opponent off-court; Shot 3 FH into vacated T-zone."
+    },
+    {
+      "pattern_group": "Serve+1",
+      "id": "S1_t_serve_bh_attack",
+      "description": "Serve down the T; Shot 3 heavy BH to the corner to jam opponent's recovery."
+    },
+    {
+      "pattern_group": "Serve+1",
+      "id": "S1_body_fh_putaway",
+      "description": "Serve into the body to freeze hips; Shot 3 aggressive FH winner off resulting short ball."
+    },
+    {
+      "pattern_group": "Return Pressure",
+      "id": "R_1st_serve_neutralize",
+      "description": "1st serve return: Deep Middle to reset the point and force a 5–8 shot rally."
+    },
+    {
+      "pattern_group": "Return Pressure",
+      "id": "R_2nd_serve_ambush",
+      "description": "2nd serve return: Step inside baseline, take time away, target weaker wing for immediate control."
+    },
+    {
+      "pattern_group": "0–4 Shot Rally",
+      "id": "R04_itf_profile",
+      "level": "ITF M15/M25",
+      "pct_points_ending_here": "~62%",
+      "dominant_cause": "unforced errors"
+    },
+    {
+      "pattern_group": "0–4 Shot Rally",
+      "id": "R04_challenger_profile",
+      "level": "Challenger/ATP",
+      "pct_points_ending_here": "65 – 71%",
+      "dominant_cause": "intentional weapons"
+    }
+  ],
+  "surface_tactics": [
+    {
+      "surface": "Hard Court",
+      "style": "Linear / Fast",
+      "primary_movement": "Explosive first step, linear recovery.",
+      "point_construction": "Short points (0–4 dominant). Early take.",
+      "spin_weight": "Flat/Drive through the court.",
+      "metabolic_load": "High intensity, short bursts.",
+      "tactical_priority": "Serve dominance & First-strike tennis."
+    },
+    {
+      "surface": "Clay",
+      "style": "Rotational / Slow",
+      "primary_movement": "Sliding mechanics, lateral elasticity.",
+      "point_construction": "Extended rallies (9+ shots frequency increases).",
+      "spin_weight": "Heavy topspin, varying heights to push opponent back.",
+      "metabolic_load": "Sustained glycolytic demand; higher points/set.",
+      "tactical_priority": "Patience, sliding into corners, and the heavy ball."
+    }
+  ],
+  "target_benchmarks": [
+    {
+      "metric": "service_hold_rate_pct",
+      "itf_m25_current": "~68%",
+      "challenger_target": "≥83%",
+      "atp_elite": "~91%"
+    },
+    {
+      "metric": "first_serve_points_won_pct",
+      "itf_m25_current": "~60%",
+      "challenger_target": "≥65%",
+      "atp_elite": "~73%"
+    },
+    {
+      "metric": "second_serve_points_won_pct",
+      "itf_m25_current": "~44%",
+      "challenger_target": "≥48%",
+      "atp_elite": "~52%"
+    },
+    {
+      "metric": "serve_return_asymmetry_pp",
+      "itf_m25_current": "~9",
+      "challenger_target": "~16",
+      "atp_elite": "~28"
+    },
+    {
+      "metric": "avg_rally_length_shots",
+      "itf_m25_current": "4.5 – 5.0",
+      "challenger_target": "4.3 – 4.7",
+      "atp_elite": "3.9 – 4.2"
+    },
+    {
+      "metric": "break_frequency_per_set",
+      "itf_m25_current": "2.0 – 2.8",
+      "challenger_target": "1.5 – 2.0",
+      "atp_elite": "1.2 – 1.5"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "athlete": "Luka Bojičić Ono",
+  "domain": "Fisiologia & Monitoramento",
+  "data_version": "2026-04",
+  "last_updated": "2026-04-06",
+  "metabolic_zones": [
+    {
+      "zone": 1,
+      "lactate_mmol": "< 1.2",
+      "whoop_strain": "< 10.0",
+      "focus": "Recuperação Ativa",
+      "bu_objective": "Eliminar lactato, restaurar glicogênio."
+    },
+    {
+      "zone": 2,
+      "lactate_mmol": "1.2 – 2.0",
+      "whoop_strain": "10.0 – 14.0",
+      "focus": "Base Aeróbica",
+      "bu_objective": "Construir densidade mitocondrial (V2)."
+    },
+    {
+      "zone": 3,
+      "lactate_mmol": "2.0 – 3.5",
+      "whoop_strain": "14.0 – 17.0",
+      "focus": "Limiar / Tempo",
+      "bu_objective": "Estabilizar ritmo de Challenger Grinder."
+    },
+    {
+      "zone": 4,
+      "lactate_mmol": "3.5 – 6.0",
+      "whoop_strain": "17.0 – 19.0",
+      "focus": "VO2 Máx / Anaeróbico",
+      "bu_objective": "Potência explosiva para 0–4 bolas."
+    },
+    {
+      "zone": 5,
+      "lactate_mmol": "> 6.0",
+      "whoop_strain": "> 19.0",
+      "focus": "Supramáximo",
+      "bu_objective": "Simulação de partida (alta intensidade)."
+    }
+  ],
+  "hrv_decision_matrix": [
+    {
+      "status": "Acima da Baseline",
+      "recovery_pct_min": 80,
+      "recommendation": "Full Send",
+      "max_zone": 5,
+      "notes": "Ótimo para Zona 4/5 ou Força máxima."
+    },
+    {
+      "status": "Estável (±5%)",
+      "recovery_pct_min": 50,
+      "recommendation": "Seguir Plano",
+      "max_zone": 3,
+      "notes": "Limitar Strain a ~16.0; foco em técnica."
+    },
+    {
+      "status": "Em Queda (−10%)",
+      "recovery_pct_min": 33,
+      "recommendation": "Reduzir",
+      "max_zone": 3,
+      "notes": "Deslocar Zona 4 para Zona 3; priorizar Zona 2."
+    },
+    {
+      "status": "Crítico (−15%+)",
+      "recovery_pct_min": 0,
+      "recommendation": "Reset Total",
+      "max_zone": 1,
+      "notes": "Zona 1 obrigatória (recuperação) ou descanso."
+    }
+  ],
+  "daily_log": [
+    {
+      "date": "2026-04-03",
+      "recovery_pct": 82,
+      "hrv_ms": 85,
+      "rhr_bpm": 48,
+      "strain": 14.2,
+      "srpe": 630,
+      "sleep_score_pct": 92,
+      "notes": "Baseline established. High readiness."
+    }
+  ]
+}

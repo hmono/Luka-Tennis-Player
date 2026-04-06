@@ -1,0 +1,708 @@
+{
+  "player": "Luka",
+  "surface_breakdown": [
+    { "surface": "Hard (outdoor)", "w": 17, "l": 28 },
+    { "surface": "Clay",           "w": 11, "l": 33 },
+    { "surface": "Grass",          "w": 0,  "l": 1  },
+    { "surface": "Hard (indoor)",  "w": 0,  "l": 1  }
+  ],
+  "career_events": [
+    {
+      "date": "2005-01-28",
+      "season": "2005",
+      "category": "milestone",
+      "title": "Born",
+      "location": null,
+      "source_note": "DOB 2005-01-28"
+    },
+    {
+      "date": null,
+      "season": "2021",
+      "category": "ranking",
+      "title": "ITF season high #2483",
+      "location": null,
+      "source_note": "Limited activity",
+      "season_end_rank": 2483
+    },
+    {
+      "date": "2021-07-01",
+      "season": "2021",
+      "category": "tournament",
+      "title": "Futures Q-1R vs D. Jovic",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Played; score unavailable"
+    },
+    {
+      "date": "2021-07-01",
+      "season": "2021",
+      "category": "tournament",
+      "title": "Futures Q-2R vs K. Minarik",
+      "location": null,
+      "round": "Q-2R",
+      "source_note": "Won 6-1 6-0"
+    },
+    {
+      "date": null,
+      "season": "2022",
+      "category": "ranking",
+      "title": "ITF season high #1840",
+      "location": null,
+      "source_note": "Progression with fluctuations",
+      "season_end_rank": 1840
+    },
+    {
+      "date": "2022-05-08",
+      "season": "2022",
+      "category": "tournament",
+      "title": "Futures Q-1R vs M. Stakusic",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-1 6-1"
+    },
+    {
+      "date": null,
+      "season": "2023",
+      "category": "ranking",
+      "title": "ITF career high #1715",
+      "location": null,
+      "source_note": "Early-season peak",
+      "season_end_rank": 1900
+    },
+    {
+      "date": "2023-10-01",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Campinas Challenger Q-1R",
+      "location": "Campinas",
+      "round": "Q-1R",
+      "source_note": "Lost to M. Alves"
+    },
+    {
+      "date": "2023-10-15",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures Q-1R vs C. Labitzke",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-4 6-3"
+    },
+    {
+      "date": "2023-10-23",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures Q-2R vs N. Perfetti",
+      "location": null,
+      "round": "Q-2R",
+      "source_note": "Lost 7-5 6-1"
+    },
+    {
+      "date": "2023-10-29",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Kupcic",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-1 6-2"
+    },
+    {
+      "date": "2023-11-05",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures Q-1R vs L. Vaccari",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2023-11-12",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Beaven",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 7-5 7-6[2]"
+    },
+    {
+      "date": "2023-11-19",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures Q-1R vs P. Vaitiekunas",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-3 6-2"
+    },
+    {
+      "date": "2023-11-29",
+      "season": "2023",
+      "category": "tournament",
+      "title": "Futures 1R vs A. Berrut",
+      "location": null,
+      "round": "1R",
+      "source_note": "Lost 6-0 6-3"
+    },
+    {
+      "date": "2024-02-18",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs M. Chan Baratau",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-0 7-5"
+    },
+    {
+      "date": "2024-03-03",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Pereira Xavier",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2024-03-04",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs H. Costanzi de Brito",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Won 7-5 7-6[2]"
+    },
+    {
+      "date": "2024-03-06",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures 1R vs B. Torres Fernandez",
+      "location": null,
+      "round": "1R",
+      "source_note": "Score unavailable"
+    },
+    {
+      "date": "2024-03-10",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs A. Navarro",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2024-03-17",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs G. Santon",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-3 6-0"
+    },
+    {
+      "date": "2024-03-18",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs V. Braga",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 7-6[4] 7-6[3]"
+    },
+    {
+      "date": "2024-08-18",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs D. Rebelo",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-0 6-2"
+    },
+    {
+      "date": "2024-08-19",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs M. Cury Bueres",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-3 6-1"
+    },
+    {
+      "date": "2024-09-01",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Loureiro",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 7-5 6-2"
+    },
+    {
+      "date": "2024-09-02",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-2R vs L. Castro",
+      "location": null,
+      "round": "Q-2R",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2024-09-08",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs T. Grandinetti",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-0 6-3"
+    },
+    {
+      "date": "2024-10-13",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Campinas Challenger Q-1R",
+      "location": "Campinas",
+      "round": "Q-1R",
+      "source_note": "Lost to M. Soto"
+    },
+    {
+      "date": "2024-11-04",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs V. Grippo",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-4 6-3"
+    },
+    {
+      "date": "2024-11-05",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs J. Loureiro",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2024-11-10",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs C. Zerega",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-2 6-1"
+    },
+    {
+      "date": "2024-11-11",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs S. Amante Perez",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Won 6-4 6-0"
+    },
+    {
+      "date": "2024-11-13",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures 1R vs I. Strode",
+      "location": null,
+      "round": "1R",
+      "source_note": "Lost 7-5 6-2"
+    },
+    {
+      "date": "2024-11-17",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs F. Crosio",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2024-11-18",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs N. Hollender",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 7-6 6-4"
+    },
+    {
+      "date": "2024-11-24",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs N. Buitrago",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-1 6-2"
+    },
+    {
+      "date": "2024-12-01",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Bianchi",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-4 6-1"
+    },
+    {
+      "date": "2024-12-08",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-1R vs F. Crosio",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-0 6-3"
+    },
+    {
+      "date": "2024-12-09",
+      "season": "2024",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs S. Cooper",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-2 6-1"
+    },
+    {
+      "date": null,
+      "season": "2025",
+      "category": "ranking",
+      "title": "ATP singles career high #1827",
+      "location": null,
+      "source_note": "ATP debut season",
+      "season_end_rank": 1920
+    },
+    {
+      "date": null,
+      "season": "2025",
+      "category": "ranking",
+      "title": "ATP doubles career high #1784",
+      "location": null,
+      "source_note": "Confirmed by TennisExplorer",
+      "season_end_rank": 1870
+    },
+    {
+      "date": "2025-02-16",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs F. Van Wyk",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-3 6-0"
+    },
+    {
+      "date": "2025-02-21",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs A. Aleshchev",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-3 6-2"
+    },
+    {
+      "date": "2025-02-23",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs M. Clark",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2025-02-25",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs P. Christoforakis",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2025-05-25",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs B. Alarcon",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-2 6-3"
+    },
+    {
+      "date": "2025-05-26",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs N. Villalon",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2025-06-01",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs G. Pinheiro da Cruz Jr.",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost 6-2 7-6"
+    },
+    {
+      "date": "2025-06-08",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs E. Johansson",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 7-5 6-1"
+    },
+    {
+      "date": "2025-06-09",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-2R vs N. Rico Arias",
+      "location": null,
+      "round": "Q-2R",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2025-06-29",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Hart",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2025-07-06",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs C. McCarthy",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2025-07-07",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs J. Beaven",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-3 6-4"
+    },
+    {
+      "date": "2025-07-13",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs P. Photiades",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2025-07-14",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs J. Beaven",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-0 6-1"
+    },
+    {
+      "date": "2025-07-21",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs R. Char",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2025-07-22",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs N. Oliveira",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-0 6-1"
+    },
+    {
+      "date": "2025-09-01",
+      "season": "2025",
+      "category": "tournament",
+      "title": "M25 Barueri Q-1R",
+      "location": "Barueri",
+      "round": "Q-1R",
+      "source_note": "Lost to R. Tosetto"
+    },
+    {
+      "date": "2025-11-02",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs J. Triana Mendoza",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won 6-2 5-0"
+    },
+    {
+      "date": "2025-11-03",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs V. Braga",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-3 6-2"
+    },
+    {
+      "date": "2025-11-09",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-1R vs A. Fernandez Badia",
+      "location": null,
+      "round": "Q-1R",
+      "source_note": "Won in match tiebreak"
+    },
+    {
+      "date": "2025-11-10",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs M. Spiering",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost 6-3 6-1"
+    },
+    {
+      "date": "2025-11-19",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures 1R vs M. Carballo",
+      "location": null,
+      "round": "1R",
+      "source_note": "Won in three sets"
+    },
+    {
+      "date": "2025-11-20",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures R16 vs B. Malla",
+      "location": null,
+      "round": "R16",
+      "source_note": "Best main draw round"
+    },
+    {
+      "date": "2025-11-20",
+      "season": "2025",
+      "category": "milestone",
+      "title": "Reached career-best main draw R16",
+      "location": null,
+      "source_note": "Lost to B. Malla"
+    },
+    {
+      "date": "2025-11-27",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures 1R vs R. Garcia Finetto",
+      "location": null,
+      "round": "1R",
+      "source_note": "Lost 6-1 6-4"
+    },
+    {
+      "date": "2025-12-08",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-2R vs R. Varillas",
+      "location": null,
+      "round": "Q-2R",
+      "source_note": "Lost 6-3 6-2"
+    },
+    {
+      "date": "2025-12-15",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-2R vs C. Trujillo",
+      "location": null,
+      "round": "Q-2R",
+      "source_note": "Won 6-2 6-1"
+    },
+    {
+      "date": "2025-12-15",
+      "season": "2025",
+      "category": "tournament",
+      "title": "Futures Q-R16 vs D. Pontoglio",
+      "location": null,
+      "round": "Q-R16",
+      "source_note": "Lost in match tiebreak"
+    },
+    {
+      "date": "2026-03-01",
+      "season": "2026",
+      "category": "tournament",
+      "title": "Brasilia Challenger Q-1R",
+      "location": "Brasilia",
+      "round": "Q-1R",
+      "source_note": "Lost to E. Ribeiro"
+    },
+    {
+      "date": "2026-03-08",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 La Plata 01 Q-1R",
+      "location": "La Plata",
+      "round": "Q-1R",
+      "source_note": "Lost to L. Rocha"
+    },
+    {
+      "date": "2026-03-16",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Punta Del Este 01 Q-2R",
+      "location": "Punta Del Este",
+      "round": "Q-2R",
+      "source_note": "Lost to M. Napoli"
+    },
+    {
+      "date": "2026-03-16",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Punta Del Este doubles",
+      "location": "Punta Del Este",
+      "round": null,
+      "source_note": "Lost to Otegui Tenti"
+    },
+    {
+      "date": "2026-03-22",
+      "season": "2026",
+      "category": "tournament",
+      "title": "Sao Paulo 2 Challenger Q-1R",
+      "location": "Sao Paulo",
+      "round": "Q-1R",
+      "source_note": "Lost to J. Schiessl"
+    },
+    {
+      "date": "2026-03-22",
+      "season": "2026",
+      "category": "ranking",
+      "title": "ATP singles current ~1951",
+      "location": null,
+      "source_note": "Current around Mar 2026"
+    },
+    {
+      "date": "2026-03-22",
+      "season": "2026",
+      "category": "ranking",
+      "title": "ATP doubles current ~2012",
+      "location": null,
+      "source_note": "Current around Mar 2026"
+    },
+    {
+      "date": "2026-03-22",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Santo Domingo 3 doubles",
+      "location": "Santo Domingo",
+      "round": null,
+      "source_note": "Lost to Bertran Mbithi"
+    },
+    {
+      "date": "2026-04-01",
+      "season": "2026",
+      "category": "milestone",
+      "title": "No titles recorded",
+      "location": null,
+      "source_note": "Singles and doubles"
+    }
+  ]
+}
