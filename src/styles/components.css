@@ -1,139 +1,340 @@
 @layer components {
   .shell {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: 72rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .shell {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
   }
 
   .surface-card {
-    @apply rounded-2xl border bg-white;
+    border-radius: 1rem;
+    border-width: 1px;
+    background-color: #ffffff;
     border-color: rgba(0, 0, 0, 0.08);
   }
 
   .hero-panel {
-    @apply relative overflow-hidden rounded-3xl px-6 py-12 text-white shadow-lg sm:px-10;
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    color: #ffffff;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     background: var(--luka-blue);
+  }
+
+  @media (min-width: 640px) {
+    .hero-panel {
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+    }
   }
 
   .hero-panel::before {
     content: "LUKA.ONO";
-    @apply pointer-events-none absolute -top-6 right-0 text-6xl font-semibold tracking-tight text-white/7 sm:text-8xl;
+    pointer-events: none;
+    position: absolute;
+    top: -1.5rem;
+    right: 0;
+    font-size: 3.75rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: rgb(255 255 255 / 0.07);
+  }
+
+  @media (min-width: 640px) {
+    .hero-panel::before {
+      font-size: 6rem;
+    }
   }
 
   .hero-tag {
-    @apply mb-4 text-[10px] uppercase tracking-[0.22em] text-white/55;
+    margin-bottom: 1rem;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: rgb(255 255 255 / 0.55);
   }
 
   .hero-sub {
-    @apply mt-4 text-[11px] tracking-[0.08em] text-white/65;
+    margin-top: 1rem;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgb(255 255 255 / 0.65);
   }
 
   .stat-strip {
-    @apply mt-4 grid gap-px overflow-hidden rounded-2xl border border-black/8 bg-black/8 md:grid-cols-6;
+    margin-top: 1rem;
+    display: grid;
+    gap: 1px;
+    overflow: hidden;
+    border-radius: 1rem;
+    border-width: 1px;
+    border-color: rgb(0 0 0 / 0.08);
+    background-color: rgb(0 0 0 / 0.08);
+  }
+
+  @media (min-width: 768px) {
+    .stat-strip {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
   }
 
   .stat-item {
-    @apply bg-white px-4 py-5 text-center;
+    background-color: #ffffff;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+    text-align: center;
   }
 
   .stat-value {
-    @apply block text-2xl font-semibold tracking-tight text-luka-blue;
+    display: block;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--luka-blue);
   }
 
   .stat-label {
-    @apply mt-1 block text-[10px] uppercase tracking-[0.16em] text-black/45;
+    margin-top: 0.25rem;
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: rgb(0 0 0 / 0.45);
   }
 
   .level-strip {
-    @apply mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-luka-dark px-4 py-4 text-white sm:gap-5;
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 1rem;
+    background-color: var(--luka-dark);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    color: #ffffff;
+  }
+
+  @media (min-width: 640px) {
+    .level-strip {
+      gap: 1.25rem;
+    }
   }
 
   .level-label {
-    @apply text-[10px] uppercase tracking-[0.16em] text-white/35;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: rgb(255 255 255 / 0.35);
   }
 
   .level-item {
-    @apply flex items-center gap-2 text-xs tracking-[0.08em];
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
   }
 
   .level-dot {
-    @apply h-2 w-2 rounded-full;
+    height: 0.5rem;
+    width: 0.5rem;
+    border-radius: 9999px;
   }
 
   .level-note {
-    @apply text-[10px] tracking-[0.08em] text-white/30 md:ml-auto;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgb(255 255 255 / 0.3);
+  }
+
+  @media (min-width: 768px) {
+    .level-note {
+      margin-left: auto;
+    }
   }
 
   .section-block {
-    @apply py-16 sm:py-24;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  @media (min-width: 640px) {
+    .section-block {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
   }
 
   .section-head {
-    @apply mb-6 flex items-baseline gap-3 border-b-2 border-luka-blue pb-3;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    border-bottom-width: 2px;
+    border-color: var(--luka-blue);
+    padding-bottom: 0.75rem;
   }
 
   .section-num {
-    @apply text-[10px] font-semibold uppercase tracking-[0.2em] text-luka-blue;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--luka-blue);
   }
 
   .section-title {
-    @apply text-2xl font-semibold tracking-tight text-luka-black;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--luka-black);
   }
 
   .section-badge {
-    @apply ml-auto rounded-md border px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-luka-blue;
+    margin-left: auto;
+    border-radius: 0.375rem;
+    border-width: 1px;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--luka-blue);
     background: rgba(59, 79, 224, 0.08);
     border-color: rgba(59, 79, 224, 0.18);
   }
 
   .module-grid {
-    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
   .module-card {
-    @apply flex min-h-64 flex-col overflow-hidden rounded-2xl border bg-white transition-transform duration-150 hover:-translate-y-0.5;
+    display: flex;
+    min-height: 16rem;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 1rem;
+    border-width: 1px;
+    background-color: #ffffff;
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
   }
 
   .module-card:hover {
+    transform: translateY(-0.125rem);
     box-shadow: 0 12px 32px rgba(59, 79, 224, 0.12);
   }
 
   .module-accent {
-    @apply h-1 w-full;
+    height: 0.25rem;
+    width: 100%;
   }
 
   .module-body {
-    @apply flex flex-1 flex-col px-5 py-5;
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
   }
 
   .module-tag {
-    @apply mb-2 text-[10px] uppercase tracking-[0.18em] text-black/45;
+    margin-bottom: 0.5rem;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgb(0 0 0 / 0.45);
   }
 
   .module-title {
-    @apply text-2xl font-semibold leading-tight tracking-tight text-luka-black;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    color: var(--luka-black);
   }
 
   .module-desc {
-    @apply mt-3 text-sm leading-6 text-black/65;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    color: rgb(0 0 0 / 0.65);
   }
 
   .module-footer {
-    @apply flex items-center justify-between border-t border-black/6 px-5 py-4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top-width: 1px;
+    border-color: rgb(0 0 0 / 0.06);
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
   }
 
   .module-arrow {
-    @apply text-black/35 transition-transform duration-150;
+    color: rgb(0 0 0 / 0.35);
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
   }
 
   .module-card:hover .module-arrow {
-    @apply translate-x-0.5;
+    transform: translateX(0.125rem);
   }
 
   .module-status {
-    @apply text-[10px] font-semibold uppercase tracking-[0.16em];
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
   }
- 
+
   .module-status-live {
     color: var(--luka-challenger);
   }
@@ -143,36 +344,89 @@
   }
 
   .priority-box {
-    @apply relative overflow-hidden rounded-3xl px-6 py-8 text-white sm:px-8;
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    color: #ffffff;
     background: var(--luka-blue);
+  }
+
+  @media (min-width: 640px) {
+    .priority-box {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
   }
 
   .priority-box::before {
     content: "LUKA";
-    @apply pointer-events-none absolute bottom-0 right-0 text-7xl font-semibold tracking-tight text-white/7 sm:text-8xl;
+    pointer-events: none;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-size: 4.5rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: rgb(255 255 255 / 0.07);
+  }
+
+  @media (min-width: 640px) {
+    .priority-box::before {
+      font-size: 6rem;
+    }
   }
 
   .priority-tag {
-    @apply mb-3 text-[10px] uppercase tracking-[0.2em] text-white/55;
+    margin-bottom: 0.75rem;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgb(255 255 255 / 0.55);
   }
 
   .priority-title {
-    @apply text-3xl font-semibold tracking-tight;
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
   }
 
   .priority-grid {
-    @apply relative z-10 mt-6 grid gap-3 md:grid-cols-2;
+    position: relative;
+    z-index: 10;
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .priority-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .priority-item {
-    @apply rounded-2xl bg-white/10 p-4;
+    border-radius: 1rem;
+    background-color: rgb(255 255 255 / 0.1);
+    padding: 1rem;
   }
 
   .priority-num {
-    @apply text-2xl font-semibold text-white/35;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.35);
   }
 
   .priority-text {
-    @apply mt-2 text-sm leading-6 text-white/80;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    color: rgb(255 255 255 / 0.8);
   }
 }
