@@ -1,31 +1,55 @@
+/* ── DESIGN TOKENS ─────────────────────────────────────────── */
 :root {
-  --luka-blue: #3b4fe0;
-  --luka-blue-dark: #2535bb;
-  --luka-blue-light: #5b6ef5;
-  --luka-off-white: #f0efeb;
-  --luka-white: #ffffff;
-  --luka-black: #0a0a0a;
-  --luka-dark: #111218;
-  --luka-text-mid: #444444;
-  --luka-text-muted: #888888;
+  /* brand */
+  --luka-blue:        #3b4fe0;
+  --luka-blue-dark:   #2535bb;
+  --luka-blue-light:  #5b6ef5;
+  --luka-off-white:   #f0efeb;
+  --luka-white:       #ffffff;
+  --luka-black:       #0a0a0a;
+  --luka-dark:        #111218;
+  --luka-text-mid:    #444444;
+  --luka-text-muted:  #888888;
   --luka-border-light: rgba(59, 79, 224, 0.15);
-  --luka-atp: #3b4fe0;
+
+  /* level */
+  --luka-atp:        #3b4fe0;
   --luka-challenger: #1cc8a0;
-  --luka-itf: #f5a623;
+  --luka-itf:        #f5a623;
+
+  /* short aliases (used by static HTML files) */
+  --blue:        var(--luka-blue);
+  --blue-lt:     var(--luka-blue-light);
+  --blue-dk:     var(--luka-blue-dark);
+  --off-white:   var(--luka-off-white);
+  --white:       var(--luka-white);
+  --black:       var(--luka-black);
+  --dark:        var(--luka-dark);
+  --atp:         var(--luka-atp);
+  --chal:        var(--luka-challenger);
+  --itf:         var(--luka-itf);
+  --border-light: var(--luka-border-light);
+  --text-dark:   var(--luka-black);
+  --text-mid:    var(--luka-text-mid);
+  --text-muted:  var(--luka-text-muted);
 }
 
+/* Tailwind v4 color mapping */
 @theme {
-  --color-luka-blue: var(--luka-blue);
-  --color-luka-blue-dark: var(--luka-blue-dark);
-  --color-luka-blue-light: var(--luka-blue-light);
-  --color-luka-off-white: var(--luka-off-white);
-  --color-luka-white: var(--luka-white);
-  --color-luka-black: var(--luka-black);
-  --color-luka-dark: var(--luka-dark);
-  --color-luka-text-mid: var(--luka-text-mid);
-  --color-luka-text-muted: var(--luka-text-muted);
+  --color-luka-blue:        var(--luka-blue);
+  --color-luka-blue-dark:   var(--luka-blue-dark);
+  --color-luka-blue-light:  var(--luka-blue-light);
+  --color-luka-off-white:   var(--luka-off-white);
+  --color-luka-white:       var(--luka-white);
+  --color-luka-black:       var(--luka-black);
+  --color-luka-dark:        var(--luka-dark);
+  --color-luka-text-mid:    var(--luka-text-mid);
+  --color-luka-text-muted:  var(--luka-text-muted);
+  --color-luka-atp:         var(--luka-atp);
+  --color-luka-challenger:  var(--luka-challenger);
+  --color-luka-itf:         var(--luka-itf);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans:  var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-bebas: var(--font-bebas), sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono:  var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }

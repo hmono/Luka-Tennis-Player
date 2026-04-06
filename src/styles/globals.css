@@ -1,25 +1,25 @@
-@layer base {
-  * {
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    background: var(--luka-off-white);
-    color: var(--luka-black);
-  }
+/* ── RESET ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@layer utilities {
-  .u-text-muted {
-    color: var(--luka-text-muted);
-  }
-
-  .u-border-light {
-    border-color: var(--luka-border-light);
-  }
+html {
+  scroll-behavior: smooth;
 }
 
+body {
+  background: var(--luka-off-white);
+  color: var(--luka-black);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── ANIMATIONS ────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
