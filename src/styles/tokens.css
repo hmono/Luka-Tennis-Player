@@ -1,0 +1,31 @@
+:root {
+  --luka-blue: #3b4fe0;
+  --luka-blue-dark: #2535bb;
+  --luka-blue-light: #5b6ef5;
+  --luka-off-white: #f0efeb;
+  --luka-white: #ffffff;
+  --luka-black: #0a0a0a;
+  --luka-dark: #111218;
+  --luka-text-mid: #444444;
+  --luka-text-muted: #888888;
+  --luka-border-light: rgba(59, 79, 224, 0.15);
+  --luka-atp: #3b4fe0;
+  --luka-challenger: #1cc8a0;
+  --luka-itf: #f5a623;
+}
+
+@theme {
+  --color-luka-blue: var(--luka-blue);
+  --color-luka-blue-dark: var(--luka-blue-dark);
+  --color-luka-blue-light: var(--luka-blue-light);
+  --color-luka-off-white: var(--luka-off-white);
+  --color-luka-white: var(--luka-white);
+  --color-luka-black: var(--luka-black);
+  --color-luka-dark: var(--luka-dark);
+  --color-luka-text-mid: var(--luka-text-mid);
+  --color-luka-text-muted: var(--luka-text-muted);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-bebas: var(--font-bebas), sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

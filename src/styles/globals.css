@@ -1,0 +1,25 @@
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--luka-off-white);
+    color: var(--luka-black);
+  }
+}
+
+@layer utilities {
+  .u-text-muted {
+    color: var(--luka-text-muted);
+  }
+
+  .u-border-light {
+    border-color: var(--luka-border-light);
+  }
+}
+

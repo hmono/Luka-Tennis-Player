@@ -1,0 +1,178 @@
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border bg-white;
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .hero-panel {
+    @apply relative overflow-hidden rounded-3xl px-6 py-12 text-white shadow-lg sm:px-10;
+    background: var(--luka-blue);
+  }
+
+  .hero-panel::before {
+    content: "LUKA.ONO";
+    @apply pointer-events-none absolute -top-6 right-0 text-6xl font-semibold tracking-tight text-white/7 sm:text-8xl;
+  }
+
+  .hero-tag {
+    @apply mb-4 text-[10px] uppercase tracking-[0.22em] text-white/55;
+  }
+
+  .hero-sub {
+    @apply mt-4 text-[11px] tracking-[0.08em] text-white/65;
+  }
+
+  .stat-strip {
+    @apply mt-4 grid gap-px overflow-hidden rounded-2xl border border-black/8 bg-black/8 md:grid-cols-6;
+  }
+
+  .stat-item {
+    @apply bg-white px-4 py-5 text-center;
+  }
+
+  .stat-value {
+    @apply block text-2xl font-semibold tracking-tight text-luka-blue;
+  }
+
+  .stat-label {
+    @apply mt-1 block text-[10px] uppercase tracking-[0.16em] text-black/45;
+  }
+
+  .level-strip {
+    @apply mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-luka-dark px-4 py-4 text-white sm:gap-5;
+  }
+
+  .level-label {
+    @apply text-[10px] uppercase tracking-[0.16em] text-white/35;
+  }
+
+  .level-item {
+    @apply flex items-center gap-2 text-xs tracking-[0.08em];
+  }
+
+  .level-dot {
+    @apply h-2 w-2 rounded-full;
+  }
+
+  .level-note {
+    @apply text-[10px] tracking-[0.08em] text-white/30 md:ml-auto;
+  }
+
+  .section-block {
+    @apply py-16 sm:py-24;
+  }
+
+  .section-head {
+    @apply mb-6 flex items-baseline gap-3 border-b-2 border-luka-blue pb-3;
+  }
+
+  .section-num {
+    @apply text-[10px] font-semibold uppercase tracking-[0.2em] text-luka-blue;
+  }
+
+  .section-title {
+    @apply text-2xl font-semibold tracking-tight text-luka-black;
+  }
+
+  .section-badge {
+    @apply ml-auto rounded-md border px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-luka-blue;
+    background: rgba(59, 79, 224, 0.08);
+    border-color: rgba(59, 79, 224, 0.18);
+  }
+
+  .module-grid {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .module-card {
+    @apply flex min-h-64 flex-col overflow-hidden rounded-2xl border bg-white transition-transform duration-150 hover:-translate-y-0.5;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+  }
+
+  .module-card:hover {
+    box-shadow: 0 12px 32px rgba(59, 79, 224, 0.12);
+  }
+
+  .module-accent {
+    @apply h-1 w-full;
+  }
+
+  .module-body {
+    @apply flex flex-1 flex-col px-5 py-5;
+  }
+
+  .module-tag {
+    @apply mb-2 text-[10px] uppercase tracking-[0.18em] text-black/45;
+  }
+
+  .module-title {
+    @apply text-2xl font-semibold leading-tight tracking-tight text-luka-black;
+  }
+
+  .module-desc {
+    @apply mt-3 text-sm leading-6 text-black/65;
+  }
+
+  .module-footer {
+    @apply flex items-center justify-between border-t border-black/6 px-5 py-4;
+  }
+
+  .module-arrow {
+    @apply text-black/35 transition-transform duration-150;
+  }
+
+  .module-card:hover .module-arrow {
+    @apply translate-x-0.5;
+  }
+
+  .module-status {
+    @apply text-[10px] font-semibold uppercase tracking-[0.16em];
+  }
+ 
+  .module-status-live {
+    color: var(--luka-challenger);
+  }
+
+  .module-status-soon {
+    color: var(--luka-itf);
+  }
+
+  .priority-box {
+    @apply relative overflow-hidden rounded-3xl px-6 py-8 text-white sm:px-8;
+    background: var(--luka-blue);
+  }
+
+  .priority-box::before {
+    content: "LUKA";
+    @apply pointer-events-none absolute bottom-0 right-0 text-7xl font-semibold tracking-tight text-white/7 sm:text-8xl;
+  }
+
+  .priority-tag {
+    @apply mb-3 text-[10px] uppercase tracking-[0.2em] text-white/55;
+  }
+
+  .priority-title {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+
+  .priority-grid {
+    @apply relative z-10 mt-6 grid gap-3 md:grid-cols-2;
+  }
+
+  .priority-item {
+    @apply rounded-2xl bg-white/10 p-4;
+  }
+
+  .priority-num {
+    @apply text-2xl font-semibold text-white/35;
+  }
+
+  .priority-text {
+    @apply mt-2 text-sm leading-6 text-white/80;
+  }
+}
