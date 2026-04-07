@@ -53,12 +53,18 @@ const cleanTournamentTitle = (title: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
-const phaseClass = (round: string | null | undefined): string => {
-  if (!round) return "text-black/40";
-  if (/^(R\d+|1R)$/.test(round)) return "font-semibold text-luka-blue";
-  if (/^Q-/.test(round)) return "text-black/40";
-  if (round === "D") return "text-black/40 italic";
-  return "text-black/40";
+const phaseColor = (round: string | null | undefined): string => {
+  if (!round) return "rgba(0,0,0,0.4)";
+  if (/^(R\d+|1R)$/.test(round)) return "var(--luka-blue)";
+  if (/^Q-/.test(round)) return "rgba(0,0,0,0.4)";
+  if (round === "D") return "rgba(0,0,0,0.4)";
+  return "rgba(0,0,0,0.4)";
+};
+
+const phaseWeight = (round: string | null | undefined): string => {
+  if (!round) return "normal";
+  if (/^(R\d+|1R)$/.test(round)) return "600";
+  return "normal";
 };
 
 // ── data slices ───────────────────────────────────────────────
@@ -165,119 +171,133 @@ const seasonGroups = [...new Set(tournamentEvents.map((e) => e.season))]
       .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")),
   }));
 
-// ── shared styles ─────────────────────────────────────────────
+// ── table wrapper style ───────────────────────────────────────
 
-const tableClass =
-  "w-full min-w-full text-sm [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[10px] [&_th]:uppercase [&_th]:tracking-[0.16em] [&_td]:px-4 [&_td]:py-3";
+const tableWrapStyle: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid rgba(0,0,0,0.07)",
+  borderRadius: "4px",
+  overflow: "hidden",
+};
+
+const tableHeadStyle: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', monospace",
+  fontSize: "8.5px",
+  letterSpacing: "0.1em",
+  textTransform: "uppercase" as const,
+  color: "#888",
+  padding: "9px 18px 10px",
+  borderBottom: "1px solid rgba(0,0,0,0.06)",
+};
 
 // ─────────────────────────────────────────────────────────────
 
 export default function CareerPage() {
   return (
-    <div className="section-block">
-      <div className="shell">
+    <>
+      <header className="hero">
+        <div className="hero-left">
+          <a href="/" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "9px",
+            letterSpacing: "0.12em",
+            color: "rgba(255,255,255,0.4)",
+            textDecoration: "none",
+            marginBottom: "20px",
+          }}>← Dashboard</a>
+          <div className="hero-tag">
+            @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
+          </div>
+          <h1>CAREER &amp;<br />RANKING</h1>
+          <div className="hero-sub">
+            TOURNAMENT RESULTS · RANKING HISTORY · CAREER TRAJECTORY · 2021–2026
+          </div>
+        </div>
+      </header>
 
-        {/* HERO */}
-        <section className="hero-panel">
-          <div className="relative z-10">
-            <Link href="/" className="mb-5 inline-flex text-xs uppercase tracking-[0.18em] text-white/50">
-              ← Dashboard
-            </Link>
-            <div className="hero-tag">
-              @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
-            </div>
-            <h1 className="max-w-3xl text-5xl font-semibold leading-none tracking-tight sm:text-7xl">
-              CAREER &
-              <br />
-              RANKING
-            </h1>
-            <div className="hero-sub">
-              TOURNAMENT RESULTS · RANKING HISTORY · CAREER TRAJECTORY · 2021–2026
-            </div>
-          </div>
-        </section>
+      <div className="player-strip">
+        <div className="stat-pill">
+          <span className="stat-pill-val">{formatRank(atpSinglesCareerHigh)}</span>
+          <span className="stat-pill-label">ATP Singles Career High</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-pill">
+          <span className="stat-pill-val">{formatRank(atpDoublesCareerHigh)}</span>
+          <span className="stat-pill-label">ATP Doubles Career High</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-pill">
+          <span className="stat-pill-val">{totalSingles.wins}W · {totalSingles.losses}L</span>
+          <span className="stat-pill-label">Career Singles Record</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-pill">
+          <span className="stat-pill-val">{totalDoubles.wins}W · {totalDoubles.losses}L</span>
+          <span className="stat-pill-label">Career Doubles Record</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-pill">
+          <span className="stat-pill-val">{challengerAppearances}</span>
+          <span className="stat-pill-label">Challenger Appearances</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-pill">
+          <span className="stat-pill-val">{bestMainDraw}</span>
+          <span className="stat-pill-label">Best Main Draw Round</span>
+        </div>
+      </div>
 
-        {/* STAT STRIP */}
-        <section className="stat-strip">
-          <div className="stat-item">
-            <span className="stat-value">{formatRank(atpSinglesCareerHigh)}</span>
-            <span className="stat-label">ATP Singles Career High</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{formatRank(atpDoublesCareerHigh)}</span>
-            <span className="stat-label">ATP Doubles Career High</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">
-              {totalSingles.wins}W · {totalSingles.losses}L
-            </span>
-            <span className="stat-label">Career Singles Record</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">
-              {totalDoubles.wins}W · {totalDoubles.losses}L
-            </span>
-            <span className="stat-label">Career Doubles Record</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{challengerAppearances}</span>
-            <span className="stat-label">Challenger Appearances</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{bestMainDraw}</span>
-            <span className="stat-label">Best Main Draw Round</span>
-          </div>
-        </section>
+      <div className="level-strip">
+        <span className="ls-label">CAREER PATH:</span>
+        <div className="ls-item active">
+          <div className="ls-dot" style={{ background: "#f5a623" }} />
+          <span style={{ color: "#f5a623" }}>ITF M25/M15</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · {formatRank(atpSinglesCurrent, true)}</span>
+        </div>
+        <span className="ls-arrow">——→</span>
+        <div className="ls-item">
+          <div className="ls-dot" style={{ background: "#1cc8a0" }} />
+          <span style={{ color: "#1cc8a0" }}>Challenger</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Target · rank ~100–500</span>
+        </div>
+        <span className="ls-arrow">——→</span>
+        <div className="ls-item">
+          <div className="ls-dot" style={{ background: "var(--luka-blue)" }} />
+          <span style={{ color: "var(--luka-blue)" }}>ATP Tour</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Long-range · top 250+</span>
+        </div>
+        <span className="ls-note">Coaches: Ricardo Siggia · Alexandre Bonatto</span>
+      </div>
 
-        {/* LEVEL STRIP */}
-        <section className="level-strip">
-          <span className="level-label">CAREER PATH:</span>
-          <div className="level-item font-semibold">
-            <span className="level-dot" style={{ background: "#f5a623", boxShadow: "0 0 0 2px rgba(245,166,35,0.35)" }} />
-            <span className="text-[#f5a623]">ITF M25/M15</span>
-            <span className="text-[10px] text-white/35">Current · {formatRank(atpSinglesCurrent, true)}</span>
-          </div>
-          <span className="text-white/20">→</span>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "#1cc8a0" }} />
-            <span className="text-[#1cc8a0]">Challenger</span>
-            <span className="text-[10px] text-white/35">Target · rank ~100–500</span>
-          </div>
-          <span className="text-white/20">→</span>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "var(--luka-blue)" }} />
-            <span className="text-luka-blue">ATP Tour</span>
-            <span className="text-[10px] text-white/35">Long-range · top 250+</span>
-          </div>
-          <span className="level-note">Coaches: Ricardo Siggia · Alexandre Bonatto</span>
-        </section>
+      <main className="wrapper">
 
         {/* S01 — CAREER SUMMARY */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">01</span>
-            <span className="section-title">Career Summary</span>
-            <span className="section-badge">2021–2026</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">01</span>
+            <span className="sec-title">Career Summary</span>
+            <span className="sec-badge">2021–2026</span>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="surface-card overflow-hidden">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                Singles — W/L por ano
-              </div>
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead className="bg-black/[0.03] text-black/45">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={tableWrapStyle}>
+              <div style={tableHeadStyle}>Singles — W/L por ano</div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="ctable">
+                  <thead>
                     <tr>
-                      <th>Ano</th>
-                      <th>W</th>
-                      <th>L</th>
-                      <th>Win%</th>
+                      <th className="th-hdr">Ano</th>
+                      <th className="th-hdr">W</th>
+                      <th className="th-hdr">L</th>
+                      <th className="th-hdr">Win%</th>
                     </tr>
                   </thead>
                   <tbody>
                     {singlesBySeason.map((row) => (
-                      <tr key={row.season} className="border-t border-black/6">
-                        <td>{row.season}</td>
+                      <tr key={row.season}>
+                        <td className="row-label">{row.season}</td>
                         <td>{row.wins}</td>
                         <td>{row.losses}</td>
                         <td>{row.winPct}</td>
@@ -287,24 +307,22 @@ export default function CareerPage() {
                 </table>
               </div>
             </div>
-            <div className="surface-card overflow-hidden">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                Doubles — W/L por ano
-              </div>
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead className="bg-black/[0.03] text-black/45">
+            <div style={tableWrapStyle}>
+              <div style={tableHeadStyle}>Doubles — W/L por ano</div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="ctable">
+                  <thead>
                     <tr>
-                      <th>Ano</th>
-                      <th>W</th>
-                      <th>L</th>
-                      <th>Win%</th>
+                      <th className="th-hdr">Ano</th>
+                      <th className="th-hdr">W</th>
+                      <th className="th-hdr">L</th>
+                      <th className="th-hdr">Win%</th>
                     </tr>
                   </thead>
                   <tbody>
                     {doublesBySeason.map((row) => (
-                      <tr key={row.season} className="border-t border-black/6">
-                        <td>{row.season}</td>
+                      <tr key={row.season}>
+                        <td className="row-label">{row.season}</td>
                         <td>{row.wins}</td>
                         <td>{row.losses}</td>
                         <td>{row.winPct}</td>
@@ -318,77 +336,67 @@ export default function CareerPage() {
         </section>
 
         {/* S02 — RANKING HISTORY */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">02</span>
-            <span className="section-title">Ranking History</span>
-            <span className="section-badge">ITF + ATP</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">02</span>
+            <span className="sec-title">Ranking History</span>
+            <span className="sec-badge">ITF + ATP</span>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="surface-card overflow-hidden">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                Rankings ITF
-              </div>
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead className="bg-black/[0.03] text-black/45">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={tableWrapStyle}>
+              <div style={tableHeadStyle}>Rankings ITF</div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="ctable">
+                  <thead>
                     <tr>
-                      <th>Temporada</th>
-                      <th>Pico</th>
-                      <th>Fim de temp.</th>
-                      <th>Notas</th>
+                      <th className="th-hdr">Temporada</th>
+                      <th className="th-hdr">Pico</th>
+                      <th className="th-hdr">Fim de temp.</th>
+                      <th className="th-hdr">Notas</th>
                     </tr>
                   </thead>
                   <tbody>
                     {itfSeasonRows.map((row) => (
-                      <tr key={`${row.season}-itf`} className="border-t border-black/6">
-                        <td>{row.season}</td>
-                        <td
-                          className="font-medium"
-                          style={{ color: row.isCareerHigh ? "#f5a623" : "var(--luka-blue)" }}
-                        >
+                      <tr key={`${row.season}-itf`}>
+                        <td className="row-label">{row.season}</td>
+                        <td style={{ color: row.isCareerHigh ? "#f5a623" : "var(--luka-blue)", fontWeight: 500 }}>
                           {row.peak}
                           {row.isCareerHigh && (
-                            <span className="ml-1 text-[10px]" title="Career High">★</span>
+                            <span style={{ marginLeft: "4px", fontSize: "10px" }} title="Career High">★</span>
                           )}
                         </td>
-                        <td className="text-black/55">{row.seasonEnd}</td>
-                        <td className="text-black/55">{row.note}</td>
+                        <td className="val-sub" style={{ display: "table-cell" }}>{row.seasonEnd}</td>
+                        <td className="val-sub" style={{ display: "table-cell" }}>{row.note}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-            <div className="surface-card overflow-hidden">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                Rankings ATP
-              </div>
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead className="bg-black/[0.03] text-black/45">
+            <div style={tableWrapStyle}>
+              <div style={tableHeadStyle}>Rankings ATP</div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="ctable">
+                  <thead>
                     <tr>
-                      <th>Temporada</th>
-                      <th>Pico</th>
-                      <th>Fim de temp.</th>
-                      <th>Notas</th>
+                      <th className="th-hdr">Temporada</th>
+                      <th className="th-hdr">Pico</th>
+                      <th className="th-hdr">Fim de temp.</th>
+                      <th className="th-hdr">Notas</th>
                     </tr>
                   </thead>
                   <tbody>
                     {atpSeasonRows.map((row) => (
-                      <tr key={`${row.season}-atp-${row.peak}`} className="border-t border-black/6">
-                        <td>{row.season}</td>
-                        <td
-                          className="font-medium text-luka-blue"
-                          style={{ color: row.isCareerHigh ? "var(--luka-blue)" : undefined }}
-                        >
+                      <tr key={`${row.season}-atp-${row.peak}`}>
+                        <td className="row-label">{row.season}</td>
+                        <td style={{ color: "var(--luka-blue)", fontWeight: 500 }}>
                           {row.peak}
                           {row.isCareerHigh && (
-                            <span className="ml-1 text-[10px]" title="Career High">★</span>
+                            <span style={{ marginLeft: "4px", fontSize: "10px" }} title="Career High">★</span>
                           )}
                         </td>
-                        <td className="text-black/55">{row.seasonEnd}</td>
-                        <td className="text-black/55">{row.note}</td>
+                        <td className="val-sub" style={{ display: "table-cell" }}>{row.seasonEnd}</td>
+                        <td className="val-sub" style={{ display: "table-cell" }}>{row.note}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -399,41 +407,37 @@ export default function CareerPage() {
         </section>
 
         {/* S03 — SURFACE BREAKDOWN */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">03</span>
-            <span className="section-title">Surface Breakdown</span>
-            <span className="section-badge">Singles · Career</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">03</span>
+            <span className="sec-title">Surface Breakdown</span>
+            <span className="sec-badge">Singles · Career</span>
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="surface-card overflow-hidden lg:col-span-2">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                W/L + win rate por superfície
-              </div>
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead className="bg-black/[0.03] text-black/45">
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "14px" }}>
+            <div style={tableWrapStyle}>
+              <div style={tableHeadStyle}>W/L + win rate por superfície</div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="ctable">
+                  <thead>
                     <tr>
-                      <th>Superfície</th>
-                      <th>W</th>
-                      <th>L</th>
-                      <th>Win%</th>
-                      <th className="min-w-32">Win rate</th>
+                      <th className="th-hdr">Superfície</th>
+                      <th className="th-hdr">W</th>
+                      <th className="th-hdr">L</th>
+                      <th className="th-hdr">Win%</th>
+                      <th className="th-hdr" style={{ minWidth: "128px" }}>Win rate</th>
                     </tr>
                   </thead>
                   <tbody>
                     {surfaceRows.map((row) => (
-                      <tr key={row.surface} className="border-t border-black/6">
-                        <td className="font-medium" style={{ color: row.color }}>
-                          {row.surface}
-                        </td>
+                      <tr key={row.surface}>
+                        <td className="row-label" style={{ color: row.color, fontWeight: 500 }}>{row.surface}</td>
                         <td>{row.w}</td>
                         <td>{row.l}</td>
-                        <td className="font-medium">{row.winPct}%</td>
+                        <td style={{ fontWeight: 500 }}>{row.winPct}%</td>
                         <td>
-                          <div className="flex h-2 w-full overflow-hidden rounded-full bg-black/8">
+                          <div className="bar-track">
                             <div
-                              className="rounded-full"
+                              className="bar-fill"
                               style={{ width: `${row.winPct}%`, background: row.color }}
                             />
                           </div>
@@ -444,12 +448,10 @@ export default function CareerPage() {
                 </table>
               </div>
             </div>
-            <div className="surface-card p-5">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-luka-blue">Insight</p>
-              <p className="mt-3 text-lg font-semibold leading-snug tracking-tight">
-                77% das derrotas em saibro. Hard 38% win rate.
-              </p>
-              <p className="mt-3 text-sm leading-6 text-black/55">
+            <div className="insight-card ic-blue" style={{ marginTop: 0 }}>
+              <span className="ins-tag">Insight</span>
+              <div className="ins-head">77% das derrotas em saibro. Hard 38% win rate.</div>
+              <p className="ins-body">
                 Saibro domina o volume de jogo no circuito sul-americano. Hard ainda é a superfície com maior taxa de conversão relativa — prioridade para calibrar volume por superfície.
               </p>
             </div>
@@ -457,31 +459,44 @@ export default function CareerPage() {
         </section>
 
         {/* S04 — TOURNAMENT RESULTS */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">04</span>
-            <span className="section-title">Tournament Results</span>
-            <span className="section-badge">Match by match</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">04</span>
+            <span className="sec-title">Tournament Results</span>
+            <span className="sec-badge">Match by match</span>
           </div>
-          <div className="grid gap-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {seasonGroups.map((group) => (
-              <div key={group.season} className="surface-card overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/6 px-4 py-4">
-                  <h2 className="text-2xl font-semibold tracking-tight text-luka-blue">{group.season}</h2>
-                  <span className="text-xs uppercase tracking-[0.16em] text-black/45">
+              <div key={group.season} style={tableWrapStyle}>
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  borderBottom: "1px solid rgba(0,0,0,0.06)",
+                  padding: "14px 18px",
+                }}>
+                  <span style={{
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: "22px",
+                    letterSpacing: "0.06em",
+                    color: "var(--luka-blue)",
+                  }}>{group.season}</span>
+                  <span className="val-sub" style={{ display: "inline" }}>
                     {group.summary.wins}W / {group.summary.losses}L
                   </span>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className={tableClass}>
-                    <thead className="bg-black/[0.03] text-black/45">
+                <div style={{ overflowX: "auto" }}>
+                  <table className="ctable">
+                    <thead>
                       <tr>
-                        <th>Data</th>
-                        <th>Torneio</th>
-                        <th>Fase</th>
-                        <th>Adversário</th>
-                        <th>Local</th>
-                        <th>Resultado</th>
+                        <th className="th-hdr">Data</th>
+                        <th className="th-hdr">Torneio</th>
+                        <th className="th-hdr">Fase</th>
+                        <th className="th-hdr">Adversário</th>
+                        <th className="th-hdr">Local</th>
+                        <th className="th-hdr">Resultado</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -491,22 +506,22 @@ export default function CareerPage() {
                         return (
                           <tr
                             key={`${group.season}-${event.title}-${event.date ?? "na"}`}
-                            className="border-t border-black/6 align-top"
+                            style={{ verticalAlign: "top" }}
                           >
-                            <td className="whitespace-nowrap">{event.date ?? group.season}</td>
-                            <td className="font-medium text-luka-black">
+                            <td className="row-label" style={{ whiteSpace: "nowrap" }}>{event.date ?? group.season}</td>
+                            <td style={{ fontWeight: 500 }}>
                               {cleanTournamentTitle(event.title)}
                             </td>
-                            <td className={phaseClass(round)}>{round ?? "—"}</td>
-                            <td className="text-black/65">{extractOpponent(event)}</td>
+                            <td style={{ color: phaseColor(round), fontWeight: phaseWeight(round) }}>{round ?? "—"}</td>
+                            <td className="val-sub" style={{ display: "table-cell" }}>{extractOpponent(event)}</td>
                             <td>{event.location ?? "—"}</td>
                             <td>
                               {result === "W" ? (
-                                <span className="font-semibold text-[#1cc8a0]">W</span>
+                                <span style={{ fontWeight: 600, color: "#1cc8a0" }}>W</span>
                               ) : result === "L" ? (
-                                <span className="text-black/35">L</span>
+                                <span style={{ color: "rgba(0,0,0,0.35)" }}>L</span>
                               ) : (
-                                <span className="text-black/25">—</span>
+                                <span style={{ color: "rgba(0,0,0,0.25)" }}>—</span>
                               )}
                             </td>
                           </tr>
@@ -521,57 +536,57 @@ export default function CareerPage() {
         </section>
 
         {/* S05 — NOTABLE TOURNAMENTS */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">05</span>
-            <span className="section-title">Notable Tournaments</span>
-            <span className="section-badge">Highlights</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">05</span>
+            <span className="sec-title">Notable Tournaments</span>
+            <span className="sec-badge">Highlights</span>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
             {latestMilestones.map((event) => (
-              <div key={`${event.season}-${event.title}`} className="surface-card p-5">
-                <p className="text-xs uppercase tracking-[0.16em] text-luka-blue">{event.season} · milestone</p>
-                <h3 className="mt-2 text-xl font-semibold tracking-tight">{event.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-black/65">{event.source_note}</p>
+              <div key={`${event.season}-${event.title}`} className="insight-card ic-blue" style={{ marginTop: 0 }}>
+                <span className="ins-tag">{event.season} · milestone</span>
+                <div className="ins-head">{event.title}</div>
+                <p className="ins-body">{event.source_note}</p>
               </div>
             ))}
             {notableEvents.slice(0, 5).map((event) => (
-              <div key={`${event.season}-${event.title}`} className="surface-card p-5">
-                <p className="text-xs uppercase tracking-[0.16em] text-luka-blue">{event.season} · tournament</p>
-                <h3 className="mt-2 text-xl font-semibold tracking-tight">{event.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-black/65">{event.source_note}</p>
+              <div key={`${event.season}-${event.title}`} className="insight-card ic-teal" style={{ marginTop: 0 }}>
+                <span className="ins-tag">{event.season} · tournament</span>
+                <div className="ins-head">{event.title}</div>
+                <p className="ins-body">{event.source_note}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* PRIORITY BOX */}
-        <section className="mt-14">
-          <div className="priority-box">
-            <div className="priority-tag">@luka.ono_ · Career Module · April 2026</div>
-            <h2 className="priority-title">→ CAREER DEVELOPMENT PRIORITIES</h2>
-            <div className="priority-grid">
-              <div className="priority-item">
-                <div className="priority-num">01</div>
-                <p className="priority-text">Reverter o início de 2026 e priorizar torneios de entrada compatível antes de novo bloco em Challenger.</p>
+        {/* LUKA BOX */}
+        <section className="section">
+          <div className="luka-box">
+            <div className="luka-box-tag">@luka.ono_ · Career Module · April 2026</div>
+            <h2>→ CAREER DEVELOPMENT PRIORITIES</h2>
+            <div className="luka-points">
+              <div className="lp">
+                <span className="lp-num">01</span>
+                <span className="lp-text">Reverter o início de 2026 e priorizar torneios de entrada compatível antes de novo bloco em Challenger.</span>
               </div>
-              <div className="priority-item">
-                <div className="priority-num">02</div>
-                <p className="priority-text">Converter qualifying em main draw com frequência maior para destravar progressão de ranking.</p>
+              <div className="lp">
+                <span className="lp-num">02</span>
+                <span className="lp-text">Converter qualifying em main draw com frequência maior para destravar progressão de ranking.</span>
               </div>
-              <div className="priority-item">
-                <div className="priority-num">03</div>
-                <p className="priority-text">Aumentar exposição em hard court (38% win rate vs 25% em saibro). Selecionar torneios hard para construir ranking enquanto saibro é trabalhado em treino.</p>
+              <div className="lp">
+                <span className="lp-num">03</span>
+                <span className="lp-text">Aumentar exposição em hard court (38% win rate vs 25% em saibro). Selecionar torneios hard para construir ranking enquanto saibro é trabalhado em treino.</span>
               </div>
-              <div className="priority-item">
-                <div className="priority-num">04</div>
-                <p className="priority-text">Perseguir Top 1.500 ATP com conversão de qualifyings e aparições regulares em main draw.</p>
+              <div className="lp">
+                <span className="lp-num">04</span>
+                <span className="lp-text">Perseguir Top 1.500 ATP com conversão de qualifyings e aparições regulares em main draw.</span>
               </div>
             </div>
           </div>
         </section>
 
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

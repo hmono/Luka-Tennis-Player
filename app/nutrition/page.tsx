@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import nutData from "@/data/nutrition.json";
 
 // ── types ─────────────────────────────────────────────────────
@@ -27,108 +25,96 @@ const tdLabels: Record<string, string> = {
   during_match: "During Match",
   post_match: "Post-Match",
 };
-
-// ── shared styles ─────────────────────────────────────────────
-
-const tableClass =
-  "w-full min-w-full text-sm [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[10px] [&_th]:uppercase [&_th]:tracking-[0.16em] [&_td]:px-4 [&_td]:py-3";
+const tdColor: Record<string, string> = {
+  pre_match: "var(--luka-blue)",
+  during_match: "var(--luka-challenger)",
+  post_match: "var(--luka-itf)",
+};
 
 // ─────────────────────────────────────────────────────────────
 
 export default function NutritionPage() {
   return (
-    <div className="section-block">
-      <div className="shell">
-
-        {/* HERO */}
-        <section className="hero-panel">
-          <div className="relative z-10">
-            <Link href="/" className="mb-5 inline-flex text-xs uppercase tracking-[0.18em] text-white/50">
-              ← Dashboard
-            </Link>
-            <div className="hero-tag">
-              @luka.ono_ · Nutrição & Saúde · Campinas, Brazil · Born Jan 28 2005
-            </div>
-            <h1 className="max-w-3xl text-5xl font-semibold leading-none tracking-tight sm:text-7xl">
-              NUTRIÇÃO
-              <br />& SAÚDE
-            </h1>
-            <div className="hero-sub">
-              PARÂMETROS · PRÉ/DURANTE/PÓS · DIA DE TORNEIO · COMPOSIÇÃO CORPORAL
-            </div>
+    <>
+      <header className="hero">
+        <div className="hero-left">
+          <div className="hero-tag">
+            @luka.ono_ · Nutrição & Saúde · Campinas, Brazil · Born Jan 28 2005
           </div>
-        </section>
+          <h1>NUTRIÇÃO<br />&amp; SAÚDE</h1>
+          <div className="hero-sub">PARÂMETROS · PRÉ/DURANTE/PÓS · DIA DE TORNEIO · COMPOSIÇÃO CORPORAL</div>
+        </div>
+      </header>
 
-        {/* LEVEL STRIP */}
-        <section className="level-strip">
-          <span className="level-label">FRAMEWORK:</span>
-          <span className="level-note">Peter Attia · Olav Aleksander Bu · Sports Nutrition Evidence Base</span>
-        </section>
+      <div className="level-strip">
+        <span className="ls-label">FRAMEWORK:</span>
+        <span className="ls-note">Peter Attia · Olav Aleksander Bu · Sports Nutrition Evidence Base</span>
+      </div>
+
+      <main className="wrapper">
 
         {/* S01 — PARÂMETROS BASAIS */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">01</span>
-            <span className="section-title">Parâmetros Basais</span>
-            <span className="section-badge">Macros · Hidratação · Daily targets</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">01</span>
+            <span className="sec-title">Parâmetros Basais</span>
+            <span className="sec-badge">Macros · Hidratação · Daily targets</span>
           </div>
-          <div className="surface-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className={tableClass}>
-                <thead className="bg-black/[0.03] text-black/45">
-                  <tr>
-                    <th>Macronutriente</th>
-                    <th>Quantidade</th>
-                    <th>Base</th>
-                    <th>Contexto</th>
-                    <th>Framework</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dailyTargets.map((t, i) => (
-                    <tr key={i} className="border-t border-black/6">
-                      <td className="font-semibold capitalize text-luka-blue">{t.macronutrient.replace(/_/g, " ")}</td>
-                      <td className="font-medium">
-                        {"amount_g_per_kg" in t ? `${t.amount_g_per_kg} g/kg` : `${(t as { amount_ml_per_kg?: string }).amount_ml_per_kg} ml/kg`}
-                      </td>
-                      <td className="text-black/55">{t.basis}</td>
-                      <td className="text-black/55">{t.context}</td>
-                      <td className="text-[10px] uppercase tracking-[0.14em] text-black/40">{t.framework}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <table className="ctable">
+            <thead>
+              <tr>
+                <th className="th-hdr">Macronutriente</th>
+                <th className="th-hdr">Quantidade</th>
+                <th className="th-hdr">Base</th>
+                <th className="th-hdr">Contexto</th>
+                <th className="th-hdr">Framework</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dailyTargets.map((t, i) => (
+                <tr key={i}>
+                  <td className="row-label" style={{ color: "var(--luka-blue)", textTransform: "capitalize" }}>
+                    {t.macronutrient.replace(/_/g, " ")}
+                  </td>
+                  <td>
+                    <span className="val">
+                      {"amount_g_per_kg" in t ? `${t.amount_g_per_kg} g/kg` : `${(t as { amount_ml_per_kg?: string }).amount_ml_per_kg} ml/kg`}
+                    </span>
+                  </td>
+                  <td><span className="val-sub">{t.basis}</span></td>
+                  <td><span className="val-sub">{t.context}</span></td>
+                  <td><span className="val-sub">{t.framework}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
 
         {/* S02 — PRÉ-TREINO */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">02</span>
-            <span className="section-title">Pré-Treino</span>
-            <span className="section-badge">Timing · Glycogen loading</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">02</span>
+            <span className="sec-title">Pré-Treino</span>
+            <span className="sec-badge">Timing · Glycogen loading</span>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="sv-grid">
             {preWindows.map((window) => (
-              <div key={window} className="surface-card overflow-hidden">
-                <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-luka-blue">
-                  {window}
-                </div>
-                <table className={tableClass}>
-                  <thead className="bg-black/[0.03] text-black/45">
+              <div key={window} className="sv-card">
+                <div className="sv-title" style={{ color: "var(--luka-blue)" }}>{window}</div>
+                <table className="ctable" style={{ marginTop: "12px" }}>
+                  <thead>
                     <tr>
-                      <th>Item</th>
-                      <th>Quantidade</th>
-                      <th>Objetivo</th>
+                      <th className="th-hdr">Item</th>
+                      <th className="th-hdr">Quantidade</th>
+                      <th className="th-hdr">Objetivo</th>
                     </tr>
                   </thead>
                   <tbody>
                     {preTraining.filter((p) => p.window === window).map((p, i) => (
-                      <tr key={i} className="border-t border-black/6">
-                        <td className="font-medium">{p.item}</td>
-                        <td className="whitespace-nowrap text-black/65">{p.amount}</td>
-                        <td className="text-black/55">{p.objective}</td>
+                      <tr key={i}>
+                        <td className="row-label">{p.item}</td>
+                        <td><span className="val-sub">{p.amount}</span></td>
+                        <td><span className="val-sub">{p.objective}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -139,40 +125,38 @@ export default function NutritionPage() {
         </section>
 
         {/* S03 — DURANTE */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">03</span>
-            <span className="section-title">Durante o Treino</span>
-            <span className="section-badge">Intra-session fueling</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">03</span>
+            <span className="sec-title">Durante o Treino</span>
+            <span className="sec-badge">Intra-session fueling</span>
           </div>
           {intraTraining.map((entry, i) => (
-            <div key={i} className="grid gap-4 md:grid-cols-2">
-              <div className="surface-card border-l-4 border-l-luka-blue p-6">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-black/40">Gatilho</p>
-                <p className="mt-2 font-medium">{entry.trigger}</p>
-                <div className="mt-4 grid grid-cols-3 gap-4">
+            <div key={i} className="sv-grid">
+              <div className="insight-card ic-blue">
+                <span className="ins-tag">Gatilho</span>
+                <p className="ins-body"><strong>{entry.trigger}</strong></p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "12px" }}>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-black/40">Intervalo</p>
-                    <p className="mt-1 font-semibold">{entry.interval_min} min</p>
+                    <span className="ins-tag">Intervalo</span>
+                    <span className="val val-atp">{entry.interval_min} min</span>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-black/40">Carbs</p>
-                    <p className="mt-1 font-semibold">{entry.carbohydrate_g} g</p>
+                    <span className="ins-tag">Carbs</span>
+                    <span className="val val-atp">{entry.carbohydrate_g} g</span>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-black/40">Fluido/h</p>
-                    <p className="mt-1 font-semibold">{entry.fluid_ml_per_hour} ml</p>
+                    <span className="ins-tag">Fluido/h</span>
+                    <span className="val val-atp">{entry.fluid_ml_per_hour} ml</span>
                   </div>
                 </div>
-                <p className="mt-3 text-[10px] uppercase tracking-[0.14em] text-black/40">
-                  Sódio: {entry.sodium_mg_per_hour} mg/h
-                </p>
+                <span className="ins-tag" style={{ marginTop: "10px", display: "block" }}>Sódio: {entry.sodium_mg_per_hour} mg/h</span>
               </div>
-              <div className="surface-card p-6">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-black/40">Fontes recomendadas</p>
-                <ul className="mt-3 space-y-2">
+              <div className="sv-card">
+                <div className="sv-title">Fontes recomendadas</div>
+                <ul style={{ listStyle: "none", padding: 0, marginTop: "10px" }}>
                   {entry.sources.map((s) => (
-                    <li key={s} className="text-sm text-black/65">{s}</li>
+                    <li key={s} className="val-sub" style={{ marginBottom: "6px" }}>{s}</li>
                   ))}
                 </ul>
               </div>
@@ -181,133 +165,119 @@ export default function NutritionPage() {
         </section>
 
         {/* S04 — PÓS-TREINO */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">04</span>
-            <span className="section-title">Pós-Treino</span>
-            <span className="section-badge">Recovery window · MPS</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">04</span>
+            <span className="sec-title">Pós-Treino</span>
+            <span className="sec-badge">Recovery window · MPS</span>
           </div>
-          <div className="surface-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className={tableClass}>
-                <thead className="bg-black/[0.03] text-black/45">
-                  <tr>
-                    <th>Janela</th>
-                    <th>Item</th>
-                    <th>Quantidade</th>
-                    <th>Objetivo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {postTraining.map((p, i) => (
-                    <tr key={i} className="border-t border-black/6">
-                      <td className={`whitespace-nowrap font-medium ${p.window.includes("0–45") ? "text-luka-blue" : "text-black/55"}`}>
-                        {p.window}
-                      </td>
-                      <td>{p.item}</td>
-                      <td className="whitespace-nowrap text-black/65">{p.amount}</td>
-                      <td className="text-black/55">{p.objective}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <table className="ctable">
+            <thead>
+              <tr>
+                <th className="th-hdr">Janela</th>
+                <th className="th-hdr">Item</th>
+                <th className="th-hdr">Quantidade</th>
+                <th className="th-hdr">Objetivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {postTraining.map((p, i) => (
+                <tr key={i}>
+                  <td className="row-label" style={{ color: p.window.includes("0–45") ? "var(--luka-blue)" : "inherit" }}>
+                    {p.window}
+                  </td>
+                  <td><span className="val-sub">{p.item}</span></td>
+                  <td><span className="val-sub">{p.amount}</span></td>
+                  <td><span className="val-sub">{p.objective}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
 
         {/* S05 — DIA DE TORNEIO */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">05</span>
-            <span className="section-title">Dia de Torneio</span>
-            <span className="section-badge">Pre · During · Post match</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">05</span>
+            <span className="sec-title">Dia de Torneio</span>
+            <span className="sec-badge">Pre · During · Post match</span>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="rally-grid">
             {tdPhases.map((phase) => (
-              <div key={phase} className="surface-card overflow-hidden">
-                <div className={`border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] ${
-                  phase === "pre_match" ? "text-luka-blue" : phase === "during_match" ? "text-luka-challenger" : "text-luka-itf"
-                }`}>
-                  {tdLabels[phase]}
-                </div>
-                <div className="divide-y divide-black/6">
-                  {tournamentDay.filter((t) => t.phase === phase).map((t, i) => (
-                    <div key={i} className="px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-black/40">{t.window}</p>
-                      <p className="mt-1 text-sm text-black/65">{t.protocol}</p>
-                    </div>
-                  ))}
-                </div>
+              <div key={phase} className="insight-card" style={{ borderLeftColor: tdColor[phase] }}>
+                <span className="ins-tag" style={{ color: tdColor[phase] }}>{tdLabels[phase]}</span>
+                {tournamentDay.filter((t) => t.phase === phase).map((t, i) => (
+                  <div key={i} style={{ marginBottom: "10px" }}>
+                    <span className="ins-tag">{t.window}</span>
+                    <p className="ins-body">{t.protocol}</p>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
         </section>
 
         {/* S06 — COMPOSIÇÃO CORPORAL */}
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">06</span>
-            <span className="section-title">Composição Corporal</span>
-            <span className="section-badge">Targets · Fases</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">06</span>
+            <span className="sec-title">Composição Corporal</span>
+            <span className="sec-badge">Targets · Fases</span>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="surface-card overflow-hidden">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                Marcadores · ITF vs Challenger
-              </div>
-              <table className={tableClass}>
-                <thead className="bg-black/[0.03] text-black/45">
+          <div className="sv-grid">
+            <div>
+              <p className="bar-block-title">Marcadores · ITF vs Challenger</p>
+              <table className="ctable">
+                <thead>
                   <tr>
-                    <th>Marker</th>
-                    <th className="text-luka-itf">ITF M25</th>
-                    <th className="text-luka-challenger">Challenger Target</th>
+                    <th className="th-hdr">Marker</th>
+                    <th className="th-itf">ITF M25</th>
+                    <th className="th-chal">Challenger Target</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bodyComposition.filter((b) => "itf_m25_reference" in b).map((b, i) => {
                     const row = b as { marker?: string; itf_m25_reference: string; challenger_target: string };
                     return (
-                      <tr key={i} className="border-t border-black/6">
-                        <td className="font-medium capitalize">{row.marker?.replace(/_/g, " ")}</td>
-                        <td className="font-semibold text-luka-itf">{row.itf_m25_reference}</td>
-                        <td className="font-semibold text-luka-challenger">{row.challenger_target}</td>
+                      <tr key={i}>
+                        <td className="row-label" style={{ textTransform: "capitalize" }}>{row.marker?.replace(/_/g, " ")}</td>
+                        <td><span className="val val-itf">{row.itf_m25_reference}</span></td>
+                        <td><span className="val val-chal">{row.challenger_target}</span></td>
                       </tr>
                     );
                   })}
                   {bodyComposition.filter((b) => "value" in b).map((b, i) => {
                     const row = b as { marker?: string; value: string; context: string };
                     return (
-                      <tr key={`v${i}`} className="border-t border-black/6">
-                        <td className="font-medium capitalize">{row.marker?.replace(/_/g, " ")}</td>
-                        <td colSpan={2} className="text-black/55">{row.value} <span className="text-[10px]">({row.context})</span></td>
+                      <tr key={`v${i}`}>
+                        <td className="row-label" style={{ textTransform: "capitalize" }}>{row.marker?.replace(/_/g, " ")}</td>
+                        <td colSpan={2}><span className="val-sub">{row.value} ({row.context})</span></td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-            <div className="surface-card overflow-hidden">
-              <div className="border-b border-black/6 px-4 py-3 text-[10px] uppercase tracking-[0.16em] text-black/45">
-                Fases de Periodização Nutricional
-              </div>
-              <table className={tableClass}>
-                <thead className="bg-black/[0.03] text-black/45">
+            <div>
+              <p className="bar-block-title">Fases de Periodização Nutricional</p>
+              <table className="ctable">
+                <thead>
                   <tr>
-                    <th>Fase</th>
-                    <th>Duração</th>
-                    <th>Calórico</th>
-                    <th>Foco</th>
+                    <th className="th-hdr">Fase</th>
+                    <th className="th-hdr">Duração</th>
+                    <th className="th-hdr">Calórico</th>
+                    <th className="th-hdr">Foco</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bodyComposition.filter((b) => "phase" in b && "caloric_target" in b).map((b, i) => {
                     const row = b as { phase: string; duration_weeks: string | number; caloric_target: string; focus: string };
                     return (
-                      <tr key={i} className="border-t border-black/6">
-                        <td className="font-medium capitalize">{row.phase.replace(/_/g, " ")}</td>
-                        <td className="whitespace-nowrap text-black/55">{row.duration_weeks}w</td>
-                        <td className="text-black/65">{row.caloric_target}</td>
-                        <td className="text-black/55">{row.focus}</td>
+                      <tr key={i}>
+                        <td className="row-label" style={{ textTransform: "capitalize" }}>{row.phase.replace(/_/g, " ")}</td>
+                        <td><span className="val-sub">{row.duration_weeks}w</span></td>
+                        <td><span className="val-sub">{row.caloric_target}</span></td>
+                        <td><span className="val-sub">{row.focus}</span></td>
                       </tr>
                     );
                   })}
@@ -318,34 +288,26 @@ export default function NutritionPage() {
         </section>
 
         {/* PRIORITY BOX */}
-        <section className="mt-14">
-          <div className="priority-box">
-            <div className="priority-tag">@luka.ono_ · Nutrição · April 2026</div>
-            <h2 className="priority-title">→ NUTRITION PRIORITIES</h2>
-            <div className="priority-grid">
-              <div className="priority-item">
-                <div className="priority-num">01</div>
-                <p className="priority-text">
-                  Janela de 0–45min pós-treino é crítica: 25–30g proteína + 1.0–1.2g/kg carboidrato. Perder essa janela atrasa MPS e reposição de glicogênio.
-                </p>
-              </div>
-              <div className="priority-item">
-                <div className="priority-num">02</div>
-                <p className="priority-text">
-                  Nunca aplicar déficit calórico durante torneios — performance e recuperação dependem de manutenção ou leve superávit calórico (+100 kcal/dia).
-                </p>
-              </div>
-              <div className="priority-item">
-                <div className="priority-num">03</div>
-                <p className="priority-text">
-                  Carbs no intra-treino (30–60g/45min) apenas em sessões acima de 60min ou Whoop Strain ≥14. Não suplementar em Zona 1–2 sem necessidade.
-                </p>
-              </div>
+        <div className="luka-box">
+          <div className="luka-box-tag">@luka.ono_ · Nutrição · April 2026</div>
+          <h2>→ NUTRITION PRIORITIES</h2>
+          <div className="luka-points">
+            <div className="lp">
+              <div className="lp-num">01</div>
+              <p className="lp-text">Janela de 0–45min pós-treino é crítica: 25–30g proteína + 1.0–1.2g/kg carboidrato. Perder essa janela atrasa MPS e reposição de glicogênio.</p>
+            </div>
+            <div className="lp">
+              <div className="lp-num">02</div>
+              <p className="lp-text">Nunca aplicar déficit calórico durante torneios — performance e recuperação dependem de manutenção ou leve superávit calórico (+100 kcal/dia).</p>
+            </div>
+            <div className="lp">
+              <div className="lp-num">03</div>
+              <p className="lp-text">Carbs no intra-treino (30–60g/45min) apenas em sessões acima de 60min ou Whoop Strain ≥14. Não suplementar em Zona 1–2 sem necessidade.</p>
             </div>
           </div>
-        </section>
+        </div>
 
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

@@ -10,19 +10,49 @@ const navLinks = [
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur">
-      <div className="shell flex min-h-[64px] flex-col gap-1 border-b border-black/8 py-4 sm:flex-row sm:items-center">
+    <header style={{
+      position: "sticky",
+      top: 0,
+      zIndex: 20,
+      background: "rgba(255,255,255,0.95)",
+      backdropFilter: "blur(8px)",
+      borderBottom: "1px solid rgba(0,0,0,0.08)",
+    }}>
+      <div className="shell" style={{ display: "flex", alignItems: "center", minHeight: "64px", padding: "12px 48px", flexWrap: "wrap", gap: "8px" }}>
         <div>
-          <Link href="/" className="text-sm font-semibold tracking-[0.3em] text-luka-blue uppercase">
+          <Link href="/" style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "10px",
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            color: "var(--luka-blue)",
+            textDecoration: "none",
+            fontWeight: 600,
+          }}>
             Luka Ono Analytics
           </Link>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-black/45">
+          <p style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "9px",
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            color: "rgba(0,0,0,0.45)",
+            marginTop: "2px",
+          }}>
             Performance intelligence partner · May 2026
           </p>
         </div>
-        <nav className="mt-2 flex flex-wrap gap-4 text-[9px] uppercase tracking-[0.28em] text-black/45 sm:mt-0 sm:ml-auto">
+        <nav style={{ marginLeft: "auto", display: "flex", flexWrap: "wrap", gap: "16px" }}>
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="leading-none px-2 py-1">
+            <Link key={link.href} href={link.href} style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              color: "rgba(0,0,0,0.45)",
+              textDecoration: "none",
+              padding: "4px 8px",
+            }}>
               {link.label}
             </Link>
           ))}

@@ -131,9 +131,6 @@ const sidebarNotes = [
   "Feedback: share notes via GitHub Discussions if numbers need refinements.",
 ];
 
-const tableClass =
-  "min-w-full text-sm [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[10px] [&_th]:uppercase [&_th]:tracking-[0.16em] [&_td]:px-4 [&_td]:py-3";
-
 const tableSections = [
   {
     label: "Trajectory & volume",
@@ -197,226 +194,207 @@ const rallySegments = rallyDistributionBenchmark
   ? parseRallyDistribution(rallyDistributionBenchmark.value)
   : [];
 
+const roColors = ["var(--luka-blue)", "var(--luka-challenger)", "var(--luka-itf)"];
+
 export default function TennisLevelComparisonPage() {
+  void comparisonOrder;
   return (
-    <div className="section-block">
-      <div className="shell">
-        <section className="hero-panel">
-          <div className="relative z-10">
-            <div className="hero-tag">
-              @{benchmarksData.subject.toLowerCase()} · Professional Tennis Player · Campinas, Brazil
-            </div>
-            <h1 className="max-w-3xl text-5xl font-semibold leading-none tracking-tight sm:text-7xl">
-              {benchmarksData.subject.toUpperCase()}
-              <br />
-              ANALYTICS
-            </h1>
-            <div className="hero-sub">
-              ATP × CHALLENGER × ITF — STRUCTURAL LEVEL COMPARISON · MARCH 2026
-            </div>
+    <>
+      <header className="hero">
+        <div className="hero-left">
+          <div className="hero-tag">
+            @{benchmarksData.subject.toLowerCase()} · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
           </div>
+          <h1>
+            {benchmarksData.subject.toUpperCase()}
+            <br />
+            ANALYTICS
+          </h1>
+          <div className="hero-sub">
+            ATP × CHALLENGER × ITF — STRUCTURAL LEVEL COMPARISON · MARCH 2026
+          </div>
+        </div>
+      </header>
+
+      <div className="player-strip">
+        {playerProfile.map((item, i) => (
+          <Fragment key={item.label}>
+            {i > 0 && <div className="stat-divider" />}
+            <div className="stat-pill">
+              <span className="stat-pill-val">{item.value}</span>
+              <span className="stat-pill-label">{item.label}</span>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+
+      <div className="level-legend">
+        <span className="ll-label">LEVEL KEY:</span>
+        <div className="ll-item">
+          <span className="ll-dot" style={{ background: "var(--luka-blue)" }} />
+          <span style={{ color: "var(--luka-blue)" }}>ATP TOUR</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "9px" }}>top 100</span>
+        </div>
+        <div className="ll-item">
+          <span className="ll-dot" style={{ background: "var(--luka-challenger)" }} />
+          <span style={{ color: "var(--luka-challenger)" }}>CHALLENGER</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "9px" }}>rank 100–500</span>
+        </div>
+        <div className="ll-item">
+          <span className="ll-dot" style={{ background: "var(--luka-itf)" }} />
+          <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "9px" }}>current level</span>
+        </div>
+        <span className="ll-note">[E] empirically established · [I] inference</span>
+      </div>
+
+      <main className="wrapper">
+
+        {/* S01 — COMPARISON TABLE */}
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">01</span>
+            <span className="sec-title">Comparison Table</span>
+            <span className="sec-badge">
+              {tableSections.reduce((sum, s) => sum + s.rows.length, 0)} rows
+            </span>
+          </div>
+          <table className="ctable">
+            <thead>
+              <tr>
+                <th className="th-hdr">Metric</th>
+                <th className="th-hdr">Comparison Basis</th>
+                <th className="th-hdr">Value</th>
+                <th className="th-hdr">Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableSections.map((section) => (
+                <Fragment key={section.label}>
+                  <tr className="grp-row">
+                    <td colSpan={4}>
+                      <span className="grp-label">{section.label}</span>
+                      <span style={{ float: "right", fontSize: "9px", opacity: 0.5, letterSpacing: "0.1em", textTransform: "uppercase" }}>{section.badge}</span>
+                    </td>
+                  </tr>
+                  {section.rows.map((row) => (
+                    <tr key={row.benchmark_name}>
+                      <td className="row-label">{formatLabel(row.benchmark_name)}</td>
+                      <td>
+                        <span className="val-sub">{row.comparison_basis}</span>
+                        <span className="val-sub">{row.reference}</span>
+                      </td>
+                      <td><span className="val">{row.value}</span></td>
+                      <td><span className="val-sub">{row.summary}</span></td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
         </section>
 
-        <section className="stat-strip">
-          {playerProfile.map((item) => (
-            <div key={item.label} className="stat-item">
-              <span className="stat-value">{item.value}</span>
-              <span className="stat-label">{item.label}</span>
+        {/* S02 — BENCHMARK BARS */}
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">02</span>
+            <span className="sec-title">Benchmark Bars</span>
+            <span className="sec-badge">Service &amp; rally indicators</span>
+          </div>
+          {barMetrics.map((metric) => (
+            <div key={metric.label} className="bar-block">
+              <p className="bar-block-title">{metric.label}</p>
+              {metric.values.map((value, index) => (
+                <div key={index} className="bar-row">
+                  <span className="bar-lbl">{index === 0 ? "ATP" : index === 1 ? "Challenger" : "ITF"}</span>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{ width: `${value}%`, background: metric.colors[index] }} />
+                  </div>
+                  <span className="bar-val" style={{ color: metric.colors[index] }}>{value}%</span>
+                </div>
+              ))}
             </div>
           ))}
         </section>
 
-        <section className="level-strip">
-          <span className="level-label">LEVEL KEY:</span>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "var(--luka-blue)" }} />
-            <span className="text-luka-blue">ATP TOUR</span>
-            <span className="text-[10px] text-white/35">top 100</span>
-          </div>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "#1cc8a0" }} />
-            <span className="text-[#1cc8a0]">CHALLENGER</span>
-            <span className="text-[10px] text-white/35">rank 100–500</span>
-          </div>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "#f5a623" }} />
-            <span className="text-[#f5a623]">ITF M25/M15</span>
-            <span className="text-[10px] text-white/35">current level</span>
-          </div>
-          <span className="level-note">[E] empirically established · [I] inference</span>
-        </section>
-
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">01</span>
-            <span className="section-title">Comparison Table</span>
-            <span className="section-badge">
-              {tableSections.reduce((sum, section) => sum + section.rows.length, 0)} rows
-            </span>
-          </div>
-          <div className="surface-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className={tableClass}>
-                <thead className="bg-luka-dark text-left text-white">
-                  <tr className="text-[10px] tracking-[0.3em]">
-                    <th>Metric</th>
-                    <th>Comparison Basis</th>
-                    <th>Value</th>
-                    <th>Summary</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableSections.map((section) => (
-                    <Fragment key={section.label}>
-                      <tr className="bg-luka-blue/5">
-                        <td colSpan={4} className="text-[10px] uppercase tracking-[0.16em] text-black/60">
-                          <div className="flex items-center justify-between">
-                            <span>{section.label}</span>
-                            <span className="text-black/40 text-[9px] uppercase tracking-[0.2em]">
-                              {section.badge}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                      {section.rows.map((row) => (
-                        <tr key={row.benchmark_name} className="border-t border-black/6 align-top">
-                          <td className="font-medium text-luka-black">{formatLabel(row.benchmark_name)}</td>
-                          <td>
-                            <p className="text-[10px] uppercase tracking-[0.16em] text-black/55">{row.comparison_basis}</p>
-                            <p className="text-[9px] text-black/40">{row.reference}</p>
-                          </td>
-                          <td className="text-black/75">
-                            <span className="font-semibold">{row.value}</span>
-                          </td>
-                          <td className="text-black/60">{row.summary}</td>
-                        </tr>
-                      ))}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
+        {/* S03 — RALLY DISTRIBUTION */}
+        {rallySegments.length > 0 && (
+          <section className="section">
+            <div className="sec-head">
+              <span className="sec-num">03</span>
+              <span className="sec-title">Rally Distribution</span>
+              <span className="sec-badge">0–4 | 5–8 | 9+ shots</span>
             </div>
-          </div>
-        </section>
-
-        <section className="mt-14 grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-6">
-            <div className="surface-card p-5">
-              <div className="section-head">
-                <span className="section-num">02</span>
-                <span className="section-title">Benchmark Bars</span>
-                <span className="section-badge">Service & rally indicators</span>
-              </div>
-              {barMetrics.map((metric, metricIndex) => (
-                <div key={metric.label} className={metricIndex ? "mt-6" : "mt-5"}>
-                  <p className="text-xs uppercase tracking-[0.16em] text-luka-blue">{metric.label}</p>
-                  <div className="mt-3 space-y-2">
-                    {metric.values.map((value, index) => (
-                      <div key={`${metric.label}-${index}`} className="flex items-center gap-3">
-                        <span className="w-32 text-xs uppercase tracking-[0.14em] text-black/45">
-                          {index === 0 ? "ATP" : index === 1 ? "Challenger" : "ITF"}
-                        </span>
-                        <div className="h-3 flex-1 rounded-full bg-black/5">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${value}%`,
-                              background: metric.colors[index],
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-semibold text-black/70">{value}%</span>
+            <div className="rally-overall">
+              <p className="ro-title">Rally length distribution · ATP vs Challenger vs ITF</p>
+              {rallySegments.map((segment) => (
+                <div key={segment.label} className="ro-row">
+                  <div className="ro-level">{segment.label}</div>
+                  <div className="ro-bar">
+                    {segment.values.map((value, index) => (
+                      <div
+                        key={index}
+                        className="ro-seg"
+                        style={{ flex: value || 1, background: roColors[index] }}
+                      >
+                        {value}%
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
+              <p className="val-sub" style={{ marginTop: "12px" }}>{rallyDistributionBenchmark?.summary}</p>
             </div>
+          </section>
+        )}
 
-            {rallySegments.length > 0 && (
-              <div className="surface-card p-5">
-                <div className="section-head">
-                  <span className="section-num">03</span>
-                  <span className="section-title">Rally Distribution</span>
-                  <span className="section-badge">0-4 | 5-8 | 9+ shots</span>
-                </div>
-                <div className="space-y-5">
-                  {rallySegments.map((segment) => (
-                    <div key={segment.label} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-[0.16em] text-black/60">{segment.label}</span>
-                        <span className="text-[9px] uppercase tracking-[0.2em] text-black/40">
-                          {segment.values.join(" | ")}
-                        </span>
-                      </div>
-                      <div className="flex h-3 overflow-hidden rounded-full bg-black/5">
-                        {segment.values.map((value, index) => (
-                          <div
-                            key={`${segment.label}-${index}`}
-                            className={`h-full ${index === 0 ? "bg-luka-blue" : index === 1 ? "bg-[#1cc8a0]" : "bg-[#f5a623]"}`}
-                            style={{ flex: value || 1 }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-sm text-black/60">{rallyDistributionBenchmark?.summary}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="surface-card p-5">
-              <div className="section-head">
-                <span className="section-num">04</span>
-                <span className="section-title">Insight Sections</span>
-                <span className="section-badge">Narrative callouts</span>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {insightCards.map((item) => (
-                  <div key={item.benchmark_name} className="surface-card border-0 bg-white p-4">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-luka-blue">{item.reference}</p>
-                    <h2 className="mt-2 text-xl font-semibold tracking-tight">{item.benchmark_name}</h2>
-                    <p className="mt-3 text-sm leading-6 text-black/65">{item.summary}</p>
-                    <p className="mt-4 text-sm leading-6 text-black/80">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* S04 — INSIGHT CARDS */}
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">04</span>
+            <span className="sec-title">Insight Sections</span>
+            <span className="sec-badge">Narrative callouts</span>
           </div>
-
-          <aside className="surface-card p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-luka-blue">Comments</p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-black/45">Share your feedback</p>
-            {sidebarNotes.map((note) => (
-              <p key={note} className="mt-3 text-sm leading-6 text-black/70">
-                {note}
-              </p>
+          <div className="insight-grid">
+            {insightCards.map((item) => (
+              <div key={item.benchmark_name} className="insight-card ic-blue">
+                <span className="ins-tag">{item.reference}</span>
+                <div className="ins-head">{formatLabel(item.benchmark_name)}</div>
+                <p className="ins-body">{item.summary}</p>
+                <p className="ins-body" style={{ marginTop: "8px" }}>{item.value}</p>
+              </div>
             ))}
-            <p className="mt-4 text-xs uppercase tracking-[0.16em] text-black/45">
-              Data sources
-            </p>
-            <ul className="mt-2 list-inside list-disc text-sm text-black/65">
-              <li>ITF · ATP tour data</li>
-              <li>CoreTennis · TennisExplorer</li>
-              <li>benchmarks.json</li>
-            </ul>
-          </aside>
+          </div>
         </section>
 
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">05</span>
-            <span className="section-title">Development Priorities</span>
-            <span className="section-badge">Structural focus</span>
+        {/* SIDEBAR NOTES */}
+        <div className="sv-card" style={{ marginBottom: "48px" }}>
+          <div className="sv-title">Comments · Data Sources</div>
+          {sidebarNotes.map((note) => (
+            <p key={note} className="val-sub" style={{ marginBottom: "8px" }}>{note}</p>
+          ))}
+          <ul style={{ listStyle: "disc", paddingLeft: "16px", marginTop: "12px" }}>
+            <li className="val-sub">ITF · ATP tour data</li>
+            <li className="val-sub">CoreTennis · TennisExplorer</li>
+            <li className="val-sub">benchmarks.json</li>
+          </ul>
+        </div>
+
+        {/* S05 — DEVELOPMENT PRIORITIES */}
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">05</span>
+            <span className="sec-title">Development Priorities</span>
+            <span className="sec-badge">Structural focus</span>
           </div>
-          <div className="priority-box">
-            <div className="priority-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
-            <h2 className="priority-title">→ DEVELOPMENT PRIORITIES</h2>
-            <div className="priority-grid">
+          <div className="luka-box">
+            <div className="luka-box-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
+            <h2>→ DEVELOPMENT PRIORITIES</h2>
+            <div className="luka-points">
               {priorityCards.map((item, index) => (
-                <div key={item.benchmark_name} className="priority-item">
-                  <div className="priority-num">{String(index + 1).padStart(2, "0")}</div>
-                  <p className="priority-text">
+                <div key={item.benchmark_name} className="lp">
+                  <div className="lp-num">{String(index + 1).padStart(2, "0")}</div>
+                  <p className="lp-text">
                     <strong>{item.summary}.</strong> {item.value}
                   </p>
                 </div>
@@ -424,18 +402,8 @@ export default function TennisLevelComparisonPage() {
             </div>
           </div>
         </section>
-        <footer className="mt-14 border-t border-black/10 pt-6">
-          <div className="flex flex-col gap-2 text-[9px] uppercase tracking-[0.18em] text-black/60 sm:flex-row sm:items-center sm:justify-between">
-            <span className="font-semibold tracking-[0.25em]">LUKA ONO · @luka.ono_</span>
-            <span className="text-center sm:text-left">
-              Analytical framework: Darren Cahill &amp; Patrick Mouratoglou (tactical) · Olav Aleksander Bu (physiology/biochemistry)
-              <br />
-              [E] Peer-reviewed · ATP published · [I] Evidence-based inference · ITF granular stats limited in published literature
-            </span>
-            <span>March 2026</span>
-          </div>
-        </footer>
-      </div>
-    </div>
+
+      </main>
+    </>
   );
 }

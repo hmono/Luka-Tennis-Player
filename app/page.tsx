@@ -69,107 +69,104 @@ const priorities = [
 
 export default function HomePage() {
   return (
-    <div className="section-block">
-      <div className="shell">
-        <section className="hero-panel">
-          <div className="relative z-10">
-            <div className="hero-tag">
-              @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
+    <>
+      <header className="hero">
+        <div className="hero-left">
+          <div className="hero-tag">
+            @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
+          </div>
+          <h1>LUKA ONO<br />ANALYTICS</h1>
+          <div className="hero-sub">DATA-DRIVEN PERFORMANCE INTELLIGENCE · MAY 2026</div>
+        </div>
+      </header>
+
+      <div className="player-strip">
+        {stats.map((stat, i) => (
+          <>
+            {i > 0 && <div key={`div-${stat.label}`} className="stat-divider" />}
+            <div key={stat.label} className="stat-pill">
+              <span className="stat-pill-val">{stat.value}</span>
+              <span className="stat-pill-label">{stat.label}</span>
             </div>
-            <h1 className="max-w-3xl text-5xl font-semibold leading-none tracking-tight sm:text-7xl">
-              LUKA ONO
-              <br />
-              ANALYTICS
-            </h1>
-            <div className="hero-sub">DATA-DRIVEN PERFORMANCE INTELLIGENCE · MAY 2026</div>
-          </div>
-        </section>
+          </>
+        ))}
+      </div>
 
-        <section className="stat-strip">
-          {stats.map((stat) => (
-            <div key={stat.label} className="stat-item">
-              <span className="stat-value">{stat.value}</span>
-              <span className="stat-label">{stat.label}</span>
-            </div>
-          ))}
-        </section>
+      <div className="level-strip">
+        <span className="ls-label">CAREER PATH:</span>
+        <div className="ls-item active">
+          <div className="ls-dot" style={{ background: "#f5a623" }} />
+          <span style={{ color: "#f5a623" }}>ITF M25/M15</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · ATP ~1.951</span>
+        </div>
+        <span className="ls-arrow">——→</span>
+        <div className="ls-item">
+          <div className="ls-dot" style={{ background: "#1cc8a0" }} />
+          <span style={{ color: "#1cc8a0" }}>Challenger</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Target · rank ~100–500</span>
+        </div>
+        <span className="ls-arrow">——→</span>
+        <div className="ls-item">
+          <div className="ls-dot" style={{ background: "var(--luka-blue)" }} />
+          <span style={{ color: "var(--luka-blue)" }}>ATP Tour</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Long-range · top 250+</span>
+        </div>
+        <span className="ls-note">Coaches: Ricardo Siggia · Alexandre Bonatto</span>
+      </div>
 
-        <section className="level-strip">
-          <span className="level-label">CAREER PATH:</span>
-          <div className="level-item font-semibold">
-            <span className="level-dot" style={{ background: "#f5a623", boxShadow: "0 0 0 2px rgba(245,166,35,0.35)" }} />
-            <span className="text-[#f5a623]">ITF M25/M15</span>
-            <span className="text-[10px] text-white/35">Current · ATP ~1.951</span>
-          </div>
-          <span className="text-white/20">→</span>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "#1cc8a0" }} />
-            <span className="text-[#1cc8a0]">Challenger</span>
-            <span className="text-[10px] text-white/35">Target · rank ~100–500</span>
-          </div>
-          <span className="text-white/20">→</span>
-          <div className="level-item">
-            <span className="level-dot" style={{ background: "var(--luka-blue)" }} />
-            <span className="text-luka-blue">ATP Tour</span>
-            <span className="text-[10px] text-white/35">Long-range · top 250+</span>
-          </div>
-          <span className="level-note">Coaches: Ricardo Siggia · Alexandre Bonatto</span>
-        </section>
-
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">01</span>
-            <span className="section-title">Analytics Modules</span>
-            <span className="section-badge">6 domains</span>
+      <main className="wrapper">
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">01</span>
+            <span className="sec-title">Analytics Modules</span>
+            <span className="sec-badge">6 domains</span>
           </div>
           <div className="module-grid">
             {modules.map((module) => (
               <Link key={module.tag} href={module.href} className="module-card">
-                <div className="module-accent" style={{ background: module.accent }} />
-                <div className="module-body">
-                  <span className="module-tag">{module.tag}</span>
-                  <h2 className="module-title">
+                <div className="mc-accent" style={{ background: module.accent }} />
+                <div className="mc-body">
+                  <span className="mc-tag">{module.tag}</span>
+                  <div className="mc-title">
                     {module.title.split("\n").map((line) => (
-                      <span key={line} className="block">
+                      <span key={line} style={{ display: "block" }}>
                         {line}
                       </span>
                     ))}
-                  </h2>
-                  <p className="module-desc">{module.desc}</p>
+                  </div>
+                  <p className="mc-desc">{module.desc}</p>
                 </div>
-                <div className="module-footer">
-                  <span
-                    className={`module-status ${module.status === "live" ? "module-status-live" : "module-status-soon"}`}
-                  >
+                <div className="mc-footer">
+                  <span className={`mc-status ${module.status === "live" ? "live" : "soon"}`}>
                     {module.status === "live" ? "Live" : "Coming soon"}
                   </span>
-                  <span className="module-arrow">→</span>
+                  <span className="mc-arrow">→</span>
                 </div>
               </Link>
             ))}
           </div>
         </section>
 
-        <section className="mt-14">
-          <div className="section-head">
-            <span className="section-num">02</span>
-            <span className="section-title">Development Priorities</span>
-            <span className="section-badge">Sprint 02 · April 2026</span>
+        <section className="section">
+          <div className="sec-head">
+            <span className="sec-num">02</span>
+            <span className="sec-title">Development Priorities</span>
+            <span className="sec-badge">Sprint 02 · April 2026</span>
           </div>
-          <div className="priority-box">
-            <div className="priority-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
-            <h2 className="priority-title">→ CURRENT FOCUS AREAS</h2>
-            <div className="priority-grid">
+          <div className="luka-box">
+            <div className="luka-box-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
+            <h2>→ CURRENT FOCUS AREAS</h2>
+            <div className="luka-points">
               {priorities.map((text, index) => (
-                <div key={text} className="priority-item">
-                  <div className="priority-num">{String(index + 1).padStart(2, "0")}</div>
-                  <p className="priority-text">{text}</p>
+                <div key={text} className="lp">
+                  <span className="lp-num">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="lp-text">{text}</span>
                 </div>
               ))}
             </div>
           </div>
         </section>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
