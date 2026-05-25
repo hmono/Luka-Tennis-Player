@@ -2,12 +2,21 @@ import { describe, expect, it } from 'vitest';
 import {
   cleanTournamentTitle,
   formatRank,
+  getCareerEvents,
   getSeasonStats,
   inferResult,
   isDoubles,
   parseRank,
 } from '../career';
 import type { CareerEvent } from '@/types';
+
+// ─── getCareerEvents ──────────────────────────────────────────────────────────
+
+describe('getCareerEvents', () => {
+  it('returns an array (not undefined) — guards against wrong JSON key', () => {
+    expect(Array.isArray(getCareerEvents())).toBe(true);
+  });
+});
 
 // ─── parseRank ────────────────────────────────────────────────────────────────
 

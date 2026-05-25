@@ -1,12 +1,11 @@
 import rawCareerData from '@/data/career.json';
 import type { CareerEvent } from '@/types';
 
-// career.json has an `events` array — field names confirmed via helper signatures.
-// Other top-level keys (player, surfaces, etc.) may exist; extend as needed.
-type CareerJson = { events: CareerEvent[]; [key: string]: unknown };
+// Actual top-level key confirmed from career/page.tsx: `career_events`.
+type CareerJson = { career_events: CareerEvent[]; [key: string]: unknown };
 
 export const getCareerEvents = (): CareerEvent[] =>
-  (rawCareerData as unknown as CareerJson).events ?? [];
+  (rawCareerData as unknown as CareerJson).career_events ?? [];
 
 export const parseRank = (value: string): number | null => {
   const match = value.match(/#(\d+)/);
