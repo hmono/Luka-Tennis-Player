@@ -1,40 +1,47 @@
 import { Fragment } from "react";
 
-import benchmarksData from "@/data/benchmarks.json";
+import {
+  getBenchmarks,
+  getBenchmarkSubject,
+  getPlayerProfile,
+  findBenchmark,
+  formatLabel,
+  extractPercentSeries,
+  padToThree,
+  parseRallyDistribution,
+} from "@/lib/benchmarks";
+import { formatRank } from "@/lib/career";
+import type { BenchmarkEntry } from "@/types";
 
-type Benchmark = (typeof benchmarksData)["benchmarks"][number];
+// ── data ──────────────────────────────────────────────────────
 
-const benchmarks = benchmarksData.benchmarks as Benchmark[];
+const benchmarks: BenchmarkEntry[] = getBenchmarks();
+const subject                       = getBenchmarkSubject();
+const player                        = getPlayerProfile();
 
-const findBenchmark = (name: string) =>
-  benchmarks.find((benchmark) => benchmark.benchmark_name === name);
+// ── player strip ──────────────────────────────────────────────
+
+const _birth        = new Date(player.birthDate);
+const _now          = new Date();
+let age = _now.getFullYear() - _birth.getFullYear();
+if (
+  _now.getMonth() < _birth.getMonth() ||
+  (_now.getMonth() === _birth.getMonth() && _now.getDate() < _birth.getDate())
+) age--;
+
+const handLabel     = player.hand === "right" ? "RH" : "LH";
+const backhandLabel = player.backhand === "two-handed" ? "2HBH" : "1HBH";
 
 const playerProfile = [
-  {
-    value: "21",
-    label: "Age · DOB Jan 2005",
-  },
-  {
-    value: "#1.827",
-    label: "ATP Singles Career High",
-  },
-  {
-    value: "#1.784",
-    label: "ATP Doubles Career High",
-  },
-  {
-    value: findBenchmark("itf_futures_tournaments")?.value ?? "30+",
-    label: "ITF Future Tournaments",
-  },
-  {
-    value: findBenchmark("challenger_appearances")?.value ?? "4",
-    label: "Challenger Appearances",
-  },
-  {
-    value: "RH · 2HBH",
-    label: "Style · 180cm / 75kg",
-  },
+  { value: String(age),                               label: `Age · DOB Jan ${_birth.getFullYear()}` },
+  { value: formatRank(player.careerHighs.atpSingles), label: "ATP Singles Career High" },
+  { value: formatRank(player.careerHighs.atpDoubles), label: "ATP Doubles Career High" },
+  { value: player.tournamentsPlayed.itfFutures,        label: "ITF Future Tournaments" },
+  { value: String(player.tournamentsPlayed.challenger), label: "Challenger Appearances" },
+  { value: `${handLabel} · ${backhandLabel}`,          label: `Style · ${player.heightCm}cm / ${player.weightKg}kg` },
 ];
+
+// ── derived slices ────────────────────────────────────────────
 
 const comparisonOrder = [
   "current_level",
@@ -76,53 +83,25 @@ const insightCards = [
   "serve_return_asymmetry_index",
   "challenger_battleground_window",
 ]
-  .map((name) => findBenchmark(name))
-  .filter(Boolean) as Benchmark[];
+  .map((name) => findBenchmark(benchmarks, name))
+  .filter(Boolean) as BenchmarkEntry[];
 
 const priorityCards = ["priority_serve_hold", "priority_asymmetry_gap", "priority_standard_plays"]
-  .map((name) => findBenchmark(name))
-  .filter(Boolean) as Benchmark[];
-
-const formatLabel = (name: string) =>
-  name
-    .replace(/_/g, " ")
-    .replace(/\b[a-z]/g, (letter) => letter.toUpperCase())
-    .replace("Challenger", "Challenger")
-    .replace("Itf", "ITF")
-    .replace("Atp", "ATP");
-
-const extractPercentSeries = (value: string) => {
-  const matches = [...value.matchAll(/\\d+(?:\\.\\d+)?/g)].map((match) => Number(match[0]));
-  return matches.slice(0, 3);
-};
-
-const parseRallyDistribution = (text: string) => {
-  return text
-    .split(";")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [level, ...rest] = line.split(" ");
-      const numbers = rest.join(" ").split("|").map((item) => Number(item.replace(/[^\d]/g, "")));
-      return {
-        label: level.replace(/_/g, " ").toUpperCase(),
-        values: numbers,
-      };
-    });
-};
-
-const padToThree = (values: number[]) => [...values, 0, 0].slice(0, 3);
+  .map((name) => findBenchmark(benchmarks, name))
+  .filter(Boolean) as BenchmarkEntry[];
 
 const barMetricDefinitions = [
-  { id: "service_hold_rate", label: "Service hold rate (ATP · Challenger · ITF)" },
-  { id: "first_serve_points_won", label: "First serve points won (ATP · Challenger · ITF)" },
+  { id: "service_hold_rate",       label: "Service hold rate (ATP · Challenger · ITF)" },
+  { id: "first_serve_points_won",  label: "First serve points won (ATP · Challenger · ITF)" },
 ];
+
+const barColors = ["var(--luka-blue)", "var(--luka-challenger)", "var(--luka-itf)"];
 
 const barMetrics = barMetricDefinitions
   .map((definition) => {
-    const benchmark = findBenchmark(definition.id);
-    const values = benchmark ? padToThree(extractPercentSeries(benchmark.value)) : [];
-    return { label: definition.label, values, colors: ["var(--luka-blue)", "#1cc8a0", "#f5a623"], benchmark };
+    const benchmark = findBenchmark(benchmarks, definition.id);
+    const values = benchmark ? padToThree(extractPercentSeries(benchmark.value)) : [0, 0, 0];
+    return { label: definition.label, values, colors: barColors, benchmark };
   })
   .filter((metric) => metric.values.some((value) => value > 0));
 
@@ -186,15 +165,17 @@ const tableSections = [
   },
 ].map((section) => ({
   ...section,
-  rows: section.rows.map((name) => findBenchmark(name)).filter(Boolean) as Benchmark[],
+  rows: section.rows.map((name) => findBenchmark(benchmarks, name)).filter(Boolean) as BenchmarkEntry[],
 }));
 
-const rallyDistributionBenchmark = findBenchmark("rally_distribution_overall");
+const rallyDistributionBenchmark = findBenchmark(benchmarks, "rally_distribution_overall");
 const rallySegments = rallyDistributionBenchmark
   ? parseRallyDistribution(rallyDistributionBenchmark.value)
   : [];
 
 const roColors = ["var(--luka-blue)", "var(--luka-challenger)", "var(--luka-itf)"];
+
+const monthYear = _now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
 export default function TennisLevelComparisonPage() {
   void comparisonOrder;
@@ -203,15 +184,15 @@ export default function TennisLevelComparisonPage() {
       <header className="hero">
         <div className="hero-left">
           <div className="hero-tag">
-            @{benchmarksData.subject.toLowerCase()} · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
+            @{player.handle} · Professional Tennis Player · {player.basedIn} · Born Jan 28 {_birth.getFullYear()}
           </div>
           <h1>
-            {benchmarksData.subject.toUpperCase()}
+            {subject.toUpperCase()}
             <br />
             ANALYTICS
           </h1>
           <div className="hero-sub">
-            ATP × CHALLENGER × ITF — STRUCTURAL LEVEL COMPARISON · MARCH 2026
+            ATP × CHALLENGER × ITF — STRUCTURAL LEVEL COMPARISON · {monthYear.toUpperCase()}
           </div>
         </div>
       </header>
@@ -388,7 +369,7 @@ export default function TennisLevelComparisonPage() {
             <span className="sec-badge">Structural focus</span>
           </div>
           <div className="luka-box">
-            <div className="luka-box-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
+            <div className="luka-box-tag">@{player.handle} · {player.name} · Application Layer</div>
             <h2>→ DEVELOPMENT PRIORITIES</h2>
             <div className="luka-points">
               {priorityCards.map((item, index) => (
