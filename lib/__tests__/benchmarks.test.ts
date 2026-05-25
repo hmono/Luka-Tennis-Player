@@ -3,10 +3,43 @@ import {
   extractPercentSeries,
   findBenchmark,
   formatLabel,
+  getBenchmarkSubject,
+  getBenchmarks,
+  getPlayerProfile,
   padToThree,
   parseRallyDistribution,
 } from '../benchmarks';
 import type { BenchmarkEntry } from '@/types';
+
+// ─── data accessor smoke tests ────────────────────────────────────────────────
+
+describe('getBenchmarks', () => {
+  it('returns an array', () => {
+    expect(Array.isArray(getBenchmarks())).toBe(true);
+  });
+  it('returns BenchmarkEntry objects with benchmark_name', () => {
+    const first = getBenchmarks()[0];
+    expect(first).toHaveProperty('benchmark_name');
+  });
+});
+
+describe('getBenchmarkSubject', () => {
+  it('returns a non-empty string', () => {
+    const subject = getBenchmarkSubject();
+    expect(typeof subject).toBe('string');
+    expect(subject.length).toBeGreaterThan(0);
+  });
+});
+
+describe('getPlayerProfile', () => {
+  it('returns a player with required fields', () => {
+    const p = getPlayerProfile();
+    expect(p).toHaveProperty('name');
+    expect(p).toHaveProperty('birthDate');
+    expect(p).toHaveProperty('careerHighs');
+    expect(typeof p.careerHighs.atpSingles).toBe('number');
+  });
+});
 
 const bm = (name: string, value = ''): BenchmarkEntry => ({
   benchmark_name: name,
