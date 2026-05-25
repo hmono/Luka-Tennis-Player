@@ -1,39 +1,30 @@
 import Link from "next/link";
 
-import careerData from "@/data/career.json";
+import {
+  getCareerEvents,
+  getSurfaceBreakdown,
+  parseRank,
+  formatRank,
+  inferResult,
+  isDoubles,
+  cleanTournamentTitle,
+  getSeasonStats,
+} from "@/lib/career";
+import type { CareerEvent, SurfaceRecord } from "@/types";
 
 // ── types ─────────────────────────────────────────────────────
 
-type CareerEvent = (typeof careerData)["career_events"][number];
 type RankingEvent = CareerEvent & { season_end_rank?: number | null };
-type SurfaceRow = { surface: string; w: number; l: number };
 
 // ── base helpers ──────────────────────────────────────────────
 
-const parseRank = (value: string) => {
-  const match = value.match(/#(\d+)/);
-  return match ? Number(match[1]) : null;
-};
-
-const formatRank = (value: number | null, approx = false) => {
-  if (value === null) return "—";
-  const formatted = new Intl.NumberFormat("de-DE").format(value);
-  return `${approx ? "~" : "#"}${formatted}`;
-};
+const careerEvents   = getCareerEvents();
+const surfaceBreakdown = getSurfaceBreakdown();
 
 const findRanking = (pattern: RegExp) =>
-  (careerData.career_events as RankingEvent[]).find(
+  (careerEvents as RankingEvent[]).find(
     (e) => e.category === "ranking" && pattern.test(e.title),
   )?.title ?? null;
-
-const inferResult = (event: CareerEvent) => {
-  const text = `${event.title} ${event.source_note}`.toLowerCase();
-  if (text.includes("won")) return "W";
-  if (text.includes("lost")) return "L";
-  return "—";
-};
-
-const isDoubles = (event: CareerEvent) => /doubles/i.test(event.title);
 
 // ── S04 helpers ───────────────────────────────────────────────
 
@@ -44,14 +35,6 @@ const extractOpponent = (event: CareerEvent): string => {
   if (lostMatch) return lostMatch[1].trim();
   return "—";
 };
-
-const cleanTournamentTitle = (title: string): string =>
-  title
-    .replace(/\s*(Q-R\d+|Q-\dR|\bR\d+\b)\s*/gi, " ")
-    .replace(/\s+vs\s+.*/gi, "")
-    .replace(/\bdoubles\b/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
 
 const phaseColor = (round: string | null | undefined): string => {
   if (!round) return "rgba(0,0,0,0.4)";
@@ -69,25 +52,14 @@ const phaseWeight = (round: string | null | undefined): string => {
 
 // ── data slices ───────────────────────────────────────────────
 
-const careerEvents = careerData.career_events as CareerEvent[];
-const rankingEvents = careerEvents.filter((e) => e.category === "ranking") as RankingEvent[];
+const rankingEvents    = careerEvents.filter((e) => e.category === "ranking") as RankingEvent[];
 const tournamentEvents = careerEvents.filter((e) => e.category === "tournament");
-const milestoneEvents = careerEvents.filter((e) => e.category === "milestone");
-
-const getSeasonStats = (season: string, doubles = false) => {
-  const ev = tournamentEvents.filter(
-    (e) => e.season === season && isDoubles(e) === doubles,
-  );
-  const wins = ev.filter((e) => inferResult(e) === "W").length;
-  const losses = ev.filter((e) => inferResult(e) === "L").length;
-  const total = wins + losses;
-  return { season, wins, losses, winPct: total > 0 ? `${Math.round((wins / total) * 100)}%` : "—" };
-};
+const milestoneEvents  = careerEvents.filter((e) => e.category === "milestone");
 
 const seasons = ["2021", "2022", "2023", "2024", "2025", "2026"];
-const singlesBySeason = seasons.map((s) => getSeasonStats(s, false));
+const singlesBySeason = seasons.map((s) => getSeasonStats(tournamentEvents, s, false));
 const doublesBySeason = seasons
-  .map((s) => getSeasonStats(s, true))
+  .map((s) => getSeasonStats(tournamentEvents, s, true))
   .filter((r) => r.wins + r.losses > 0);
 
 const totalSingles = singlesBySeason.reduce(
@@ -137,7 +109,6 @@ const bestMainDraw =
     ?.title.match(/R\d+/i)?.[0] ?? "R16";
 
 // S03 — surface breakdown
-const surfaceBreakdown = careerData.surface_breakdown as SurfaceRow[];
 const surfaceColorMap: Record<string, string> = {
   "Hard (outdoor)": "var(--luka-blue)",
   "Hard (indoor)": "var(--luka-blue-light)",
@@ -165,7 +136,7 @@ const seasonGroups = [...new Set(tournamentEvents.map((e) => e.season))]
   .sort((a, b) => Number(b) - Number(a))
   .map((season) => ({
     season,
-    summary: getSeasonStats(season, false),
+    summary: getSeasonStats(tournamentEvents, season, false),
     events: tournamentEvents
       .filter((e) => e.season === season)
       .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")),
