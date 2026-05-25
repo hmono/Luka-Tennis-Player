@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 
 const stats = [
@@ -82,13 +83,13 @@ export default function HomePage() {
 
       <div className="player-strip">
         {stats.map((stat, i) => (
-          <>
-            {i > 0 && <div key={`div-${stat.label}`} className="stat-divider" />}
-            <div key={stat.label} className="stat-pill">
+          <Fragment key={stat.label}>
+            {i > 0 && <div className="stat-divider" />}
+            <div className="stat-pill">
               <span className="stat-pill-val">{stat.value}</span>
               <span className="stat-pill-label">{stat.label}</span>
             </div>
-          </>
+          </Fragment>
         ))}
       </div>
 
