@@ -1,31 +1,24 @@
 import Link from "next/link";
 
-import tacticalData from "@/data/tactical.json";
-
-// ── types ─────────────────────────────────────────────────────
-
-type Framework = (typeof tacticalData)["frameworks"][number];
-type Pattern = (typeof tacticalData)["game_patterns"][number];
-type Surface = (typeof tacticalData)["surface_tactics"][number];
-type Benchmark = (typeof tacticalData)["target_benchmarks"][number];
+import {
+  getTacticsFrameworks,
+  getTacticsPatterns,
+  getTacticsSurfaces,
+  getTacticsBenchmarks,
+  groupPatterns,
+  getRallyComparison,
+} from "@/lib/tactics";
+import type { CoachingFramework, GamePattern, SurfaceTactics, TacticalBenchmark } from "@/types";
 
 // ── data slices ───────────────────────────────────────────────
 
-const frameworks = tacticalData.frameworks as Framework[];
-const allPatterns = tacticalData.game_patterns as Pattern[];
-const surfaces = tacticalData.surface_tactics as Surface[];
-const benchmarks = tacticalData.target_benchmarks as Benchmark[];
+const frameworks: CoachingFramework[] = getTacticsFrameworks();
+const allPatterns: GamePattern[]      = getTacticsPatterns();
+const surfaces: SurfaceTactics[]      = getTacticsSurfaces();
+const benchmarks: TacticalBenchmark[] = getTacticsBenchmarks();
 
-const patternGroups = allPatterns
-  .filter((p) => p.pattern_group !== "0–4 Shot Rally")
-  .reduce<Record<string, Pattern[]>>((acc, p) => {
-    (acc[p.pattern_group] ??= []).push(p);
-    return acc;
-  }, {});
-
-const rally04 = allPatterns.filter((p) => p.pattern_group === "0–4 Shot Rally");
-const itfRally = rally04.find((p) => p.id?.includes("itf"));
-const chalRally = rally04.find((p) => p.id?.includes("challenger"));
+const patternGroups                   = groupPatterns(allPatterns);
+const { itf: itfRally, challenger: chalRally } = getRallyComparison(allPatterns);
 
 const hard = surfaces.find((s) => s.surface === "Hard Court")!;
 const clay = surfaces.find((s) => s.surface === "Clay")!;
@@ -194,7 +187,7 @@ export default function TacticsPage() {
 
         {/* PRIORITY BOX */}
         <div className="luka-box">
-          <div className="luka-box-tag">@luka.ono_ · Tactical Development · April 2026</div>
+          <div className="luka-box-tag">@luka.ono_ · Tactical Development · Module 03</div>
           <h2>→ TACTICAL PRIORITIES</h2>
           <div className="luka-points">
             <div className="lp">
