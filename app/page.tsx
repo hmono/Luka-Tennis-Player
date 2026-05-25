@@ -1,13 +1,30 @@
 import { Fragment } from "react";
 import Link from "next/link";
+import { getPlayerProfile } from "@/lib/benchmarks";
+import { formatRank } from "@/lib/career";
+
+const player = getPlayerProfile();
+
+// Age — computed at build time from ISO birthDate
+const _birth = new Date(player.birthDate);
+const _now   = new Date();
+let age = _now.getFullYear() - _birth.getFullYear();
+if (
+  _now.getMonth() < _birth.getMonth() ||
+  (_now.getMonth() === _birth.getMonth() && _now.getDate() < _birth.getDate())
+) age--;
+
+const handLabel     = player.hand === "right" ? "RH" : "LH";
+const backhandLabel = player.backhand === "two-handed" ? "2HBH" : "1HBH";
+const monthYear     = _now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
 const stats = [
-  { value: "21", label: "Age · DOB Jan 2005" },
-  { value: "#1.827", label: "ATP Singles Career High" },
-  { value: "#1.784", label: "ATP Doubles Career High" },
-  { value: "30+", label: "ITF Future Tournaments" },
-  { value: "4", label: "Challenger Appearances" },
-  { value: "RH · 2HBH", label: "Style · 180cm / 75kg" },
+  { value: String(age),                                          label: `Age · DOB Jan ${_birth.getFullYear()}` },
+  { value: formatRank(player.careerHighs.atpSingles),            label: "ATP Singles Career High" },
+  { value: formatRank(player.careerHighs.atpDoubles),            label: "ATP Doubles Career High" },
+  { value: player.tournamentsPlayed.itfFutures,                  label: "ITF Future Tournaments" },
+  { value: String(player.tournamentsPlayed.challenger),          label: "Challenger Appearances" },
+  { value: `${handLabel} · ${backhandLabel}`,                    label: `Style · ${player.heightCm}cm / ${player.weightKg}kg` },
 ];
 
 const modules = [
@@ -17,7 +34,7 @@ const modules = [
     title: "Level\nComparison",
     desc: "Structural benchmarks across ATP Tour, Challenger, and ITF M25/M15. Points per game, rally distribution, serve/return asymmetry, and key findings for Luka's development path.",
     status: "live",
-    accent: "linear-gradient(90deg,var(--luka-blue),#1cc8a0,#f5a623)",
+    accent: "linear-gradient(90deg,var(--luka-blue),var(--luka-challenger),var(--luka-itf))",
   },
   {
     href: "/career",
@@ -33,7 +50,7 @@ const modules = [
     title: "Tactics &\nGame Patterns",
     desc: "Pattern-of-play analysis based on Cahill, Mouratoglou, and Ferrero frameworks. Serve construction, rally patterns, transition quality, and tactical priorities by surface.",
     status: "live",
-    accent: "#1cc8a0",
+    accent: "var(--luka-challenger)",
   },
   {
     href: "/physical",
@@ -41,7 +58,7 @@ const modules = [
     title: "Physical\nTraining",
     desc: "Periodization protocols, training load metrics, and physical development targets. Strength, speed, and endurance benchmarks aligned to ITF and Challenger metabolic demands.",
     status: "live",
-    accent: "#7c6ef5",
+    accent: "var(--luka-physical)",
   },
   {
     href: "/physiology",
@@ -49,7 +66,7 @@ const modules = [
     title: "Physiology &\nMonitoring",
     desc: "Whoop band data: HRV, recovery score, sleep, and strain. Match and training load monitoring aligned to Olav Aleksander Bu's physiological framework for elite tennis.",
     status: "live",
-    accent: "#f5a623",
+    accent: "var(--luka-itf)",
   },
   {
     href: "/nutrition",
@@ -57,7 +74,7 @@ const modules = [
     title: "Nutrition &\nHealth",
     desc: "Nutrition protocols and health guidelines based on Peter Attia and Olav Aleksander Bu frameworks. Tournament nutrition, recovery fueling, and body composition targets.",
     status: "live",
-    accent: "#e05c3b",
+    accent: "var(--luka-nutrition)",
   },
 ];
 
@@ -74,10 +91,10 @@ export default function HomePage() {
       <header className="hero">
         <div className="hero-left">
           <div className="hero-tag">
-            @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
+            @{player.handle} · Professional Tennis Player · {player.basedIn} · Born Jan 28 {_birth.getFullYear()}
           </div>
           <h1>LUKA ONO<br />ANALYTICS</h1>
-          <div className="hero-sub">DATA-DRIVEN PERFORMANCE INTELLIGENCE · MAY 2026</div>
+          <div className="hero-sub">DATA-DRIVEN PERFORMANCE INTELLIGENCE · {monthYear.toUpperCase()}</div>
         </div>
       </header>
 
@@ -96,14 +113,16 @@ export default function HomePage() {
       <div className="level-strip">
         <span className="ls-label">CAREER PATH:</span>
         <div className="ls-item active">
-          <div className="ls-dot" style={{ background: "#f5a623" }} />
-          <span style={{ color: "#f5a623" }}>ITF M25/M15</span>
-          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · ATP ~1.951</span>
+          <div className="ls-dot" style={{ background: "var(--luka-itf)" }} />
+          <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>
+            Current · ATP ~{player.currentRankings.atpSingles.toLocaleString("de-DE")}
+          </span>
         </div>
         <span className="ls-arrow">——→</span>
         <div className="ls-item">
-          <div className="ls-dot" style={{ background: "#1cc8a0" }} />
-          <span style={{ color: "#1cc8a0" }}>Challenger</span>
+          <div className="ls-dot" style={{ background: "var(--luka-challenger)" }} />
+          <span style={{ color: "var(--luka-challenger)" }}>Challenger</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Target · rank ~100–500</span>
         </div>
         <span className="ls-arrow">——→</span>
@@ -112,7 +131,7 @@ export default function HomePage() {
           <span style={{ color: "var(--luka-blue)" }}>ATP Tour</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Long-range · top 250+</span>
         </div>
-        <span className="ls-note">Coaches: Ricardo Siggia · Alexandre Bonatto</span>
+        <span className="ls-note">Coaches: {player.coaches.join(" · ")}</span>
       </div>
 
       <main className="wrapper">
@@ -152,10 +171,10 @@ export default function HomePage() {
           <div className="sec-head">
             <span className="sec-num">02</span>
             <span className="sec-title">Development Priorities</span>
-            <span className="sec-badge">Sprint 02 · April 2026</span>
+            <span className="sec-badge">Sprint 02 · {monthYear}</span>
           </div>
           <div className="luka-box">
-            <div className="luka-box-tag">@luka.ono_ · Luka Bojičić Ono · Application Layer</div>
+            <div className="luka-box-tag">@{player.handle} · {player.name} · Application Layer</div>
             <h2>→ CURRENT FOCUS AREAS</h2>
             <div className="luka-points">
               {priorities.map((text, index) => (

@@ -17,6 +17,10 @@
   --luka-challenger: #1cc8a0;
   --luka-itf:        #f5a623;
 
+  /* module accents */
+  --luka-physical:   #7c6ef5;
+  --luka-nutrition:  #e05c3b;
+
   /* short aliases (used by static HTML files) */
   --blue:        var(--luka-blue);
   --blue-lt:     var(--luka-blue-light);
@@ -48,6 +52,8 @@
   --color-luka-atp:         var(--luka-atp);
   --color-luka-challenger:  var(--luka-challenger);
   --color-luka-itf:         var(--luka-itf);
+  --color-luka-physical:    var(--luka-physical);
+  --color-luka-nutrition:   var(--luka-nutrition);
 
   --font-sans:  var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-bebas: var(--font-bebas), sans-serif;

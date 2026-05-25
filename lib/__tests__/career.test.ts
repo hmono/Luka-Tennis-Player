@@ -75,6 +75,10 @@ const evt = (title: string, source_note = ''): CareerEvent => ({
   title,
   source_note,
   season: '2025',
+  category: 'tournament',
+  date: null,
+  location: null,
+  round: null,
 });
 
 describe('inferResult', () => {
@@ -138,12 +142,13 @@ describe('isDoubles', () => {
 // ─── getSeasonStats ───────────────────────────────────────────────────────────
 
 describe('getSeasonStats', () => {
+  const base = { category: 'tournament' as const, date: null, location: null, round: null };
   const events: CareerEvent[] = [
-    { title: 'Won R1', source_note: '', season: '2025' },
-    { title: 'Won R2', source_note: '', season: '2025' },
-    { title: 'Lost R3', source_note: '', season: '2025' },
-    { title: 'Won Doubles R1', source_note: '', season: '2025' },
-    { title: 'Won R1', source_note: '', season: '2024' },
+    { title: 'Won R1',        source_note: '', season: '2025', ...base },
+    { title: 'Won R2',        source_note: '', season: '2025', ...base },
+    { title: 'Lost R3',       source_note: '', season: '2025', ...base },
+    { title: 'Won Doubles R1', source_note: '', season: '2025', ...base },
+    { title: 'Won R1',        source_note: '', season: '2024', ...base },
   ];
 
   it('counts singles wins and losses for a season', () => {
