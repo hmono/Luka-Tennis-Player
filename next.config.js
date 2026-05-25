@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'export',
-  basePath: '/Luka-Tennis-Player',
   trailingSlash: true,
   images: { unoptimized: true },
 };
