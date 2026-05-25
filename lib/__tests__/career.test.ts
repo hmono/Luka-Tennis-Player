@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cleanTournamentTitle,
+  extractOpponent,
   formatRank,
   getCareerEvents,
   getSurfaceBreakdown,
@@ -8,6 +9,8 @@ import {
   inferResult,
   isDoubles,
   parseRank,
+  phaseColor,
+  phaseWeight,
 } from '../career';
 import type { CareerEvent } from '@/types';
 
@@ -167,5 +170,60 @@ describe('getSeasonStats', () => {
   it('isolates by season', () => {
     const stats = getSeasonStats(events, '2024');
     expect(stats.wins).toBe(1);
+  });
+});
+
+// ─── extractOpponent ──────────────────────────────────────────────────────────
+
+describe('extractOpponent', () => {
+  it('extracts opponent from vs in title', () => {
+    expect(extractOpponent(evt('ITF M25 R1 vs J. Smith'))).toBe('J. Smith');
+  });
+
+  it('extracts opponent from lost to in source_note', () => {
+    expect(extractOpponent(evt('ITF M25 R2', 'lost to B. Malla'))).toBe('B. Malla');
+  });
+
+  it('prefers vs in title over source_note', () => {
+    expect(extractOpponent(evt('R1 vs A. Jones', 'lost to B. Malla'))).toBe('A. Jones');
+  });
+
+  it('returns em dash when no opponent found', () => {
+    expect(extractOpponent(evt('ITF M25 Brazil'))).toBe('—');
+  });
+});
+
+// ─── phaseColor ───────────────────────────────────────────────────────────────
+
+describe('phaseColor', () => {
+  it('returns luka-blue for main draw rounds', () => {
+    expect(phaseColor('R1')).toBe('var(--luka-blue)');
+    expect(phaseColor('R2')).toBe('var(--luka-blue)');
+    expect(phaseColor('1R')).toBe('var(--luka-blue)');
+  });
+
+  it('returns muted colour for qualifying rounds', () => {
+    expect(phaseColor('Q-R1')).toBe('rgba(0,0,0,0.4)');
+  });
+
+  it('returns muted colour for null', () => {
+    expect(phaseColor(null)).toBe('rgba(0,0,0,0.4)');
+  });
+});
+
+// ─── phaseWeight ──────────────────────────────────────────────────────────────
+
+describe('phaseWeight', () => {
+  it('returns 600 for main draw rounds', () => {
+    expect(phaseWeight('R1')).toBe('600');
+    expect(phaseWeight('1R')).toBe('600');
+  });
+
+  it('returns normal for qualifying rounds', () => {
+    expect(phaseWeight('Q-R1')).toBe('normal');
+  });
+
+  it('returns normal for null', () => {
+    expect(phaseWeight(null)).toBe('normal');
   });
 });

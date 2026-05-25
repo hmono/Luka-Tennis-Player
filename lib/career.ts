@@ -35,6 +35,28 @@ export const cleanTournamentTitle = (title: string): string =>
 export const isDoubles = (event: CareerEvent): boolean =>
   event.title.toLowerCase().includes('doubles');
 
+export const extractOpponent = (event: CareerEvent): string => {
+  const vsMatch = event.title.match(/vs\s+(.+)/i);
+  if (vsMatch) return vsMatch[1].trim();
+  const lostMatch = event.source_note.match(/lost to (.+)/i);
+  if (lostMatch) return lostMatch[1].trim();
+  return '—';
+};
+
+export const phaseColor = (round: string | null | undefined): string => {
+  if (!round) return 'rgba(0,0,0,0.4)';
+  if (/^(R\d+|1R)$/.test(round)) return 'var(--luka-blue)';
+  if (/^Q-/.test(round)) return 'rgba(0,0,0,0.4)';
+  if (round === 'D') return 'rgba(0,0,0,0.4)';
+  return 'rgba(0,0,0,0.4)';
+};
+
+export const phaseWeight = (round: string | null | undefined): string => {
+  if (!round) return 'normal';
+  if (/^(R\d+|1R)$/.test(round)) return '600';
+  return 'normal';
+};
+
 /** Pure version — accepts events array as parameter instead of closing over module scope. */
 export const getSeasonStats = (
   events: CareerEvent[],

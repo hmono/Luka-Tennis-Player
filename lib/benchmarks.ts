@@ -27,7 +27,7 @@ export const extractPercentSeries = (value: string): number[] =>
   [...value.matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0])).slice(0, 3);
 
 export const padToThree = (values: number[]): [number, number, number] =>
-  [...values, 0, 0].slice(0, 3) as [number, number, number];
+  [...values, 0, 0, 0].slice(0, 3) as [number, number, number];
 
 export const parseRallyDistribution = (
   text: string,

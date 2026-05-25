@@ -9,6 +9,9 @@ import {
   isDoubles,
   cleanTournamentTitle,
   getSeasonStats,
+  extractOpponent,
+  phaseColor,
+  phaseWeight,
 } from "@/lib/career";
 import type { CareerEvent, SurfaceRecord } from "@/types";
 
@@ -25,30 +28,6 @@ const findRanking = (pattern: RegExp) =>
   (careerEvents as RankingEvent[]).find(
     (e) => e.category === "ranking" && pattern.test(e.title),
   )?.title ?? null;
-
-// ── S04 helpers ───────────────────────────────────────────────
-
-const extractOpponent = (event: CareerEvent): string => {
-  const vsMatch = event.title.match(/vs\s+(.+)/i);
-  if (vsMatch) return vsMatch[1].trim();
-  const lostMatch = event.source_note.match(/lost to (.+)/i);
-  if (lostMatch) return lostMatch[1].trim();
-  return "—";
-};
-
-const phaseColor = (round: string | null | undefined): string => {
-  if (!round) return "rgba(0,0,0,0.4)";
-  if (/^(R\d+|1R)$/.test(round)) return "var(--luka-blue)";
-  if (/^Q-/.test(round)) return "rgba(0,0,0,0.4)";
-  if (round === "D") return "rgba(0,0,0,0.4)";
-  return "rgba(0,0,0,0.4)";
-};
-
-const phaseWeight = (round: string | null | undefined): string => {
-  if (!round) return "normal";
-  if (/^(R\d+|1R)$/.test(round)) return "600";
-  return "normal";
-};
 
 // ── data slices ───────────────────────────────────────────────
 
