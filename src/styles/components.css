@@ -1261,3 +1261,79 @@ footer {
 .float-right   { float: right; }
 .ls-wide       { letter-spacing: 0.1em; }
 .uppercase     { text-transform: uppercase; }
+.mt-0          { margin-top: 0; }
+.fw-500        { font-weight: 500; }
+.nowrap        { white-space: nowrap; }
+.val-sub-inline { display: inline; }
+
+/* ─── Career page ─────────────────────────────────────────────────────────────
+   Classes extracted from inline style objects in app/career/page.tsx          */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+
+/* White bordered card that wraps a table */
+.card-table {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Mono label row at the top of a card-table */
+.tbl-section-head {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888;
+  padding: 9px 18px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Horizontal-scroll wrapper for tables */
+.tbl-scroll { overflow-x: auto; }
+
+/* Two-column equal grids */
+.grid-2col   { display: grid; grid-template-columns: 1fr 1fr;  gap: 14px; }
+.grid-2-1col { display: grid; grid-template-columns: 2fr 1fr;  gap: 14px; }
+.flex-col-14 { display: flex; flex-direction: column; gap: 14px; }
+
+/* Season group header inside a card-table */
+.season-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 14px 18px;
+}
+
+/* Year label in season-head */
+.season-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  color: var(--luka-blue);
+}
+
+/* Match result badges */
+.result-w { font-weight: 600; color: var(--luka-challenger); }
+.result-l { color: rgba(0, 0, 0, 0.35); }
+.result-n { color: rgba(0, 0, 0, 0.25); }
+
+/* Career-high star indicator */
+.career-high-star { margin-left: 4px; font-size: 10px; }
+.v-top     { vertical-align: top; }
+.min-w-128 { min-width: 128px; }
+.text-blue { color: var(--luka-blue); }

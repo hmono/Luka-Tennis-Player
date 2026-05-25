@@ -113,25 +113,6 @@ const seasonGroups = [...new Set(tournamentEvents.map((e) => e.season))]
       .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")),
   }));
 
-// ── table wrapper style ───────────────────────────────────────
-
-const tableWrapStyle: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid rgba(0,0,0,0.07)",
-  borderRadius: "4px",
-  overflow: "hidden",
-};
-
-const tableHeadStyle: React.CSSProperties = {
-  fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: "8.5px",
-  letterSpacing: "0.1em",
-  textTransform: "uppercase" as const,
-  color: "#888",
-  padding: "9px 18px 10px",
-  borderBottom: "1px solid rgba(0,0,0,0.06)",
-};
-
 // ─────────────────────────────────────────────────────────────
 
 export default function CareerPage() {
@@ -139,17 +120,7 @@ export default function CareerPage() {
     <>
       <header className="hero">
         <div className="hero-left">
-          <a href="/" style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "9px",
-            letterSpacing: "0.12em",
-            color: "rgba(255,255,255,0.4)",
-            textDecoration: "none",
-            marginBottom: "20px",
-          }}>← Dashboard</a>
+          <a href="/" className="back-link">← Dashboard</a>
           <div className="hero-tag">
             @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
           </div>
@@ -195,14 +166,14 @@ export default function CareerPage() {
       <div className="level-strip">
         <span className="ls-label">CAREER PATH:</span>
         <div className="ls-item active">
-          <div className="ls-dot" style={{ background: "#f5a623" }} />
-          <span style={{ color: "#f5a623" }}>ITF M25/M15</span>
+          <div className="ls-dot" style={{ background: "var(--luka-itf)" }} />
+          <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · {formatRank(atpSinglesCurrent, true)}</span>
         </div>
         <span className="ls-arrow">——→</span>
         <div className="ls-item">
-          <div className="ls-dot" style={{ background: "#1cc8a0" }} />
-          <span style={{ color: "#1cc8a0" }}>Challenger</span>
+          <div className="ls-dot" style={{ background: "var(--luka-challenger)" }} />
+          <span style={{ color: "var(--luka-challenger)" }}>Challenger</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Target · rank ~100–500</span>
         </div>
         <span className="ls-arrow">——→</span>
@@ -223,10 +194,10 @@ export default function CareerPage() {
             <span className="sec-title">Career Summary</span>
             <span className="sec-badge">2021–2026</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-            <div style={tableWrapStyle}>
-              <div style={tableHeadStyle}>Singles — W/L por ano</div>
-              <div style={{ overflowX: "auto" }}>
+          <div className="grid-2col">
+            <div className="card-table">
+              <div className="tbl-section-head">Singles — W/L por ano</div>
+              <div className="tbl-scroll">
                 <table className="ctable">
                   <thead>
                     <tr>
@@ -249,9 +220,9 @@ export default function CareerPage() {
                 </table>
               </div>
             </div>
-            <div style={tableWrapStyle}>
-              <div style={tableHeadStyle}>Doubles — W/L por ano</div>
-              <div style={{ overflowX: "auto" }}>
+            <div className="card-table">
+              <div className="tbl-section-head">Doubles — W/L por ano</div>
+              <div className="tbl-scroll">
                 <table className="ctable">
                   <thead>
                     <tr>
@@ -284,10 +255,10 @@ export default function CareerPage() {
             <span className="sec-title">Ranking History</span>
             <span className="sec-badge">ITF + ATP</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-            <div style={tableWrapStyle}>
-              <div style={tableHeadStyle}>Rankings ITF</div>
-              <div style={{ overflowX: "auto" }}>
+          <div className="grid-2col">
+            <div className="card-table">
+              <div className="tbl-section-head">Rankings ITF</div>
+              <div className="tbl-scroll">
                 <table className="ctable">
                   <thead>
                     <tr>
@@ -301,23 +272,23 @@ export default function CareerPage() {
                     {itfSeasonRows.map((row) => (
                       <tr key={`${row.season}-itf`}>
                         <td className="row-label">{row.season}</td>
-                        <td style={{ color: row.isCareerHigh ? "#f5a623" : "var(--luka-blue)", fontWeight: 500 }}>
+                        <td className="fw-500" style={{ color: row.isCareerHigh ? "var(--luka-itf)" : "var(--luka-blue)" }}>
                           {row.peak}
                           {row.isCareerHigh && (
-                            <span style={{ marginLeft: "4px", fontSize: "10px" }} title="Career High">★</span>
+                            <span className="career-high-star" title="Career High">★</span>
                           )}
                         </td>
-                        <td className="val-sub" style={{ display: "table-cell" }}>{row.seasonEnd}</td>
-                        <td className="val-sub" style={{ display: "table-cell" }}>{row.note}</td>
+                        <td className="val-sub">{row.seasonEnd}</td>
+                        <td className="val-sub">{row.note}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-            <div style={tableWrapStyle}>
-              <div style={tableHeadStyle}>Rankings ATP</div>
-              <div style={{ overflowX: "auto" }}>
+            <div className="card-table">
+              <div className="tbl-section-head">Rankings ATP</div>
+              <div className="tbl-scroll">
                 <table className="ctable">
                   <thead>
                     <tr>
@@ -331,14 +302,14 @@ export default function CareerPage() {
                     {atpSeasonRows.map((row) => (
                       <tr key={`${row.season}-atp-${row.peak}`}>
                         <td className="row-label">{row.season}</td>
-                        <td style={{ color: "var(--luka-blue)", fontWeight: 500 }}>
+                        <td className="text-blue fw-500">
                           {row.peak}
                           {row.isCareerHigh && (
-                            <span style={{ marginLeft: "4px", fontSize: "10px" }} title="Career High">★</span>
+                            <span className="career-high-star" title="Career High">★</span>
                           )}
                         </td>
-                        <td className="val-sub" style={{ display: "table-cell" }}>{row.seasonEnd}</td>
-                        <td className="val-sub" style={{ display: "table-cell" }}>{row.note}</td>
+                        <td className="val-sub">{row.seasonEnd}</td>
+                        <td className="val-sub">{row.note}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -355,10 +326,10 @@ export default function CareerPage() {
             <span className="sec-title">Surface Breakdown</span>
             <span className="sec-badge">Singles · Career</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "14px" }}>
-            <div style={tableWrapStyle}>
-              <div style={tableHeadStyle}>W/L + win rate por superfície</div>
-              <div style={{ overflowX: "auto" }}>
+          <div className="grid-2-1col">
+            <div className="card-table">
+              <div className="tbl-section-head">W/L + win rate por superfície</div>
+              <div className="tbl-scroll">
                 <table className="ctable">
                   <thead>
                     <tr>
@@ -366,16 +337,16 @@ export default function CareerPage() {
                       <th className="th-hdr">W</th>
                       <th className="th-hdr">L</th>
                       <th className="th-hdr">Win%</th>
-                      <th className="th-hdr" style={{ minWidth: "128px" }}>Win rate</th>
+                      <th className="th-hdr min-w-128">Win rate</th>
                     </tr>
                   </thead>
                   <tbody>
                     {surfaceRows.map((row) => (
                       <tr key={row.surface}>
-                        <td className="row-label" style={{ color: row.color, fontWeight: 500 }}>{row.surface}</td>
+                        <td className="row-label fw-500" style={{ color: row.color }}>{row.surface}</td>
                         <td>{row.w}</td>
                         <td>{row.l}</td>
-                        <td style={{ fontWeight: 500 }}>{row.winPct}%</td>
+                        <td className="fw-500">{row.winPct}%</td>
                         <td>
                           <div className="bar-track">
                             <div
@@ -390,7 +361,7 @@ export default function CareerPage() {
                 </table>
               </div>
             </div>
-            <div className="insight-card ic-blue" style={{ marginTop: 0 }}>
+            <div className="insight-card ic-blue mt-0">
               <span className="ins-tag">Insight</span>
               <div className="ins-head">77% das derrotas em saibro. Hard 38% win rate.</div>
               <p className="ins-body">
@@ -407,29 +378,16 @@ export default function CareerPage() {
             <span className="sec-title">Tournament Results</span>
             <span className="sec-badge">Match by match</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div className="flex-col-14">
             {seasonGroups.map((group) => (
-              <div key={group.season} style={tableWrapStyle}>
-                <div style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "12px",
-                  borderBottom: "1px solid rgba(0,0,0,0.06)",
-                  padding: "14px 18px",
-                }}>
-                  <span style={{
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: "22px",
-                    letterSpacing: "0.06em",
-                    color: "var(--luka-blue)",
-                  }}>{group.season}</span>
-                  <span className="val-sub" style={{ display: "inline" }}>
+              <div key={group.season} className="card-table">
+                <div className="season-head">
+                  <span className="season-label">{group.season}</span>
+                  <span className="val-sub val-sub-inline">
                     {group.summary.wins}W / {group.summary.losses}L
                   </span>
                 </div>
-                <div style={{ overflowX: "auto" }}>
+                <div className="tbl-scroll">
                   <table className="ctable">
                     <thead>
                       <tr>
@@ -448,22 +406,22 @@ export default function CareerPage() {
                         return (
                           <tr
                             key={`${group.season}-${event.title}-${event.date ?? "na"}`}
-                            style={{ verticalAlign: "top" }}
+                            className="v-top"
                           >
-                            <td className="row-label" style={{ whiteSpace: "nowrap" }}>{event.date ?? group.season}</td>
-                            <td style={{ fontWeight: 500 }}>
+                            <td className="row-label nowrap">{event.date ?? group.season}</td>
+                            <td className="fw-500">
                               {cleanTournamentTitle(event.title)}
                             </td>
                             <td style={{ color: phaseColor(round), fontWeight: phaseWeight(round) }}>{round ?? "—"}</td>
-                            <td className="val-sub" style={{ display: "table-cell" }}>{extractOpponent(event)}</td>
+                            <td className="val-sub">{extractOpponent(event)}</td>
                             <td>{event.location ?? "—"}</td>
                             <td>
                               {result === "W" ? (
-                                <span style={{ fontWeight: 600, color: "#1cc8a0" }}>W</span>
+                                <span className="result-w">W</span>
                               ) : result === "L" ? (
-                                <span style={{ color: "rgba(0,0,0,0.35)" }}>L</span>
+                                <span className="result-l">L</span>
                               ) : (
-                                <span style={{ color: "rgba(0,0,0,0.25)" }}>—</span>
+                                <span className="result-n">—</span>
                               )}
                             </td>
                           </tr>
@@ -484,16 +442,16 @@ export default function CareerPage() {
             <span className="sec-title">Notable Tournaments</span>
             <span className="sec-badge">Highlights</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          <div className="grid-2col">
             {latestMilestones.map((event) => (
-              <div key={`${event.season}-${event.title}`} className="insight-card ic-blue" style={{ marginTop: 0 }}>
+              <div key={`${event.season}-${event.title}`} className="insight-card ic-blue mt-0">
                 <span className="ins-tag">{event.season} · milestone</span>
                 <div className="ins-head">{event.title}</div>
                 <p className="ins-body">{event.source_note}</p>
               </div>
             ))}
             {notableEvents.slice(0, 5).map((event) => (
-              <div key={`${event.season}-${event.title}`} className="insight-card ic-teal" style={{ marginTop: 0 }}>
+              <div key={`${event.season}-${event.title}`} className="insight-card ic-teal mt-0">
                 <span className="ins-tag">{event.season} · tournament</span>
                 <div className="ins-head">{event.title}</div>
                 <p className="ins-body">{event.source_note}</p>
