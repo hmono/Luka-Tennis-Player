@@ -103,17 +103,26 @@ C8 (independent — static inlines → CSS classes)
 
 | ID | Audit ref | Title | Priority | Dep | Status |
 |----|-----------|-------|----------|-----|--------|
-| C1 | P4 | Simplify `phaseColor`/`phaseWeight` to 2-branch ternaries in `lib/career.ts` | Low | — | `todo` |
-| C2 | P3 | Replace `as unknown as T` double-cast with `as T` single cast in all 4 lib files | Low | — | `todo` |
-| C3 | P3 | Align `TacticalData` exported interface keys with actual JSON (`game_patterns`, `surface_tactics`, `target_benchmarks`) | Medium | — | `todo` |
-| C4 | P2 | Derive `seasons` array from data instead of hardcoded `["2021"…"2026"]` in `career/page.tsx` | Medium | — | `todo` |
-| C5 | P2 | Remove hardcoded bio strings from `career/page.tsx` (birthDate, hero-sub range, luka-box-tag date) → read from `player.json` | Medium | — | `todo` |
-| C6 | P0 | Delete 22 dead CSS classes from `components.css` (`.shell`, `.section-block`, `.page-layout`, `.hero-panel`, `.surface-card`, `.level-legend`, `.level-item`, `.level-dot`, `.level-note`, `.level-label`, `.stat-strip`, `.stat-item`, `.stat-value`, `.stat-label` and 8 more) | High | — | `todo` |
-| C7 | P0 | Split `components.css` (1 339 lines, 227 selectors) into `layout.css`, `hero.css`, `cards.css`, `table.css` | Medium | C6 | `todo` |
-| C8 | P1 | Move static inline styles → CSS classes in `physical/page.tsx` (6 violations) and `tactics/page.tsx` (3 violations + remove dead `display:none` link) | High | — | `todo` |
+| C1 | P4 | Simplify `phaseColor`/`phaseWeight` to 2-branch ternaries in `lib/career.ts` | Low | — | `done` |
+| C2 | P3 | Replace `as unknown as T` double-cast with `as T` single cast in all 4 lib files | Low | — | `done` |
+| C3 | P3 | Drop unused `TacticalData` interface (lib uses private `TacticalJson`; no consumers) | Medium | — | `done` |
+| C4 | P2 | Derive `seasons` array from data instead of hardcoded `["2021"…"2026"]` in `career/page.tsx` | Medium | — | `done` |
+| C5 | P2 | Remove hardcoded bio strings from `career/page.tsx` (birthDate, hero-sub range, luka-box-tag date) → read from `player.json` | Medium | — | `done` |
+| C6 | P0 | Delete 75 dead CSS classes from `components.css` (1339→840 lines, −37%) | High | — | `done` |
+| C7 | P0 | Split `components.css` (851 lines) into `layout.css`, `hero.css`, `cards.css`, `table.css` | Medium | C6 | `done` |
+| C8 | P1 | Move static inline styles → CSS classes in `physical/page.tsx` (6 violations) and `tactics/page.tsx` (3 violations + remove dead `display:none` link) | High | — | `done` |
 
 ### Log
 
 | Date | Entry |
 |------|-------|
 | 2026-05-25 | Sprint 3 created from audit; 8 tasks, 2 blocking (C6→C7) |
+| 2026-05-25 | C6 done — 75 dead CSS blocks removed (1339→840 lines) |
+| 2026-05-25 | C8 done — 9 static inlines → CSS classes; dead Link removed; 8 utility classes added |
+| 2026-05-25 | C3 done — unused TacticalData interface deleted |
+| 2026-05-25 | C4 done — seasons derived from careerEvents data |
+| 2026-05-25 | C5 done — birthDate, range, box-tag read from player.json via getPlayerProfile() |
+| 2026-05-25 | C7 done — components.css split into layout/hero/cards/table.css |
+| 2026-05-25 | C1 done — phaseColor/phaseWeight simplified to 2-branch ternaries |
+| 2026-05-25 | C2 done — as unknown as T → as T in career/benchmarks/tactics lib files |
+| 2026-05-25 | Sprint 3 COMPLETE — all 8 tasks done, 76/76 tests pass |
