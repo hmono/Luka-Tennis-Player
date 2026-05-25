@@ -1,6 +1,6 @@
 # Luka Ono Analytics
 
-[![Deploy to GitHub Pages](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml/badge.svg)](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml)
+[![Deploy to Cloudflare Pages](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml/badge.svg)](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml)
 
 Data-driven performance intelligence platform for Luka Bojičić Ono — professional tennis player (Campinas, Brazil · ATP ~1.951).
 
@@ -16,7 +16,7 @@ Six analytics modules covering career trajectory, tactical patterns, physical tr
 | Language | TypeScript 5 (strict) |
 | Styling | Tailwind CSS 4 + CSS custom properties |
 | Tests | Vitest + React Testing Library |
-| Deploy | GitHub Actions → GitHub Pages |
+| Deploy | GitHub Actions → Cloudflare Pages |
 
 ---
 
@@ -120,5 +120,5 @@ See `docs/STYLING_RULE.md` for full contract.
 Tests run before every build. A failing test blocks the deploy.
 
 ```
-push → Test (vitest run) → Build (next build) → Deploy (GitHub Pages)
+push → Test (vitest run) → Build (next build) → Deploy (Cloudflare Pages)
 ```
