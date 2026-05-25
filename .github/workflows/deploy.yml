@@ -23,9 +23,17 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create Pages project (idempotent)
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create luka-tennis-player --production-branch=main
+
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=luka-tennis-player
+          command: pages deploy out --project-name=luka-tennis-player --commit-dirty=true
