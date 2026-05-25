@@ -8,51 +8,26 @@ const navLinks = [
   { label: "Physical", href: "/physical" },
 ];
 
+const taglineDate = new Date().toLocaleDateString("en-US", {
+  month: "long",
+  year: "numeric",
+});
+
 export default function Header() {
   return (
-    <header style={{
-      position: "sticky",
-      top: 0,
-      zIndex: 20,
-      background: "rgba(255,255,255,0.95)",
-      backdropFilter: "blur(8px)",
-      borderBottom: "1px solid rgba(0,0,0,0.08)",
-    }}>
-      <div className="shell" style={{ display: "flex", alignItems: "center", minHeight: "64px", padding: "12px 48px", flexWrap: "wrap", gap: "8px" }}>
+    <header className="site-header">
+      <div className="shell site-header-inner">
         <div>
-          <Link href="/" style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "10px",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: "var(--luka-blue)",
-            textDecoration: "none",
-            fontWeight: 600,
-          }}>
+          <Link href="/" className="site-header-brand-link">
             Luka Ono Analytics
           </Link>
-          <p style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "9px",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: "rgba(0,0,0,0.45)",
-            marginTop: "2px",
-          }}>
-            Performance intelligence partner · May 2026
+          <p className="site-header-tagline">
+            Performance intelligence partner · {taglineDate}
           </p>
         </div>
-        <nav style={{ marginLeft: "auto", display: "flex", flexWrap: "wrap", gap: "16px" }}>
+        <nav className="site-header-nav">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "9px",
-              letterSpacing: "0.28em",
-              textTransform: "uppercase",
-              color: "rgba(0,0,0,0.45)",
-              textDecoration: "none",
-              padding: "4px 8px",
-            }}>
+            <Link key={link.href} href={link.href} className="site-header-nav-link">
               {link.label}
             </Link>
           ))}
