@@ -1,11 +1,10 @@
 import rawCareerData from '@/data/career.json';
-import type { CareerEvent } from '@/types';
+import type { CareerData, CareerEvent, SurfaceRecord } from '@/types';
 
-// Actual top-level key confirmed from career/page.tsx: `career_events`.
-type CareerJson = { career_events: CareerEvent[]; [key: string]: unknown };
+const data = rawCareerData as unknown as CareerData;
 
-export const getCareerEvents = (): CareerEvent[] =>
-  (rawCareerData as unknown as CareerJson).career_events ?? [];
+export const getCareerEvents      = (): CareerEvent[]   => data.career_events      ?? [];
+export const getSurfaceBreakdown  = (): SurfaceRecord[] => data.surface_breakdown  ?? [];
 
 export const parseRank = (value: string): number | null => {
   const match = value.match(/#(\d+)/);

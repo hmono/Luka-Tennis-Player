@@ -3,6 +3,7 @@ import {
   cleanTournamentTitle,
   formatRank,
   getCareerEvents,
+  getSurfaceBreakdown,
   getSeasonStats,
   inferResult,
   isDoubles,
@@ -13,8 +14,14 @@ import type { CareerEvent } from '@/types';
 // ─── getCareerEvents ──────────────────────────────────────────────────────────
 
 describe('getCareerEvents', () => {
-  it('returns an array (not undefined) — guards against wrong JSON key', () => {
+  it('returns an array — guards against wrong JSON key', () => {
     expect(Array.isArray(getCareerEvents())).toBe(true);
+  });
+});
+
+describe('getSurfaceBreakdown', () => {
+  it('returns an array — guards against wrong JSON key', () => {
+    expect(Array.isArray(getSurfaceBreakdown())).toBe(true);
   });
 });
 

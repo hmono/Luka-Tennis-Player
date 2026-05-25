@@ -8,12 +8,23 @@ export type HRVStatus = 'above_baseline' | 'stable' | 'declining' | 'critical';
 
 // ─── Career ───────────────────────────────────────────────────────────────────
 
-/** Raw event shape from career.json — inferred from helper signatures in career/page.tsx */
+/** Shape of each entry in career.json `career_events` array — confirmed from career/page.tsx */
 export interface CareerEvent {
   title: string;
   source_note: string;
   season: string;
-  [key: string]: unknown;
+  category: 'ranking' | 'tournament' | 'milestone';
+  date: string | null;
+  location: string | null;
+  round: string | null;
+  season_end_rank?: number | null;   // ranking events only
+}
+
+/** Shape of each entry in career.json `surface_breakdown` array */
+export interface SurfaceRecord {
+  surface: string;
+  w: number;
+  l: number;
 }
 
 /** Flat benchmark row shape from benchmarks.json */
@@ -42,48 +53,10 @@ export interface PlayerProfile {
   tournamentsPlayed: { itfFutures: string; challenger: number };
 }
 
-export interface SurfaceRecord {
-  surface: Surface;
-  wins: number;
-  losses: number;
-}
-
-export interface SeasonRecord {
-  year: number;
-  singles: { wins: number; losses: number };
-  doubles: { wins: number; losses: number };
-}
-
-export interface RankingSnapshot {
-  year: number;
-  itf?: number;
-  atp_singles?: number;
-  atp_doubles?: number;
-  careerHigh?: boolean;
-}
-
-export interface TournamentMatch {
-  date: string;             // ISO 8601
-  tournament: string;
-  level: TournamentLevel;
-  round: string;
-  opponent: string;
-  result: MatchResult;
-}
-
-export interface CareerMilestone {
-  date: string;
-  description: string;
-  category: 'ranking' | 'tournament' | 'milestone';
-}
-
+/** Actual shape of career.json — confirmed from career/page.tsx */
 export interface CareerData {
-  player: PlayerProfile;
-  surfaces: SurfaceRecord[];
-  seasons: SeasonRecord[];
-  rankings: RankingSnapshot[];
-  matches: TournamentMatch[];
-  milestones: CareerMilestone[];
+  career_events: CareerEvent[];
+  surface_breakdown: SurfaceRecord[];
 }
 
 // ─── Benchmarks ───────────────────────────────────────────────────────────────
