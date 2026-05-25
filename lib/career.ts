@@ -57,6 +57,10 @@ export const phaseWeight = (round: string | null | undefined): string => {
   return 'normal';
 };
 
+/** Pure — pass the events array explicitly; no closure over module scope. */
+export const findRanking = (events: CareerEvent[], pattern: RegExp): string | null =>
+  events.find((e) => e.category === 'ranking' && pattern.test(e.title))?.title ?? null;
+
 /** Pure version — accepts events array as parameter instead of closing over module scope. */
 export const getSeasonStats = (
   events: CareerEvent[],

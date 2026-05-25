@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cleanTournamentTitle,
   extractOpponent,
+  findRanking,
   formatRank,
   getCareerEvents,
   getSurfaceBreakdown,
@@ -225,5 +226,27 @@ describe('phaseWeight', () => {
 
   it('returns normal for null', () => {
     expect(phaseWeight(null)).toBe('normal');
+  });
+});
+
+// ─── findRanking ──────────────────────────────────────────────────────────────
+
+describe('findRanking', () => {
+  const events: CareerEvent[] = [
+    { title: 'ATP singles career high #1.827', source_note: '', season: '2024', category: 'ranking', date: null, location: null, round: null },
+    { title: 'ATP doubles career high #1.784', source_note: '', season: '2024', category: 'ranking', date: null, location: null, round: null },
+    { title: 'Won R1 ITF M25', source_note: '', season: '2024', category: 'tournament', date: null, location: null, round: 'R1' },
+  ];
+
+  it('returns title when pattern matches a ranking event', () => {
+    expect(findRanking(events, /ATP singles career high/i)).toBe('ATP singles career high #1.827');
+  });
+
+  it('returns null when no ranking event matches', () => {
+    expect(findRanking(events, /ATP singles current/i)).toBeNull();
+  });
+
+  it('ignores non-ranking events', () => {
+    expect(findRanking(events, /Won/i)).toBeNull();
   });
 });

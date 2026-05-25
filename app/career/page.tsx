@@ -12,26 +12,18 @@ import {
   extractOpponent,
   phaseColor,
   phaseWeight,
+  findRanking,
 } from "@/lib/career";
 import type { CareerEvent, SurfaceRecord } from "@/types";
-
-// ── types ─────────────────────────────────────────────────────
-
-type RankingEvent = CareerEvent & { season_end_rank?: number | null };
 
 // ── base helpers ──────────────────────────────────────────────
 
 const careerEvents   = getCareerEvents();
 const surfaceBreakdown = getSurfaceBreakdown();
 
-const findRanking = (pattern: RegExp) =>
-  (careerEvents as RankingEvent[]).find(
-    (e) => e.category === "ranking" && pattern.test(e.title),
-  )?.title ?? null;
-
 // ── data slices ───────────────────────────────────────────────
 
-const rankingEvents    = careerEvents.filter((e) => e.category === "ranking") as RankingEvent[];
+const rankingEvents    = careerEvents.filter((e) => e.category === "ranking");
 const tournamentEvents = careerEvents.filter((e) => e.category === "tournament");
 const milestoneEvents  = careerEvents.filter((e) => e.category === "milestone");
 
@@ -74,9 +66,9 @@ const atpSeasonRows = rankingEvents
   }));
 
 // stat strip
-const atpSinglesCareerHigh = parseRank(findRanking(/ATP singles career high/i) ?? "");
-const atpDoublesCareerHigh = parseRank(findRanking(/ATP doubles career high/i) ?? "");
-const atpSinglesCurrent = parseRank(findRanking(/ATP singles current/i) ?? "");
+const atpSinglesCareerHigh = parseRank(findRanking(careerEvents, /ATP singles career high/i) ?? "");
+const atpDoublesCareerHigh = parseRank(findRanking(careerEvents, /ATP doubles career high/i) ?? "");
+const atpSinglesCurrent    = parseRank(findRanking(careerEvents, /ATP singles current/i) ?? "");
 
 const challengerAppearances = tournamentEvents.filter((e) =>
   /Challenger/i.test(e.title),
