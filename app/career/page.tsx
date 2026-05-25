@@ -14,12 +14,19 @@ import {
   phaseWeight,
   findRanking,
 } from "@/lib/career";
+import { getPlayerProfile } from "@/lib/benchmarks";
 import type { CareerEvent, SurfaceRecord } from "@/types";
 
 // ── base helpers ──────────────────────────────────────────────
 
-const careerEvents   = getCareerEvents();
+const careerEvents     = getCareerEvents();
 const surfaceBreakdown = getSurfaceBreakdown();
+const player           = getPlayerProfile();
+
+// ── bio formatting (C5) ───────────────────────────────────────
+const [byear, bmonth, bday] = player.birthDate.split("-");
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const birthFormatted = `${MONTHS[Number(bmonth) - 1]} ${Number(bday)} ${byear}`;
 
 // ── data slices ───────────────────────────────────────────────
 
@@ -27,7 +34,7 @@ const rankingEvents    = careerEvents.filter((e) => e.category === "ranking");
 const tournamentEvents = careerEvents.filter((e) => e.category === "tournament");
 const milestoneEvents  = careerEvents.filter((e) => e.category === "milestone");
 
-const seasons = ["2021", "2022", "2023", "2024", "2025", "2026"];
+const seasons = [...new Set(careerEvents.map((e) => e.season))].sort();
 const singlesBySeason = seasons.map((s) => getSeasonStats(tournamentEvents, s, false));
 const doublesBySeason = seasons
   .map((s) => getSeasonStats(tournamentEvents, s, true))
@@ -122,11 +129,11 @@ export default function CareerPage() {
         <div className="hero-left">
           <a href="/" className="back-link">← Dashboard</a>
           <div className="hero-tag">
-            @luka.ono_ · Professional Tennis Player · Campinas, Brazil · Born Jan 28 2005
+            @luka.ono_ · Professional Tennis Player · {player.basedIn} · Born {birthFormatted}
           </div>
           <h1>CAREER &amp;<br />RANKING</h1>
           <div className="hero-sub">
-            TOURNAMENT RESULTS · RANKING HISTORY · CAREER TRAJECTORY · 2021–2026
+            TOURNAMENT RESULTS · RANKING HISTORY · CAREER TRAJECTORY · {seasons[0]}–{seasons[seasons.length - 1]}
           </div>
         </div>
       </header>
@@ -463,7 +470,7 @@ export default function CareerPage() {
         {/* LUKA BOX */}
         <section className="section">
           <div className="luka-box">
-            <div className="luka-box-tag">@luka.ono_ · Career Module · April 2026</div>
+            <div className="luka-box-tag">@luka.ono_ · Career Module · {seasons[seasons.length - 1]}</div>
             <h2>→ CAREER DEVELOPMENT PRIORITIES</h2>
             <div className="luka-points">
               <div className="lp">

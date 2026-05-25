@@ -89,7 +89,7 @@ export default function TacticsPage() {
           </div>
 
           {Object.entries(patternGroups).map(([group, patterns]) => (
-            <div key={group} style={{ marginBottom: "20px" }}>
+            <div key={group} className="pattern-group">
               <p className="bar-block-title">{group}</p>
               <div className="rally-grid">
                 {patterns.map((p) => (
@@ -107,7 +107,7 @@ export default function TacticsPage() {
               {itfRally && (
                 <div className="insight-card ic-amber">
                   <span className="ins-tag" style={{ color: "var(--luka-itf)" }}>{itfRally.level}</span>
-                  <div className="ins-head" style={{ fontSize: "28px" }}>{itfRally.pct_points_ending_here}</div>
+                  <div className="ins-head" className="fs-28">{itfRally.pct_points_ending_here}</div>
                   <span className="ins-tag">points end in 0–4 shots</span>
                   <p className="ins-body">Dominant cause: <strong>{itfRally.dominant_cause}</strong></p>
                 </div>
@@ -115,7 +115,7 @@ export default function TacticsPage() {
               {chalRally && (
                 <div className="insight-card ic-teal">
                   <span className="ins-tag" style={{ color: "var(--luka-challenger)" }}>{chalRally.level}</span>
-                  <div className="ins-head" style={{ fontSize: "28px" }}>{chalRally.pct_points_ending_here}</div>
+                  <div className="ins-head" className="fs-28">{chalRally.pct_points_ending_here}</div>
                   <span className="ins-tag">points end in 0–4 shots</span>
                   <p className="ins-body">Dominant cause: <strong>{chalRally.dominant_cause}</strong></p>
                 </div>
@@ -145,7 +145,7 @@ export default function TacticsPage() {
                     ["Metabolic Load", s.metabolic_load],
                     ["Priority", s.tactical_priority],
                   ].map(([label, value]) => (
-                    <div key={label} style={{ marginBottom: "10px" }}>
+                    <div key={label} className="sv-field">
                       <span className="ins-tag">{label}</span>
                       <p className="ins-body">{value}</p>
                     </div>
@@ -207,7 +207,7 @@ export default function TacticsPage() {
 
       </main>
 
-      <Link href="/" style={{ display: "none" }}>← Dashboard</Link>
+
     </>
   );
 }

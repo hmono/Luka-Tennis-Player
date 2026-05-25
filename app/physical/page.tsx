@@ -85,16 +85,16 @@ export default function PhysicalPage() {
                 style={{ borderLeftColor: blockAccent[b.block] ?? "var(--luka-dark)" }}
               >
                 <span className="ins-tag">{b.duration_weeks ? `${b.duration_weeks}w block` : "protocol"}</span>
-                <div className="ins-head" style={{ textTransform: "capitalize" }}>{b.block.replace(/_/g, " ")}</div>
-                <p className="ins-body" style={{ fontWeight: 500 }}>{b.objective}</p>
+                <div className="ins-head capitalize">{b.block.replace(/_/g, " ")}</div>
+                <p className="ins-body fw-500">{b.objective}</p>
                 {"principle" in b && b.principle && (
                   <p className="ins-body">{b.principle}</p>
                 )}
                 {"sessions" in b && Array.isArray(b.sessions) && (
-                  <ul style={{ marginTop: "8px", paddingLeft: "0", listStyle: "none" }}>
+                  <ul className="list-plain">
                     {(b.sessions as { slot: string; type: string; lactate_ceiling_mmol?: number; lactate_range_mmol?: string }[]).map((s) => (
                       <li key={s.slot} className="ins-body">
-                        <strong style={{ textTransform: "capitalize" }}>{s.slot}:</strong>{" "}
+                        <strong className="capitalize">{s.slot}:</strong>{" "}
                         {s.type}
                         {s.lactate_ceiling_mmol && ` · lactate ≤${s.lactate_ceiling_mmol} mmol/L`}
                         {s.lactate_range_mmol && ` · lactate ${s.lactate_range_mmol} mmol/L`}
@@ -114,7 +114,7 @@ export default function PhysicalPage() {
             <span className="sec-title">Metabolic Zones</span>
             <span className="sec-badge">Zone 1–4</span>
           </div>
-          <div className="insight-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <div className="grid-4col">
             {zones.map((z) => (
               <div
                 key={z.zone}
@@ -124,7 +124,7 @@ export default function PhysicalPage() {
                 <span className="ins-tag">Zone {z.zone}</span>
                 <div className="ins-head">{z.metabolic_state}</div>
                 <p className="ins-body">{z.training_type}</p>
-                <p className="ins-body" style={{ marginTop: "6px", opacity: 0.7 }}>{z.purpose}</p>
+                <p className="ins-body ins-body-muted">{z.purpose}</p>
               </div>
             ))}
           </div>
@@ -149,13 +149,13 @@ export default function PhysicalPage() {
             <tbody>
               {weeklyStructure.map((d) => (
                 <tr key={d.day_type}>
-                  <td className="row-label" style={{ color: dayTypeColor[d.day_type] ?? "inherit", textTransform: "capitalize" }}>
+                  <td className="row-label capitalize" style={{ color: dayTypeColor[d.day_type] ?? "inherit" }}>
                     {d.day_type.replace(/_/g, " ")}
                   </td>
                   <td><span className="val">{d.frequency_per_week}×</span></td>
                   <td>
                     {d.sessions.length > 0 ? (
-                      <ul style={{ listStyle: "none", padding: 0 }}>
+                      <ul className="list-plain">
                         {d.sessions.map((s) => (
                           <li key={s} className="val-sub">{s}</li>
                         ))}

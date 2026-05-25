@@ -13,7 +13,7 @@ type TacticalJson = {
   target_benchmarks: TacticalBenchmark[];
 };
 
-const data = rawTacticalData as unknown as TacticalJson;
+const data = rawTacticalData as TacticalJson;
 
 export const getTacticsFrameworks  = (): CoachingFramework[]   => data.frameworks;
 export const getTacticsPatterns    = (): GamePattern[]         => data.game_patterns;

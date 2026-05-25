@@ -1,7 +1,7 @@
 import rawCareerData from '@/data/career.json';
 import type { CareerData, CareerEvent, SurfaceRecord } from '@/types';
 
-const data = rawCareerData as unknown as CareerData;
+const data = rawCareerData as CareerData;
 
 export const getCareerEvents      = (): CareerEvent[]   => data.career_events      ?? [];
 export const getSurfaceBreakdown  = (): SurfaceRecord[] => data.surface_breakdown  ?? [];
@@ -43,19 +43,11 @@ export const extractOpponent = (event: CareerEvent): string => {
   return '—';
 };
 
-export const phaseColor = (round: string | null | undefined): string => {
-  if (!round) return 'rgba(0,0,0,0.4)';
-  if (/^(R\d+|1R)$/.test(round)) return 'var(--luka-blue)';
-  if (/^Q-/.test(round)) return 'rgba(0,0,0,0.4)';
-  if (round === 'D') return 'rgba(0,0,0,0.4)';
-  return 'rgba(0,0,0,0.4)';
-};
+export const phaseColor = (round: string | null | undefined): string =>
+  round && /^(R\d+|1R)$/.test(round) ? 'var(--luka-blue)' : 'rgba(0,0,0,0.4)';
 
-export const phaseWeight = (round: string | null | undefined): string => {
-  if (!round) return 'normal';
-  if (/^(R\d+|1R)$/.test(round)) return '600';
-  return 'normal';
-};
+export const phaseWeight = (round: string | null | undefined): string =>
+  round && /^(R\d+|1R)$/.test(round) ? '600' : 'normal';
 
 /** Pure — pass the events array explicitly; no closure over module scope. */
 export const findRanking = (events: CareerEvent[], pattern: RegExp): string | null =>

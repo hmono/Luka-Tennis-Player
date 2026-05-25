@@ -1,0 +1,117 @@
+/* ── TABLE (ctable) ────────────────────────────────────────── */
+.ctable { width: 100%; border-collapse: collapse; }
+.ctable thead tr { background: var(--luka-dark); }
+
+.ctable th {
+  padding: 12px 18px;
+  text-align: left;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.th-atp  { color: var(--luka-atp) !important; }
+.th-chal { color: var(--luka-challenger) !important; }
+.th-itf  { color: var(--luka-itf) !important; }
+.th-hdr  { color: rgba(255, 255, 255, 0.35) !important; }
+
+.ctable td {
+  padding: 13px 18px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  vertical-align: top;
+  background: var(--luka-white);
+}
+
+.ctable tr:hover td { background: rgba(59, 79, 224, 0.025); }
+
+.row-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  color: var(--luka-text-muted);
+  min-width: 190px;
+}
+
+.grp-row td {
+  background: rgba(59, 79, 224, 0.05) !important;
+  padding: 7px 18px 5px;
+}
+
+.grp-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--luka-blue);
+  font-weight: 600;
+}
+
+/* ── VALUES ────────────────────────────────────────────────── */
+.val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  display: block;
+}
+
+.val-atp  { color: var(--luka-atp); }
+.val-chal { color: var(--luka-challenger); }
+.val-itf  { color: var(--luka-itf); }
+
+.val-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--luka-text-muted);
+  margin-top: 3px;
+  display: block;
+  line-height: 1.5;
+}
+
+/* ── CAREER TABLE COMPONENTS ───────────────────────────────── */
+.card-table {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tbl-section-head {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888;
+  padding: 9px 18px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tbl-scroll { overflow-x: auto; }
+
+.season-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 14px 18px;
+}
+
+.season-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  color: var(--luka-blue);
+}
+
+/* ── RESULT BADGES ─────────────────────────────────────────── */
+.result-w { font-weight: 600; color: var(--luka-challenger); }
+.result-l { color: rgba(0, 0, 0, 0.35); }
+.result-n { color: rgba(0, 0, 0, 0.25); }
+
+.career-high-star { margin-left: 4px; font-size: 10px; }
+.v-top     { vertical-align: top; }
+.min-w-128 { min-width: 128px; }
+.text-blue { color: var(--luka-blue); }

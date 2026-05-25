@@ -124,13 +124,6 @@ export interface TacticalBenchmark {
   atp_elite: number | string;
 }
 
-export interface TacticalData {
-  frameworks: CoachingFramework[];
-  patterns: GamePattern[];
-  surfaces: SurfaceTactics[];
-  benchmarks: TacticalBenchmark[];
-}
-
 // ─── Physiology ───────────────────────────────────────────────────────────────
 
 export interface MetabolicZone {

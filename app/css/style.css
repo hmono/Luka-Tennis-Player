@@ -1,7 +1,10 @@
 @import "tailwindcss";
 @import "../../src/styles/tokens.css";
 @import "../../src/styles/globals.css";
-@import "../../src/styles/components.css";
+@import "../../src/styles/layout.css";
+@import "../../src/styles/hero.css";
+@import "../../src/styles/cards.css";
+@import "../../src/styles/table.css";
 
 @plugin "@tailwindcss/forms" {
   strategy: base;

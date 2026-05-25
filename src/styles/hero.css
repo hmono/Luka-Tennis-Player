@@ -1,0 +1,175 @@
+/* ── HERO ───────────────────────────────────────────────────── */
+.hero {
+  background: var(--luka-blue);
+  color: var(--luka-white);
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: end;
+  min-height: 240px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: 'LUKA.ONO';
+  position: absolute;
+  right: -20px;
+  top: -30px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 220px;
+  color: rgba(255, 255, 255, 0.05);
+  letter-spacing: -4px;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hero-left {
+  padding: 48px 0 36px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(60px, 7vw, 96px);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  color: var(--luka-white);
+  margin-bottom: 18px;
+}
+
+.hero-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 14px;
+}
+
+.hero-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.06em;
+  margin-top: 1rem;
+}
+
+/* ── PLAYER STRIP ───────────────────────────────────────────── */
+.player-strip {
+  background: var(--luka-white);
+  border-bottom: 3px solid var(--luka-blue);
+  padding: 26px 48px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.stat-pill { text-align: center; }
+
+.stat-pill-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--luka-blue);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  display: block;
+}
+
+.stat-pill-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--luka-text-muted);
+  margin-top: 4px;
+  display: block;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 44px;
+  background: rgba(59, 79, 224, 0.12);
+  margin: 0 auto;
+}
+
+/* ll-* (static HTML level legend) */
+.ll-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.ll-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.ll-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.ll-note {
+  margin-left: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.22);
+  letter-spacing: 0.07em;
+}
+
+/* ── LEVEL STRIP ────────────────────────────────────────────── */
+.level-strip {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  background-color: var(--luka-dark);
+  padding: 1rem;
+  color: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .level-strip { gap: 1.25rem; }
+}
+
+.ls-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.ls-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.ls-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ls-item.active { font-weight: 600; }
+.ls-item.active .ls-dot { box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35); }
+
+.ls-arrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.ls-note {
+  margin-left: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.22);
+  letter-spacing: 0.07em;
+}

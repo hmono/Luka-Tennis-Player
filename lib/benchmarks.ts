@@ -4,11 +4,11 @@ import type { BenchmarkEntry, PlayerProfile } from '@/types';
 
 type BenchmarksJson = { subject: string; benchmarks: BenchmarkEntry[] };
 
-const bdata = rawBenchmarksData as unknown as BenchmarksJson;
+const bdata = rawBenchmarksData as BenchmarksJson;
 
 export const getBenchmarks      = (): BenchmarkEntry[] => bdata.benchmarks;
 export const getBenchmarkSubject = (): string          => bdata.subject;
-export const getPlayerProfile   = (): PlayerProfile   => rawPlayerData as unknown as PlayerProfile;
+export const getPlayerProfile   = (): PlayerProfile   => rawPlayerData as PlayerProfile;
 
 export const findBenchmark = (
   benchmarks: BenchmarkEntry[],
