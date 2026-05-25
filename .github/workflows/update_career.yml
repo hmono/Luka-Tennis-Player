@@ -15,11 +15,18 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: pip install requests beautifulsoup4
+      - name: Install dependencies
+        run: pip install playwright
 
-      - run: python scripts/update_career.py
+      - name: Install Chromium
+        run: playwright install chromium --with-deps
 
-      - uses: stefanzwi/git-auto-commit-action@v5
-        with:
-          file_pattern: data/career.json
-          commit_message: 'data: update career.json [automated]'
+      - name: Run scraper
+        run: python scripts/update_career.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/career.json
+          git diff --staged --quiet || (git commit -m "data: update career.json [automated]" && git push)

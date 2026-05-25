@@ -1,132 +1,169 @@
 """
 update_career.py
-Scrapes recent match results from the ITF website and appends new events
-to data/career.json.
+Fetches recent match results from the ITF internal JSON API and appends
+new events to data/career.json.
 
 Called by .github/workflows/update_career.yml weekly on Sundays at 06:00 UTC.
 
-SETUP REQUIRED:
-  Set PLAYER_ITF_ID below (find it in the URL of the player's ITF profile page).
-  e.g. https://www.itftennis.com/en/players/100123456/luka-ojcic-ono/
-  → PLAYER_ITF_ID = "100123456"
+Why Playwright:
+  ITF is a JS SPA behind Imperva/Incapsula WAF. Plain requests() returns a
+  bot-challenge page. Playwright runs a real Chromium instance which passes the
+  Incapsula JS challenge, then intercepts the XHR response directly.
+
+Player profile:
+  https://www.itftennis.com/en/players/luka-bojicic-ono/800625103/bra/mt/s/activity/
+  playerId = 800625103
 """
 
 import json
-import re
-from datetime import datetime, date, timedelta
-from urllib.parse import urljoin
+import sys
+from datetime import date, datetime, timedelta
 
-import requests
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
-PLAYER_ITF_ID = "100610195"          # TODO: confirm from ITF profile URL
-BASE_URL      = "https://www.itftennis.com"
-RESULTS_URL   = f"{BASE_URL}/en/players/{PLAYER_ITF_ID}/results/"
-DATA_PATH     = "data/career.json"
-LOOKBACK_DAYS = 14                   # fetch matches in the last N days
+PLAYER_ITF_ID   = "800625103"
+CIRCUIT_CODE    = "MT"            # Men's Tour
+MATCH_TYPE_CODE = "S"             # Singles
+TAKE            = 50              # results per page
+LOOKBACK_DAYS   = 30              # skip events older than N days
+DATA_PATH       = "data/career.json"
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (compatible; LukaTennisBot/1.0; "
-        "+https://github.com/hmono/Luka-Tennis-Player)"
-    )
-}
+ACTIVITY_URL = (
+    "https://www.itftennis.com/en/players/luka-bojicic-ono/"
+    f"{PLAYER_ITF_ID}/bra/mt/s/activity/"
+)
+API_URL = (
+    "https://www.itftennis.com/tennis/api/PlayerApi/GetPlayerActivity"
+    f"?circuitCode={CIRCUIT_CODE}&matchTypeCode={MATCH_TYPE_CODE}"
+    f"&playerId={PLAYER_ITF_ID}&skip=0&surfaceCode=&take={TAKE}"
+    f"&tourCategoryCode=&year="
+)
 
-# ─── Scraping ─────────────────────────────────────────────────────────────────
+# ─── Fetch via Playwright ──────────────────────────────────────────────────────
 
-def fetch_html(url: str) -> BeautifulSoup:
-    resp = requests.get(url, headers=HEADERS, timeout=20)
-    resp.raise_for_status()
-    return BeautifulSoup(resp.text, "html.parser")
-
-
-def current_season() -> str:
-    return str(date.today().year)
-
-
-def parse_match_rows(soup: BeautifulSoup) -> list[dict]:
+def fetch_activity() -> list[dict]:
     """
-    Parse match result rows from the ITF player results page.
-    Returns a list of raw row dicts with keys matching career.json event shape.
+    Open the ITF activity page in a headless Chromium instance so Incapsula
+    sets its cookies, then intercept the XHR call to GetPlayerActivity and
+    return the parsed JSON payload.
     """
-    events = []
+    result: list[dict] = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (X11; Linux x86_64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+        )
+        page = context.new_page()
+
+        # Intercept the API response
+        api_response: list[dict] = []
+
+        def handle_response(response):
+            if "GetPlayerActivity" in response.url and response.status == 200:
+                try:
+                    api_response.extend(response.json())
+                except Exception:
+                    pass
+
+        page.on("response", handle_response)
+
+        try:
+            print(f"Navigating to {ACTIVITY_URL} ...")
+            page.goto(ACTIVITY_URL, timeout=60_000, wait_until="networkidle")
+        except PWTimeout:
+            print("Page load timed out — continuing with whatever was captured.")
+
+        result = api_response
+
+        browser.close()
+
+    return result
+
+
+# ─── Parse ────────────────────────────────────────────────────────────────────
+
+def parse_match(m: dict) -> dict | None:
+    """
+    Convert one ITF GetPlayerActivity record to a career.json event shape.
+    Returns None if the match is outside the lookback window.
+    """
     cutoff = date.today() - timedelta(days=LOOKBACK_DAYS)
 
-    # ITF results page: rows are inside a table or a results list.
-    # Selector targets the standard results table structure as of 2026.
-    rows = soup.select("table.results-table tbody tr, .results-list .result-row")
-
-    for row in rows:
-        cells = row.find_all("td")
-        if len(cells) < 5:
-            continue
-
-        date_text       = cells[0].get_text(strip=True)
-        tournament_text = cells[1].get_text(strip=True)
-        round_text      = cells[2].get_text(strip=True)
-        opponent_text   = cells[3].get_text(strip=True)
-        result_text     = cells[4].get_text(strip=True)
-
-        # Parse date — ITF uses dd MMM YYYY format
+    # Dates come as "YYYY-MM-DDTHH:MM:SS" or similar ISO strings
+    raw_dates: list[str] = m.get("dates", []) or []
+    match_date: date | None = None
+    for raw in raw_dates:
         try:
-            match_date = datetime.strptime(date_text, "%d %b %Y").date()
+            match_date = datetime.fromisoformat(raw[:10]).date()
+            break
         except ValueError:
             continue
 
-        if match_date < cutoff:
-            continue
+    if match_date is None or match_date < cutoff:
+        return None
 
-        result_upper = result_text.upper()
-        won  = result_upper.startswith("W")
-        lost = result_upper.startswith("L")
+    tournament   = m.get("tournamentName", "")
+    round_label  = (m.get("roundGroup", {}) or {}).get("label", "")
+    result_code  = m.get("resultCode", "")      # "W" or "L"
+    opp          = m.get("opponents", [{}])
+    opp_name     = ""
+    if opp:
+        o = opp[0]
+        opp_name = f"{o.get('givenName','')} {o.get('familyName','')}".strip()
 
-        title = f"{tournament_text} {round_text}"
-        if won:
-            title += f" Won vs {opponent_text}"
-        elif lost:
-            title += f" Lost to {opponent_text}"
+    won  = result_code == "W"
+    lost = result_code == "L"
 
-        events.append({
-            "title":       title,
-            "source_note": f"ITF result: {result_text}",
-            "season":      str(match_date.year),
-            "date":        match_date.isoformat(),
-        })
+    title = f"{tournament} {round_label}".strip()
+    if won and opp_name:
+        title += f" Won vs {opp_name}"
+    elif lost and opp_name:
+        title += f" Lost to {opp_name}"
 
-    return events
+    tour_code = m.get("tourCode", "ITF")
 
+    return {
+        "title":       title,
+        "source_note": f"ITF result: {'W' if won else 'L'} — {tournament}",
+        "season":      str(match_date.year),
+        "date":        match_date.isoformat(),
+        "category":    "tournament",
+        "round":       round_label or None,
+        "location":    m.get("location"),
+        "tour":        tour_code,
+    }
 
-def infer_level(tournament_name: str) -> str:
-    name = tournament_name.upper()
-    if "M15" in name:
-        return "M15"
-    if "M25" in name:
-        return "M25"
-    if "CHALLENGER" in name:
-        return "Challenger"
-    if "ATP" in name:
-        return "ATP"
-    return "M25"   # default for Futures
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    print(f"Fetching results for ITF player {PLAYER_ITF_ID}...")
-    soup = fetch_html(RESULTS_URL)
+    print(f"Fetching activity for ITF player {PLAYER_ITF_ID}...")
+    raw = fetch_activity()
 
-    new_events = parse_match_rows(soup)
+    if not raw:
+        print("No data received from ITF API — Incapsula may have blocked or no matches.")
+        sys.exit(0)
+
+    print(f"Received {len(raw)} raw records.")
+
+    new_events = [e for m in raw if (e := parse_match(m)) is not None]
     if not new_events:
-        print("No new match rows found — page structure may have changed or no recent matches.")
-        return
+        print(f"No matches within the last {LOOKBACK_DAYS} days.")
+        sys.exit(0)
 
     with open(DATA_PATH, encoding="utf-8") as f:
         data = json.load(f)
 
-    existing_events: list[dict] = data.get("events", [])
+    existing_events: list[dict] = data.get("career_events", data.get("events", []))
 
-    # Deduplicate by (date, title) to avoid re-adding the same match.
     existing_keys = {
         (e.get("date", ""), e.get("title", ""))
         for e in existing_events
@@ -134,19 +171,24 @@ def main() -> None:
 
     added = 0
     for event in new_events:
-        key = (event.get("date", ""), event.get("title", ""))
+        key = (event["date"], event["title"])
         if key not in existing_keys:
             existing_events.append(event)
             existing_keys.add(key)
             added += 1
 
     if added == 0:
-        print("No new events to add.")
-        return
+        print("No new events to add — all already present.")
+        sys.exit(0)
 
-    # Keep sorted descending by date.
     existing_events.sort(key=lambda e: e.get("date", ""), reverse=True)
-    data["events"]       = existing_events
+
+    # Support both "career_events" and "events" top-level keys
+    if "career_events" in data:
+        data["career_events"] = existing_events
+    else:
+        data["events"] = existing_events
+
     data["last_updated"] = date.today().isoformat()
 
     with open(DATA_PATH, "w", encoding="utf-8") as f:
