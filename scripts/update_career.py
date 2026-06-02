@@ -69,9 +69,20 @@ def fetch_activity() -> list[dict]:
         def handle_response(response):
             if "GetPlayerActivity" in response.url and response.status == 200:
                 try:
-                    api_response.extend(response.json())
-                except Exception:
-                    pass
+                    data = response.json()
+                    if isinstance(data, list):
+                        api_response.extend(data)
+                    elif isinstance(data, dict):
+                        # API wraps results in a key; try common candidates
+                        for key in ("items", "results", "data", "matches", "activity", "playerActivity"):
+                            if key in data and isinstance(data[key], list):
+                                api_response.extend(data[key])
+                                break
+                        else:
+                            # Fallback: dump raw keys so we can diagnose in logs
+                            print(f"[warn] Unexpected API shape — top-level keys: {list(data.keys())}")
+                except Exception as exc:
+                    print(f"[warn] Failed to parse GetPlayerActivity response: {exc}")
 
         page.on("response", handle_response)
 
@@ -95,6 +106,10 @@ def parse_match(m: dict) -> dict | None:
     Convert one ITF GetPlayerActivity record to a career.json event shape.
     Returns None if the match is outside the lookback window.
     """
+    if not isinstance(m, dict):
+        print(f"[warn] Skipping non-dict record: {type(m).__name__} = {m!r}")
+        return None
+
     cutoff = date.today() - timedelta(days=LOOKBACK_DAYS)
 
     # Dates come as "YYYY-MM-DDTHH:MM:SS" or similar ISO strings
