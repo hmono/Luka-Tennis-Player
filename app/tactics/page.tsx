@@ -107,7 +107,7 @@ export default function TacticsPage() {
               {itfRally && (
                 <div className="insight-card ic-amber">
                   <span className="ins-tag" style={{ color: "var(--luka-itf)" }}>{itfRally.level}</span>
-                  <div className="ins-head" className="fs-28">{itfRally.pct_points_ending_here}</div>
+                  <div className="ins-head fs-28">{itfRally.pct_points_ending_here}</div>
                   <span className="ins-tag">points end in 0–4 shots</span>
                   <p className="ins-body">Dominant cause: <strong>{itfRally.dominant_cause}</strong></p>
                 </div>
@@ -115,7 +115,7 @@ export default function TacticsPage() {
               {chalRally && (
                 <div className="insight-card ic-teal">
                   <span className="ins-tag" style={{ color: "var(--luka-challenger)" }}>{chalRally.level}</span>
-                  <div className="ins-head" className="fs-28">{chalRally.pct_points_ending_here}</div>
+                  <div className="ins-head fs-28">{chalRally.pct_points_ending_here}</div>
                   <span className="ins-tag">points end in 0–4 shots</span>
                   <p className="ins-body">Dominant cause: <strong>{chalRally.dominant_cause}</strong></p>
                 </div>
