@@ -8,9 +8,6 @@ on:
       lookback_days:
         description: 'Lookback window in days (default 30; use ~120 for backfill)'
         default: '30'
-      debug_schema:
-        description: 'Dump first raw records to diagnose ITF API shape'
-        default: ''
 
 jobs:
   update:
@@ -31,7 +28,6 @@ jobs:
       - name: Run scraper
         env:
           LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '30' }}
-          DEBUG_SCHEMA: ${{ github.event.inputs.debug_schema || '' }}
         run: python scripts/update_career.py
 
       - name: Commit if changed

@@ -17,10 +17,9 @@ Player profile:
 
 import json
 import os
+import re
 import sys
 from datetime import date, datetime, timedelta
-
-from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -50,6 +49,8 @@ def fetch_activity() -> list[dict]:
     sets its cookies, then intercept the XHR call to GetPlayerActivity and
     return the parsed JSON payload.
     """
+    from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+
     result: list[dict] = []
 
     with sync_playwright() as p:
@@ -102,60 +103,141 @@ def fetch_activity() -> list[dict]:
 
 # ─── Parse ────────────────────────────────────────────────────────────────────
 
-def parse_match(m: dict) -> dict | None:
-    """
-    Convert one ITF GetPlayerActivity record to a career.json event shape.
-    Returns None if the match is outside the lookback window.
-    """
-    if not isinstance(m, dict):
-        print(f"[warn] Skipping non-dict record: {type(m).__name__} = {m!r}")
+# ITF activity records are TOURNAMENTS, each wrapping draws -> matches:
+#   { tournamentName, location, dates: "18 May to 24 May 2026",
+#     events: [ { drawType, matchType, matches: [ { opponents, roundGroup,
+#                 resultCode, resultStatusCode, scores } ] } ] }
+# We flatten singles matches into career.json events matching the existing
+# shape: date, season, category, title, location, round, source_note.
+
+_DATE_FORMATS = ("%d %b %Y", "%d %B %Y")
+
+
+def parse_tournament_date(raw: str) -> date | None:
+    """Take the START of an ITF date range like '18 May to 24 May 2026'."""
+    s = (raw or "").strip()
+    if not s:
         return None
-
-    cutoff = date.today() - timedelta(days=LOOKBACK_DAYS)
-
-    # Dates come as "YYYY-MM-DDTHH:MM:SS" or similar ISO strings
-    raw_dates: list[str] = m.get("dates", []) or []
-    match_date: date | None = None
-    for raw in raw_dates:
+    start, tail = s.split(" to ")[0].strip(), s.split(" to ")[-1].strip()
+    year = re.search(r"\b(\d{4})\b", tail)
+    if not re.search(r"\b\d{4}\b", start) and year:
+        start = f"{start} {year.group(1)}"
+    for fmt in _DATE_FORMATS:
         try:
-            match_date = datetime.fromisoformat(raw[:10]).date()
-            break
+            return datetime.strptime(start, fmt).date()
         except ValueError:
             continue
+    return None
 
-    if match_date is None or match_date < cutoff:
-        return None
 
-    tournament   = m.get("tournamentName", "")
-    round_label  = (m.get("roundGroup", {}) or {}).get("label", "")
-    result_code  = m.get("resultCode", "")      # "W" or "L"
-    opp          = m.get("opponents", [{}])
-    opp_name     = ""
-    if opp:
-        o = opp[0]
-        opp_name = f"{o.get('givenName','')} {o.get('familyName','')}".strip()
+def round_token(draw_type: str, round_value: str) -> str | None:
+    """Map (drawType, roundGroup.Value) to the career.json round vocabulary
+    (Q-1R, Q-2R, Q-R16, 1R, R16, QF, SF, F)."""
+    rv = (round_value or "").strip().lower()
+    base: str | None = None
+    ordinal = re.match(r"(\d+)\s*(?:st|nd|rd|th)?\s+round", rv)
+    if ordinal:
+        base = f"{ordinal.group(1)}R"
+    elif "round of" in rv:
+        n = re.search(r"round of\s+(\d+)", rv)
+        base = f"R{n.group(1)}" if n else None
+    elif "quarter" in rv:
+        base = "QF"
+    elif "semi" in rv:
+        base = "SF"
+    elif rv in ("final", "finals"):
+        base = "F"
+    if base is None:
+        base = round_value or None
+    if base and "qualifying" in (draw_type or "").lower():
+        return f"Q-{base}"
+    return base
 
-    won  = result_code == "W"
-    lost = result_code == "L"
 
-    title = f"{tournament} {round_label}".strip()
-    if won and opp_name:
-        title += f" Won vs {opp_name}"
-    elif lost and opp_name:
-        title += f" Lost to {opp_name}"
+def format_score(scores: list[dict], result_status: str | None) -> str:
+    """Render set scores from the player's perspective: '6-2 3-6 8-10'."""
+    sets = []
+    for s in scores or []:
+        a, b = s.get("scoreOne"), s.get("scoreTwo")
+        if a is None or b is None:
+            continue
+        seg = f"{a}-{b}"
+        ls = s.get("losingScore")
+        if ls is not None:
+            seg += f"({ls})"
+        sets.append(seg)
+    txt = " ".join(sets)
+    if result_status == "RET":
+        txt = f"{txt} (ret.)".strip()
+    return txt
 
-    tour_code = m.get("tourCode", "ITF")
 
-    return {
-        "title":       title,
-        "source_note": f"ITF result: {'W' if won else 'L'} — {tournament}",
-        "season":      str(match_date.year),
-        "date":        match_date.isoformat(),
-        "category":    "tournament",
-        "round":       round_label or None,
-        "location":    m.get("location"),
-        "tour":        tour_code,
-    }
+def opponent_name(opponents: list[dict]) -> str:
+    """'Tsz Fu' + 'Wong' -> 'T. Wong' (career.json abbreviation style)."""
+    if not opponents:
+        return ""
+    o = opponents[0]
+    given = (o.get("givenName") or "").strip()
+    family = (o.get("familyName") or "").strip()
+    initial = f"{given[0]}." if given else ""
+    return f"{initial} {family}".strip()
+
+
+def parse_tournament(t: dict) -> list[dict]:
+    """
+    Convert one ITF activity tournament record into a list of career.json
+    singles match events. Returns [] if outside the lookback window.
+    All matches in a tournament inherit the tournament's start date
+    (the activity feed carries no per-match dates).
+    """
+    if not isinstance(t, dict):
+        print(f"[warn] Skipping non-dict record: {type(t).__name__}")
+        return []
+
+    t_date = parse_tournament_date(t.get("dates", ""))
+    if t_date is None:
+        print(f"[warn] Unparseable dates {t.get('dates')!r} for {t.get('tournamentName')!r}")
+        return []
+
+    if t_date < date.today() - timedelta(days=LOOKBACK_DAYS):
+        return []
+
+    tournament = t.get("tournamentName", "")
+    location = t.get("location")
+
+    events: list[dict] = []
+    for draw in t.get("events", []) or []:
+        if (draw.get("matchType") or "").lower() != "singles":
+            continue
+        draw_type = draw.get("drawType", "")
+        for match in draw.get("matches", []) or []:
+            result_code = match.get("resultCode", "")
+            if result_code not in ("W", "L"):
+                continue
+            token = round_token(draw_type, (match.get("roundGroup") or {}).get("Value", ""))
+            opp = opponent_name(match.get("opponents", []))
+
+            parts = [tournament]
+            if token:
+                parts.append(token)
+            if opp:
+                parts.append(f"vs {opp}")
+            title = " ".join(parts).strip()
+
+            verb = "Won" if result_code == "W" else "Lost"
+            score = format_score(match.get("scores", []), match.get("resultStatusCode"))
+            source_note = f"{verb} {score}".strip() if score else f"{verb}; score unavailable"
+
+            events.append({
+                "date":        t_date.isoformat(),
+                "season":      str(t_date.year),
+                "category":    "tournament",
+                "title":       title,
+                "location":    location,
+                "round":       token,
+                "source_note": source_note,
+            })
+    return events
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -170,13 +252,7 @@ def main() -> None:
 
     print(f"Received {len(raw)} raw records.")
 
-    if os.environ.get("DEBUG_SCHEMA"):
-        for i, rec in enumerate(raw[:3]):
-            keys = list(rec.keys()) if isinstance(rec, dict) else type(rec).__name__
-            print(f"[debug] record {i} keys: {keys}")
-            print(f"[debug] record {i} json: {json.dumps(rec, ensure_ascii=False)[:1200]}")
-
-    new_events = [e for m in raw if (e := parse_match(m)) is not None]
+    new_events = [ev for t in raw for ev in parse_tournament(t)]
     if not new_events:
         print(f"No matches within the last {LOOKBACK_DAYS} days.")
         sys.exit(0)
