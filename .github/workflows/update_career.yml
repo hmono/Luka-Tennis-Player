@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 6 * * 0'
   workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: 'Lookback window in days (default 30; use ~120 for backfill)'
+        default: '30'
 
 jobs:
   update:
@@ -22,6 +26,8 @@ jobs:
         run: playwright install chromium --with-deps
 
       - name: Run scraper
+        env:
+          LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '30' }}
         run: python scripts/update_career.py
 
       - name: Commit if changed

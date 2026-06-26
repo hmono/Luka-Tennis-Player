@@ -16,6 +16,7 @@ Player profile:
 """
 
 import json
+import os
 import sys
 from datetime import date, datetime, timedelta
 
@@ -27,7 +28,7 @@ PLAYER_ITF_ID   = "800625103"
 CIRCUIT_CODE    = "MT"            # Men's Tour
 MATCH_TYPE_CODE = "S"             # Singles
 TAKE            = 50              # results per page
-LOOKBACK_DAYS   = 30              # skip events older than N days
+LOOKBACK_DAYS   = int(os.environ.get("LOOKBACK_DAYS", "30"))  # skip events older than N days; override via env for backfill
 DATA_PATH       = "data/career.json"
 
 ACTIVITY_URL = (
