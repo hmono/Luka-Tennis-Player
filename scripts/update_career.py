@@ -75,7 +75,7 @@ def fetch_activity() -> list[dict]:
                         api_response.extend(data)
                     elif isinstance(data, dict):
                         # API wraps results in a key; try common candidates
-                        for key in ("items", "results", "data", "matches", "activity", "playerActivity"):
+                        for key in ("events", "items", "results", "data", "matches", "activity", "playerActivity"):
                             if key in data and isinstance(data[key], list):
                                 api_response.extend(data[key])
                                 break
@@ -169,6 +169,12 @@ def main() -> None:
         sys.exit(0)
 
     print(f"Received {len(raw)} raw records.")
+
+    if os.environ.get("DEBUG_SCHEMA"):
+        for i, rec in enumerate(raw[:3]):
+            keys = list(rec.keys()) if isinstance(rec, dict) else type(rec).__name__
+            print(f"[debug] record {i} keys: {keys}")
+            print(f"[debug] record {i} json: {json.dumps(rec, ensure_ascii=False)[:1200]}")
 
     new_events = [e for m in raw if (e := parse_match(m)) is not None]
     if not new_events:
