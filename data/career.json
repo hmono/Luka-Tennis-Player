@@ -3,13 +3,13 @@
   "surface_breakdown": [
     {
       "surface": "Hard (outdoor)",
-      "w": 17,
+      "w": 19,
       "l": 28
     },
     {
       "surface": "Clay",
-      "w": 11,
-      "l": 33
+      "w": 16,
+      "l": 38
     },
     {
       "surface": "Grass",
@@ -30,7 +30,8 @@
       "title": "M15 Brasilia Q-2R vs T. Wong",
       "location": "Brasilia",
       "round": "Q-2R",
-      "source_note": "Lost 6-2 3-6 8-10"
+      "source_note": "Lost 6-2 3-6 8-10",
+      "surface": "Hard (outdoor)"
     },
     {
       "date": "2026-06-08",
@@ -39,7 +40,8 @@
       "title": "M15 Brasilia Q-1R vs V. Costa Goncalves",
       "location": "Brasilia",
       "round": "Q-1R",
-      "source_note": "Won 6-4 3-0 (ret.)"
+      "source_note": "Won 6-4 3-0 (ret.)",
+      "surface": "Hard (outdoor)"
     },
     {
       "date": "2026-06-01",
@@ -48,7 +50,8 @@
       "title": "M25 Cuiaba 1R vs K. Noatto",
       "location": "Cuiaba",
       "round": "1R",
-      "source_note": "Lost 4-6 6-4 0-6"
+      "source_note": "Lost 4-6 6-4 0-6",
+      "surface": "Clay"
     },
     {
       "date": "2026-06-01",
@@ -57,7 +60,8 @@
       "title": "M25 Cuiaba Q-2R vs T. Meneo",
       "location": "Cuiaba",
       "round": "Q-2R",
-      "source_note": "Won 4-6 4-1 (ret.)"
+      "source_note": "Won 4-6 4-1 (ret.)",
+      "surface": "Clay"
     },
     {
       "date": "2026-06-01",
@@ -66,7 +70,8 @@
       "title": "M25 Cuiaba Q-1R vs J. Angelico",
       "location": "Cuiaba",
       "round": "Q-1R",
-      "source_note": "Won 6-3 6-2"
+      "source_note": "Won 6-3 6-2",
+      "surface": "Clay"
     },
     {
       "date": "2026-05-18",
@@ -75,7 +80,8 @@
       "title": "M15 Maringa Q-1R vs H. Hoeyeraal",
       "location": "Maringa",
       "round": "Q-1R",
-      "source_note": "Lost 3-6 3-6"
+      "source_note": "Lost 3-6 3-6",
+      "surface": "Clay"
     },
     {
       "date": "2026-05-11",
@@ -84,7 +90,8 @@
       "title": "M15 Maringá Q-1R vs R. Augusto dos Santos",
       "location": "Maringá",
       "round": "Q-1R",
-      "source_note": "Lost 1-6 3-6"
+      "source_note": "Lost 1-6 3-6",
+      "surface": "Clay"
     },
     {
       "date": "2026-05-04",
@@ -93,7 +100,8 @@
       "title": "M25 Villa Maria 1R vs M. Zeitune",
       "location": "Villa Maria",
       "round": "1R",
-      "source_note": "Lost 0-6 0-6"
+      "source_note": "Lost 0-6 0-6",
+      "surface": "Clay"
     },
     {
       "date": "2026-05-04",
@@ -102,7 +110,8 @@
       "title": "M25 Villa Maria Q-3R vs V. Cunha",
       "location": "Villa Maria",
       "round": "Q-3R",
-      "source_note": "Won 6-1 1-6 10-5"
+      "source_note": "Won 6-1 1-6 10-5",
+      "surface": "Clay"
     },
     {
       "date": "2026-05-04",
@@ -111,7 +120,8 @@
       "title": "M25 Villa Maria Q-2R vs B. Zarlenga",
       "location": "Villa Maria",
       "round": "Q-2R",
-      "source_note": "Won 7-6(3) 7-5"
+      "source_note": "Won 7-6(3) 7-5",
+      "surface": "Clay"
     },
     {
       "date": "2026-05-04",
@@ -120,7 +130,18 @@
       "title": "M25 Villa Maria Q-1R vs F. Dadino",
       "location": "Villa Maria",
       "round": "Q-1R",
-      "source_note": "Won 7-5 6-4"
+      "source_note": "Won 7-5 6-4",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-04-27",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Lujan Q-2R vs L. Castro",
+      "location": "Lujan",
+      "round": "Q-2R",
+      "source_note": "Lost 0-6 4-6",
+      "surface": "Clay"
     },
     {
       "date": "2026-04-01",
@@ -820,5 +841,27 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-06-26"
+  "last_updated": "2026-06-26",
+  "surface_breakdown_baseline": [
+    {
+      "surface": "Hard (outdoor)",
+      "w": 17,
+      "l": 28
+    },
+    {
+      "surface": "Clay",
+      "w": 11,
+      "l": 33
+    },
+    {
+      "surface": "Grass",
+      "w": 0,
+      "l": 1
+    },
+    {
+      "surface": "Hard (indoor)",
+      "w": 0,
+      "l": 1
+    }
+  ]
 }
