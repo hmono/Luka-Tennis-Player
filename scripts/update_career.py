@@ -25,7 +25,8 @@ from datetime import date, datetime, timedelta
 
 PLAYER_ITF_ID   = "800625103"
 CIRCUIT_CODE    = "MT"            # Men's Tour
-MATCH_TYPE_CODE = "S"             # Singles
+MATCH_TYPE_CODE = "S"             # default; we fetch both S and D
+MATCH_TYPES     = ("S", "D")      # Singles and Doubles
 TAKE            = 50              # results per page
 LOOKBACK_DAYS   = int(os.environ.get("LOOKBACK_DAYS", "30"))  # skip events older than N days; override via env for backfill
 DATA_PATH       = "data/career.json"
@@ -34,12 +35,13 @@ ACTIVITY_URL = (
     "https://www.itftennis.com/en/players/luka-bojicic-ono/"
     f"{PLAYER_ITF_ID}/bra/mt/s/activity/"
 )
-def api_url(year: str = "") -> str:
+def api_url(year: str = "", match_type: str = MATCH_TYPE_CODE) -> str:
     """GetPlayerActivity endpoint; pass a year to page beyond the default feed
-    (which only returns the ~5 most recent tournaments)."""
+    (which only returns the ~5 most recent tournaments) and a match_type
+    ('S' singles, 'D' doubles)."""
     return (
         "https://www.itftennis.com/tennis/api/PlayerApi/GetPlayerActivity"
-        f"?circuitCode={CIRCUIT_CODE}&matchTypeCode={MATCH_TYPE_CODE}"
+        f"?circuitCode={CIRCUIT_CODE}&matchTypeCode={match_type}"
         f"&playerId={PLAYER_ITF_ID}&skip=0&surfaceCode=&take={TAKE}"
         f"&tourCategoryCode=&year={year}"
     )
@@ -105,29 +107,40 @@ def fetch_activity() -> list[dict]:
         except PWTimeout:
             print("Page load timed out — continuing with whatever was captured.")
 
-        # Primary: page the API per year via the now-authenticated context.
+        # Primary: page the API per match type (singles + doubles) and year
+        # via the now-authenticated context.
         paged: list[dict] = []
-        for yr in years:
-            try:
-                resp = context.request.get(api_url(yr), timeout=30_000)
-                if resp.ok:
-                    tournaments = _extract_tournaments(resp.json())
-                    print(f"year {yr}: {len(tournaments)} tournament(s)")
-                    paged.extend(tournaments)
-                else:
-                    print(f"[warn] year {yr}: HTTP {resp.status}")
-            except Exception as exc:
-                print(f"[warn] year {yr} request failed: {exc}")
+        for mt in MATCH_TYPES:
+            for yr in years:
+                try:
+                    resp = context.request.get(api_url(yr, mt), timeout=30_000)
+                    if resp.ok:
+                        tournaments = _extract_tournaments(resp.json())
+                        for t in tournaments:
+                            if isinstance(t, dict):
+                                t["_mtc"] = mt
+                        print(f"{mt} {yr}: {len(tournaments)} tournament(s)")
+                        paged.extend(tournaments)
+                    else:
+                        print(f"[warn] {mt} {yr}: HTTP {resp.status}")
+                except Exception as exc:
+                    print(f"[warn] {mt} {yr} request failed: {exc}")
 
         browser.close()
 
-    # Merge paged + intercepted, dedup by tournamentLink (fallback: name+dates).
-    merged: dict[str, dict] = {}
+    # The intercepted default feed is the singles tab.
+    for t in intercepted:
+        if isinstance(t, dict):
+            t.setdefault("_mtc", "S")
+
+    # Merge paged + intercepted, dedup by (matchType, tournamentLink) so a
+    # tournament played in both singles and doubles keeps both draw sets.
+    merged: dict[tuple, dict] = {}
     for t in paged + intercepted:
         if not isinstance(t, dict):
             continue
-        key = t.get("tournamentLink") or f"{t.get('tournamentName')}|{t.get('dates')}"
-        merged.setdefault(key, t)
+        link = t.get("tournamentLink") or f"{t.get('tournamentName')}|{t.get('dates')}"
+        merged.setdefault((t.get("_mtc"), link), t)
 
     if not paged and intercepted:
         print("[warn] Per-year paging returned nothing — using intercepted feed only.")
@@ -141,8 +154,8 @@ def fetch_activity() -> list[dict]:
 #   { tournamentName, location, dates: "18 May to 24 May 2026",
 #     events: [ { drawType, matchType, matches: [ { opponents, roundGroup,
 #                 resultCode, resultStatusCode, scores } ] } ] }
-# We flatten singles matches into career.json events matching the existing
-# shape: date, season, category, title, location, round, source_note.
+# We flatten singles and doubles matches into career.json events matching the
+# existing shape: date, season, category, title, location, round, source_note.
 
 _DATE_FORMATS = ("%d %b %Y", "%d %B %Y")
 
@@ -223,22 +236,26 @@ def surface_bucket(surface_desc: str, surface_code: str) -> str | None:
     return None
 
 
-def opponent_name(opponents: list[dict]) -> str:
+def _abbrev(player: dict) -> str:
     """'Tsz Fu' + 'Wong' -> 'T. Wong' (career.json abbreviation style)."""
-    if not opponents:
+    if not isinstance(player, dict):
         return ""
-    o = opponents[0]
-    given = (o.get("givenName") or "").strip()
-    family = (o.get("familyName") or "").strip()
+    given = (player.get("givenName") or "").strip()
+    family = (player.get("familyName") or "").strip()
     initial = f"{given[0]}." if given else ""
     return f"{initial} {family}".strip()
+
+
+def opponent_name(opponents: list[dict]) -> str:
+    """Singles: the single opponent. Doubles: the opposing pair 'A. One/B. Two'."""
+    return "/".join(n for o in (opponents or []) if (n := _abbrev(o)))
 
 
 def parse_tournament(t: dict) -> list[dict]:
     """
     Convert one ITF activity tournament record into a list of career.json
-    singles match events. Returns [] if outside the lookback window.
-    All matches in a tournament inherit the tournament's start date
+    singles and doubles match events. Returns [] if outside the lookback
+    window. All matches in a tournament inherit the tournament's start date
     (the activity feed carries no per-match dates).
     """
     if not isinstance(t, dict):
@@ -259,9 +276,12 @@ def parse_tournament(t: dict) -> list[dict]:
 
     events: list[dict] = []
     for draw in t.get("events", []) or []:
-        if (draw.get("matchType") or "").lower() != "singles":
+        match_type = (draw.get("matchType") or "").lower()
+        if match_type not in ("singles", "doubles"):
             continue
+        is_doubles = match_type == "doubles"
         draw_type = draw.get("drawType", "")
+        partner = _abbrev(draw.get("partner") or {})
         for match in draw.get("matches", []) or []:
             result_code = match.get("resultCode", "")
             if result_code not in ("W", "L"):
@@ -272,6 +292,8 @@ def parse_tournament(t: dict) -> list[dict]:
             parts = [tournament]
             if token:
                 parts.append(token)
+            if is_doubles:
+                parts.append("doubles")   # career.json marks doubles via the title
             if opp:
                 parts.append(f"vs {opp}")
             title = " ".join(parts).strip()
@@ -279,6 +301,8 @@ def parse_tournament(t: dict) -> list[dict]:
             verb = "Won" if result_code == "W" else "Lost"
             score = format_score(match.get("scores", []), match.get("resultStatusCode"))
             source_note = f"{verb} {score}".strip() if score else f"{verb}; score unavailable"
+            if is_doubles and partner:
+                source_note = f"{source_note} (w/ {partner})"
 
             event = {
                 "date":        t_date.isoformat(),
