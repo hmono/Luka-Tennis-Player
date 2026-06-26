@@ -279,7 +279,9 @@ def main() -> None:
         print("No new events to add — all already present.")
         sys.exit(0)
 
-    existing_events.sort(key=lambda e: e.get("date", ""), reverse=True)
+    # Some events (milestones, rankings) carry date: null — coerce to "" so the
+    # sort doesn't compare None to str.
+    existing_events.sort(key=lambda e: e.get("date") or "", reverse=True)
 
     # Support both "career_events" and "events" top-level keys
     if "career_events" in data:
