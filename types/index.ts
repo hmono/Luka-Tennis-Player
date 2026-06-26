@@ -18,6 +18,7 @@ export interface CareerEvent {
   location: string | null;
   round: string | null;
   season_end_rank?: number | null;   // ranking events only
+  surface?: string;                  // tournament events from the ITF scraper
 }
 
 /** Shape of each entry in career.json `surface_breakdown` array */
@@ -57,6 +58,7 @@ export interface PlayerProfile {
 export interface CareerData {
   career_events: CareerEvent[];
   surface_breakdown: SurfaceRecord[];
+  surface_breakdown_baseline?: SurfaceRecord[];   // frozen pre-scraper totals
 }
 
 // ─── Benchmarks ───────────────────────────────────────────────────────────────

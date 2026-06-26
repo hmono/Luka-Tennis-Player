@@ -34,24 +34,46 @@ ACTIVITY_URL = (
     "https://www.itftennis.com/en/players/luka-bojicic-ono/"
     f"{PLAYER_ITF_ID}/bra/mt/s/activity/"
 )
-API_URL = (
-    "https://www.itftennis.com/tennis/api/PlayerApi/GetPlayerActivity"
-    f"?circuitCode={CIRCUIT_CODE}&matchTypeCode={MATCH_TYPE_CODE}"
-    f"&playerId={PLAYER_ITF_ID}&skip=0&surfaceCode=&take={TAKE}"
-    f"&tourCategoryCode=&year="
-)
+def api_url(year: str = "") -> str:
+    """GetPlayerActivity endpoint; pass a year to page beyond the default feed
+    (which only returns the ~5 most recent tournaments)."""
+    return (
+        "https://www.itftennis.com/tennis/api/PlayerApi/GetPlayerActivity"
+        f"?circuitCode={CIRCUIT_CODE}&matchTypeCode={MATCH_TYPE_CODE}"
+        f"&playerId={PLAYER_ITF_ID}&skip=0&surfaceCode=&take={TAKE}"
+        f"&tourCategoryCode=&year={year}"
+    )
 
 # ─── Fetch via Playwright ──────────────────────────────────────────────────────
+
+def _extract_tournaments(payload) -> list[dict]:
+    """Pull the tournament list out of a GetPlayerActivity payload, which is
+    either a bare list or a dict wrapping it under one of several keys."""
+    if isinstance(payload, list):
+        return payload
+    if isinstance(payload, dict):
+        for key in ("events", "items", "results", "data", "matches", "activity", "playerActivity"):
+            if isinstance(payload.get(key), list):
+                return payload[key]
+        print(f"[warn] Unexpected API shape — top-level keys: {list(payload.keys())}")
+    return []
+
 
 def fetch_activity() -> list[dict]:
     """
     Open the ITF activity page in a headless Chromium instance so Incapsula
-    sets its cookies, then intercept the XHR call to GetPlayerActivity and
-    return the parsed JSON payload.
+    sets its cookies (intercepting the default feed as a fallback), then page
+    the GetPlayerActivity API per year — the default feed only returns the ~5
+    most recent tournaments, so a year filter is needed to reach the full
+    lookback window. Returns tournaments deduped by tournamentLink.
     """
     from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
-    result: list[dict] = []
+    # Years intersecting the lookback window (e.g. a Jan run reaches last year).
+    cutoff = date.today() - timedelta(days=LOOKBACK_DAYS)
+    years = [str(y) for y in range(cutoff.year, date.today().year + 1)]
+
+    collected: list[dict] = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -65,26 +87,15 @@ def fetch_activity() -> list[dict]:
         )
         page = context.new_page()
 
-        # Intercept the API response
-        api_response: list[dict] = []
+        # Fallback: intercept the default feed fired by the SPA on load.
+        intercepted: list[dict] = []
 
         def handle_response(response):
             if "GetPlayerActivity" in response.url and response.status == 200:
                 try:
-                    data = response.json()
-                    if isinstance(data, list):
-                        api_response.extend(data)
-                    elif isinstance(data, dict):
-                        # API wraps results in a key; try common candidates
-                        for key in ("events", "items", "results", "data", "matches", "activity", "playerActivity"):
-                            if key in data and isinstance(data[key], list):
-                                api_response.extend(data[key])
-                                break
-                        else:
-                            # Fallback: dump raw keys so we can diagnose in logs
-                            print(f"[warn] Unexpected API shape — top-level keys: {list(data.keys())}")
+                    intercepted.extend(_extract_tournaments(response.json()))
                 except Exception as exc:
-                    print(f"[warn] Failed to parse GetPlayerActivity response: {exc}")
+                    print(f"[warn] Failed to parse intercepted response: {exc}")
 
         page.on("response", handle_response)
 
@@ -94,11 +105,34 @@ def fetch_activity() -> list[dict]:
         except PWTimeout:
             print("Page load timed out — continuing with whatever was captured.")
 
-        result = api_response
+        # Primary: page the API per year via the now-authenticated context.
+        paged: list[dict] = []
+        for yr in years:
+            try:
+                resp = context.request.get(api_url(yr), timeout=30_000)
+                if resp.ok:
+                    tournaments = _extract_tournaments(resp.json())
+                    print(f"year {yr}: {len(tournaments)} tournament(s)")
+                    paged.extend(tournaments)
+                else:
+                    print(f"[warn] year {yr}: HTTP {resp.status}")
+            except Exception as exc:
+                print(f"[warn] year {yr} request failed: {exc}")
 
         browser.close()
 
-    return result
+    # Merge paged + intercepted, dedup by tournamentLink (fallback: name+dates).
+    merged: dict[str, dict] = {}
+    for t in paged + intercepted:
+        if not isinstance(t, dict):
+            continue
+        key = t.get("tournamentLink") or f"{t.get('tournamentName')}|{t.get('dates')}"
+        merged.setdefault(key, t)
+
+    if not paged and intercepted:
+        print("[warn] Per-year paging returned nothing — using intercepted feed only.")
+
+    return list(merged.values())
 
 
 # ─── Parse ────────────────────────────────────────────────────────────────────
@@ -172,6 +206,23 @@ def format_score(scores: list[dict], result_status: str | None) -> str:
     return txt
 
 
+def surface_bucket(surface_desc: str, surface_code: str) -> str | None:
+    """Map an ITF surfaceDesc/surfaceCode to a surface_breakdown bucket label.
+    ITF does not reliably flag indoor hard courts, so plain hard defaults to
+    outdoor; carpet maps to the indoor bucket."""
+    d = (surface_desc or "").strip().lower()
+    c = (surface_code or "").strip().upper()
+    if "clay" in d or c == "C":
+        return "Clay"
+    if "grass" in d or c == "G":
+        return "Grass"
+    if "carpet" in d or "indoor" in d or c == "R":
+        return "Hard (indoor)"
+    if "hard" in d or c == "H":
+        return "Hard (outdoor)"
+    return None
+
+
 def opponent_name(opponents: list[dict]) -> str:
     """'Tsz Fu' + 'Wong' -> 'T. Wong' (career.json abbreviation style)."""
     if not opponents:
@@ -204,6 +255,7 @@ def parse_tournament(t: dict) -> list[dict]:
 
     tournament = t.get("tournamentName", "")
     location = t.get("location")
+    surface = surface_bucket(t.get("surfaceDesc", ""), t.get("surfaceCode", ""))
 
     events: list[dict] = []
     for draw in t.get("events", []) or []:
@@ -228,7 +280,7 @@ def parse_tournament(t: dict) -> list[dict]:
             score = format_score(match.get("scores", []), match.get("resultStatusCode"))
             source_note = f"{verb} {score}".strip() if score else f"{verb}; score unavailable"
 
-            events.append({
+            event = {
                 "date":        t_date.isoformat(),
                 "season":      str(t_date.year),
                 "category":    "tournament",
@@ -236,8 +288,51 @@ def parse_tournament(t: dict) -> list[dict]:
                 "location":    location,
                 "round":       token,
                 "source_note": source_note,
-            })
+            }
+            if surface:
+                event["surface"] = surface
+            events.append(event)
     return events
+
+
+# ─── Surface breakdown ────────────────────────────────────────────────────────
+
+def _infer_result(event: dict) -> str:
+    """Mirror lib/career.ts inferResult: 'W'/'L'/'-' from title + source_note."""
+    text = f"{event.get('title','')} {event.get('source_note','')}".lower()
+    if "won" in text:
+        return "W"
+    if "lost" in text:
+        return "L"
+    return "-"
+
+
+def recompute_surface_breakdown(data: dict, events: list[dict]) -> None:
+    """
+    Recompute data['surface_breakdown'] = frozen pre-scraper baseline + the
+    W/L tally of every event that carries a 'surface'. The baseline is
+    snapshotted once (the current breakdown predates surface-tagged events),
+    so historical surface-less matches are preserved without double counting.
+    """
+    if "surface_breakdown_baseline" not in data:
+        data["surface_breakdown_baseline"] = [dict(s) for s in data.get("surface_breakdown", [])]
+
+    breakdown: dict[str, dict] = {
+        s["surface"]: {"surface": s["surface"], "w": s.get("w", 0), "l": s.get("l", 0)}
+        for s in data["surface_breakdown_baseline"]
+    }
+    for e in events:
+        surf = e.get("surface")
+        if not surf:
+            continue
+        bucket = breakdown.setdefault(surf, {"surface": surf, "w": 0, "l": 0})
+        res = _infer_result(e)
+        if res == "W":
+            bucket["w"] += 1
+        elif res == "L":
+            bucket["l"] += 1
+
+    data["surface_breakdown"] = list(breakdown.values())
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -262,26 +357,34 @@ def main() -> None:
 
     existing_events: list[dict] = data.get("career_events", data.get("events", []))
 
-    existing_keys = {
-        (e.get("date", ""), e.get("title", ""))
-        for e in existing_events
+    existing_by_key: dict[tuple, dict] = {
+        (e.get("date") or "", e.get("title", "")): e for e in existing_events
     }
 
     added = 0
+    backfilled = 0
     for event in new_events:
         key = (event["date"], event["title"])
-        if key not in existing_keys:
+        existing = existing_by_key.get(key)
+        if existing is None:
             existing_events.append(event)
-            existing_keys.add(key)
+            existing_by_key[key] = event
             added += 1
+        elif event.get("surface") and not existing.get("surface"):
+            # Match already recorded (e.g. added before surface tagging) —
+            # backfill its surface so the breakdown recompute counts it.
+            existing["surface"] = event["surface"]
+            backfilled += 1
 
-    if added == 0:
+    if added == 0 and backfilled == 0:
         print("No new events to add — all already present.")
         sys.exit(0)
 
     # Some events (milestones, rankings) carry date: null — coerce to "" so the
     # sort doesn't compare None to str.
     existing_events.sort(key=lambda e: e.get("date") or "", reverse=True)
+
+    recompute_surface_breakdown(data, existing_events)
 
     # Support both "career_events" and "events" top-level keys
     if "career_events" in data:
@@ -294,7 +397,7 @@ def main() -> None:
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    print(f"career.json updated — {added} new event(s) added.")
+    print(f"career.json updated — {added} new event(s) added, {backfilled} surface backfill(s).")
 
 
 if __name__ == "__main__":
