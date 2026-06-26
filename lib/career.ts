@@ -19,8 +19,9 @@ export const formatRank = (value: number | null, approx = false): string => {
 
 export const inferResult = (event: CareerEvent): 'W' | 'L' | '—' => {
   const text = `${event.title} ${event.source_note}`.toLowerCase();
-  if (text.includes('won')) return 'W';
-  if (text.includes('lost')) return 'L';
+  // Word-bounded so an opponent surname like 'Wong' does not match 'won'.
+  if (/\bwon\b/.test(text)) return 'W';
+  if (/\blost\b/.test(text)) return 'L';
   return '—';
 };
 

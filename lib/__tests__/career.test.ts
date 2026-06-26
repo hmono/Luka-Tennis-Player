@@ -97,6 +97,10 @@ describe('inferResult', () => {
   it('returns — when neither won nor lost appears', () => {
     expect(inferResult(evt('ITF M25 Brazil'))).toBe('—');
   });
+
+  it('does not match "won" inside an opponent surname like Wong', () => {
+    expect(inferResult(evt('M15 Brasilia Q-2R vs T. Wong', 'Lost 6-2 3-6 8-10'))).toBe('L');
+  });
 });
 
 // ─── cleanTournamentTitle ─────────────────────────────────────────────────────

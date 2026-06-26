@@ -298,11 +298,12 @@ def parse_tournament(t: dict) -> list[dict]:
 # ─── Surface breakdown ────────────────────────────────────────────────────────
 
 def _infer_result(event: dict) -> str:
-    """Mirror lib/career.ts inferResult: 'W'/'L'/'-' from title + source_note."""
+    """Mirror lib/career.ts inferResult: 'W'/'L'/'-' from title + source_note.
+    Word-bounded so an opponent surname like 'Wong' does not match 'won'."""
     text = f"{event.get('title','')} {event.get('source_note','')}".lower()
-    if "won" in text:
+    if re.search(r"\bwon\b", text):
         return "W"
-    if "lost" in text:
+    if re.search(r"\blost\b", text):
         return "L"
     return "-"
 
@@ -376,15 +377,19 @@ def main() -> None:
             existing["surface"] = event["surface"]
             backfilled += 1
 
-    if added == 0 and backfilled == 0:
-        print("No new events to add — all already present.")
-        sys.exit(0)
-
     # Some events (milestones, rankings) carry date: null — coerce to "" so the
     # sort doesn't compare None to str.
     existing_events.sort(key=lambda e: e.get("date") or "", reverse=True)
 
+    # Always recompute so a corrected tally (e.g. after a result-inference fix)
+    # is applied even on runs that add nothing new.
+    before = json.dumps(data.get("surface_breakdown"), sort_keys=True)
     recompute_surface_breakdown(data, existing_events)
+    breakdown_changed = json.dumps(data.get("surface_breakdown"), sort_keys=True) != before
+
+    if added == 0 and backfilled == 0 and not breakdown_changed:
+        print("No new events to add — all already present.")
+        sys.exit(0)
 
     # Support both "career_events" and "events" top-level keys
     if "career_events" in data:
