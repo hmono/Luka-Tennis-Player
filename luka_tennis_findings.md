@@ -253,6 +253,32 @@ Per-set load is higher than expected. HRV/RPE monitoring required. Recovery prot
 
 ---
 
+## Section 09 — Marcadores Laboratoriais (Coleta 23/06/2026)
+
+Painel de sangue (lab Orosimbo Maia · solicitante Dr. Tales Saia · Luka 21a). Interpretação no eixo das **cãibras crônicas (EAMC)** — ver pesquisa `Pesquisas/20260622_EamcTennis_v1.md` e notebook `notebooks/caibras-luka-eamc.ipynb`.
+
+| Marcador | Resultado | Referência | Flag | Relevância p/ cãibra |
+|---|---|---|---|---|
+| **CK (creatinoquinase)** | **1.024 U/L** | <190 | 🔴 ~5,4× (repetida/confirmada) | Sobrecarga/dano muscular → eixo **neuromuscular/fadiga**; repetir em repouso 48–72h |
+| Ureia | 43 mg/dL | 19–44 | 🟡 topo | U/Cr alta → **desidratação leve** / dieta hiperproteica |
+| AST / ALT | 46 / 42 U/L | <50 / <50 | 🟡 topo | Origem **muscular** (acompanha CK), não hepática |
+| Potássio | 4,6 mmol/L | 3,5–5,1 | 🟢 | Hipocalemia **excluída** |
+| Cálcio total | 10,0 mg/dL | 8,6–10,0 | 🟡 topo | Hipocalcemia **excluída** (total; sem Ca iônico/albumina) |
+| Creatinina / eGFR | 0,96 / >90 | 0,7–1,2 | 🟢 | Função renal normal |
+| Glicemia jejum | 84 mg/dL | 70–99 | 🟢 | Normal |
+| TSH | 2,05 uUI/mL | 0,4–4,5 | 🟢 | Tireoide **excluída** |
+| Hemoglobina / Ht | 15,3 / 45,9 | 14–17 / 40–54 | 🟢 | Sem anemia |
+| Ferritina / B12 | 116 / 699 | normal | 🟢 | Ferro e B12 ok |
+| Lipídios | HDL 85 · LDL 86 · TG 46 | ótimo | 🟢 | — |
+
+**Interpretação (não-diagnóstica; confirmar com Dr. Tales Saia):**
+- Labs **excluem** distúrbio metabólico de repouso como causa das cãibras (tireoide, anemia, K, Ca, renal, glicemia normais).
+- **CK elevada** é o sinal relevante → sustenta o **eixo neuromuscular/dano + sub-recuperação**, coerente com a alta demanda glicolítica do ITF (Section 07).
+- **Ureia no topo** sugere hidratação subótima — modulador de cãibra.
+- **Lacunas a medir:** Na⁺ sérico, Mg, 25-OH-Vit D, Ca iônico+albumina; **repetir CK em repouso**; e o **teste de suor (Na⁺)** — medida decisiva do fenótipo salty sweater.
+
+---
+
 ## Appendix A — ATP Ranking Points (2024)
 
 | Level | W | F | SF | QF | R16 | R32 |
