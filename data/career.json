@@ -9,7 +9,7 @@
     {
       "surface": "Clay",
       "w": 16,
-      "l": 40
+      "l": 41
     },
     {
       "surface": "Grass",
@@ -23,6 +23,16 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-06-22",
+      "season": "2026",
+      "category": "tournament",
+      "title": "Piracicaba ATP Challenger 50 1R doubles vs R. Tosetto/N. Zanellato",
+      "location": "Piracicaba",
+      "round": "1R",
+      "source_note": "Lost 4-6 2-6 (w/ H. Ortenblad Nogueira)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-06-08",
       "season": "2026",
@@ -881,7 +891,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-06-26",
+  "last_updated": "2026-07-05",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
