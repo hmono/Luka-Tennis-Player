@@ -9,7 +9,7 @@
     {
       "surface": "Clay",
       "w": 16,
-      "l": 41
+      "l": 43
     },
     {
       "surface": "Grass",
@@ -23,6 +23,26 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-07-13",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Villa Constitucion Q-1R vs b. de la Pena",
+      "location": "Villa Constitución",
+      "round": "Q-1R",
+      "source_note": "Lost 4-6 5-7",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-07-13",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Villa Constitucion 1R doubles vs N. Hollender/F. Tenti",
+      "location": "Villa Constitución",
+      "round": "1R",
+      "source_note": "Lost 6-2 6-7(3) 8-10 (w/ E. Lima)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-06-22",
       "season": "2026",
@@ -891,7 +911,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-07-05",
+  "last_updated": "2026-07-19",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
