@@ -9,7 +9,7 @@
     {
       "surface": "Clay",
       "w": 16,
-      "l": 45
+      "l": 47
     },
     {
       "surface": "Grass",
@@ -23,6 +23,26 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-08-03",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Londrina Q-1R vs G. Carvalho",
+      "location": "Londrina",
+      "round": "Q-1R",
+      "source_note": "Lost 5-7 6-7(4)",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-08-03",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Londrina 1R doubles vs L. Rodriguez/G. Roveri Sidney",
+      "location": "Londrina",
+      "round": "1R",
+      "source_note": "Lost 7-5 4-6 4-10 (w/ T. Wong)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-07-27",
       "season": "2026",
@@ -931,7 +951,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-08-02",
+  "last_updated": "2026-08-09",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
