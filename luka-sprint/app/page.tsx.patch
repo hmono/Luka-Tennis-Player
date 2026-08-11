@@ -1,0 +1,33 @@
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ top of file, add import @@
++import playerData from "@/data/player.json";
+
+@@ replace every hardcoded bio literal: @@
+
+-  "21"  /  "Age · DOB Jan 2005"
++  String(new Date().getFullYear() - new Date(playerData.birthDate).getFullYear())
++  `Age · DOB ${new Date(playerData.birthDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+
+-  "#1.827"  /  "ATP Singles Career High"
++  formatRank(playerData.careerHighs.atpSingles)
+
+-  "#1.784"  /  "ATP Doubles Career High"
++  formatRank(playerData.careerHighs.atpDoubles)
+
+-  "30+"  /  "ITF Future Tournaments"
++  String(playerData.tournamentsPlayed.itfFutures)
+
+-  "4"  /  "Challenger Appearances"
++  String(playerData.tournamentsPlayed.challenger)
+
+-  "RH · 2HBH"  /  "Style · 180cm / 75kg"
++  `${playerData.hand === "right" ? "RH" : "LH"} · ${playerData.backhand === "two-handed" ? "2HBH" : "1HBH"}`
++  `Style · ${playerData.heightCm}cm / ${playerData.weightKg}kg`
+
+-  "Coaches: Ricardo Siggia and Alexandre Bonatto" (or equivalent)
++  `Coaches: ${playerData.coaches.join(" and ")}`
+
+@@ hero tag (if present): @@
+-  "@luka.ono_ · ..."  (hardcoded)
++  `@${playerData.handle} · Professional Tennis Player · ${playerData.basedIn}`

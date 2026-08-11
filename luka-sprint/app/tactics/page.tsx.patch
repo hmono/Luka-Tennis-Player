@@ -1,0 +1,50 @@
+--- a/app/tactics/page.tsx
++++ b/app/tactics/page.tsx
+@@ -1,23 +1,19 @@
+ import Link from "next/link";
+-import tacticalData from "@/data/tactical.json";
+-
+-// ── types ─────────────────────────────────────────────────────
+-
+-type Framework = (typeof tacticalData)["frameworks"][number];
+-type Pattern = (typeof tacticalData)["game_patterns"][number];
+-type Surface = (typeof tacticalData)["surface_tactics"][number];
+-type Benchmark = (typeof tacticalData)["target_benchmarks"][number];
+-
+-// ── data slices ───────────────────────────────────────────────
+-
+-const frameworks = tacticalData.frameworks as Framework[];
+-const allPatterns = tacticalData.game_patterns as Pattern[];
+-const surfaces = tacticalData.surface_tactics as Surface[];
+-const benchmarks = tacticalData.target_benchmarks as Benchmark[];
+-
+-const patternGroups = allPatterns
+-  .filter((p) => p.pattern_group !== "0–4 Shot Rally")
+-  .reduce<Record<string, Pattern[]>>((acc, p) => {
+-    (acc[p.pattern_group] ??= []).push(p);
+-    return acc;
+-  }, {});
+-
+-const rally04 = allPatterns.filter((p) => p.pattern_group === "0–4 Shot Rally");
+-const itfRally = rally04.find((p) => p.id?.includes("itf"));
+-const chalRally = rally04.find((p) => p.id?.includes("challenger"));
++import type { CoachingFramework, GamePattern, SurfaceTactics, TacticalBenchmark } from "@/types";
++import {
++  getTacticsFrameworks,
++  getTacticsPatterns,
++  getTacticsSurfaces,
++  getTacticsBenchmarks,
++  groupPatterns,
++  getRallyComparison,
++} from "@/lib/tactics";
++
++const frameworks: CoachingFramework[]  = getTacticsFrameworks();
++const allPatterns: GamePattern[]       = getTacticsPatterns();
++const surfaces: SurfaceTactics[]       = getTacticsSurfaces();
++const benchmarks: TacticalBenchmark[]  = getTacticsBenchmarks();
++
++const patternGroups                    = groupPatterns(allPatterns);
++const { itf: itfRally, challenger: chalRally } = getRallyComparison(allPatterns);
+
+ const hard = surfaces.find((s) => s.surface === "Hard Court")!;
+ const clay = surfaces.find((s) => s.surface === "Clay")!;

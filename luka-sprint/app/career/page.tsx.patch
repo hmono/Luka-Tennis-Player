@@ -1,0 +1,25 @@
+--- a/app/career/page.tsx
++++ b/app/career/page.tsx
+@@ top of file @@
+-import careerData from "@/data/career.json";
++import {
++  getCareerEvents,
++  parseRank,
++  formatRank,
++  inferResult,
++  cleanTournamentTitle,
++  isDoubles,
++  getSeasonStats,
++} from "@/lib/career";
+
+-// Remove local definitions of parseRank, formatRank, inferResult,
+-// cleanTournamentTitle, isDoubles, getSeasonStats — all now in lib/career.ts
+
++const tournamentEvents = getCareerEvents();
+
+@@ getSeasonStats call-sites @@
+-  getSeasonStats(season)
++  getSeasonStats(tournamentEvents, season)
+
+-  getSeasonStats(season, true)
++  getSeasonStats(tournamentEvents, season, true)

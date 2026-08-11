@@ -1,0 +1,35 @@
+--- a/app/tennis-level-comparison/page.tsx
++++ b/app/tennis-level-comparison/page.tsx
+@@ -1,14 +1,19 @@
+ import { Fragment } from "react";
+-import benchmarksData from "@/data/benchmarks.json";
+-
+-type Benchmark = (typeof benchmarksData)["benchmarks"][number];
+-
+-const benchmarks = benchmarksData.benchmarks as Benchmark[];
+-const findBenchmark = (name: string) =>
+-  benchmarks.find((benchmark) => benchmark.benchmark_name === name);
+-
+-const formatLabel = (name: string) => ...   // local duplicate — remove
+-const extractPercentSeries = (value: string) => ...  // local duplicate — remove
+-const parseRallyDistribution = (text: string) => ...  // local duplicate — remove
+-const padToThree = (values: number[]) => ...  // local duplicate — remove
++import type { BenchmarkEntry } from "@/types";
++import {
++  getBenchmarks,
++  getBenchmarkSubject,
++  getPlayerProfile,
++  findBenchmark,
++  formatLabel,
++  extractPercentSeries,
++  padToThree,
++  parseRallyDistribution,
++} from "@/lib/benchmarks";
++
++const benchmarks: BenchmarkEntry[] = getBenchmarks();
++// Curry findBenchmark so call-sites remain single-argument (minimal page churn)
++const find = (name: string) => findBenchmark(benchmarks, name);
++
++// Replace all findBenchmark(name) calls in this file with find(name)
++// Replace benchmarksData.subject with getBenchmarkSubject()
++// Replace hardcoded player bio values with getPlayerProfile() — see S5 patch

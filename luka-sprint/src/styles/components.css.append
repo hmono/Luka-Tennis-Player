@@ -1,0 +1,80 @@
+/* ─── Header ─────────────────────────────────────────────────────────────────
+   Replaces all inline styles previously in components/ui/header.tsx          */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 12px 48px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.site-header-brand-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--luka-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.site-header-tagline {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 2px;
+}
+
+.site-header-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.site-header-nav-link {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
+  text-decoration: none;
+  padding: 4px 8px;
+}
+
+.site-header-nav-link:hover {
+  color: var(--luka-blue);
+}
+
+/* ─── Spacing utilities ───────────────────────────────────────────────────────
+   For static margins previously hardcoded as inline styles in page components */
+
+.mb-10  { margin-bottom: 10px; }
+.mb-12  { margin-bottom: 12px; }
+.mb-20  { margin-bottom: 20px; }
+.mb-48  { margin-bottom: 48px; }
+.mt-8   { margin-top: 8px; }
+.mt-12  { margin-top: 12px; }
+
+/* ─── Text utilities ─────────────────────────────────────────────────────────
+   For static text properties previously hardcoded as inline styles           */
+
+.text-9   { font-size: 9px; }
+.text-28  { font-size: 28px; }
+.opacity-muted { opacity: 0.5; }
+.float-right   { float: right; }
+.ls-wide       { letter-spacing: 0.1em; }
+.uppercase     { text-transform: uppercase; }
