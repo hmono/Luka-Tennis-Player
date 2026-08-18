@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+next-env.d.ts
+
+# Test coverage
+coverage/
+
+# Environment / secrets
+# WHOOP + Cloudflare credentials live in GitHub Secrets, never in the repo.
+# See scripts/whoop_auth.py and .github/workflows/.
+.env
+.env.*
+!.env.example
+
+# Python (scripts/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
