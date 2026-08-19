@@ -75,7 +75,7 @@ python scripts/md2pdf.py docs/data-sources/consulta_dr_abud_2026-08-19.md
 
 Gera A4 pronto para impressão, com as caixinhas `- [ ]` marcáveis. Descobre o Chromium sozinho (`$CHROME_BIN` → PATH → bundle Playwright em `/opt/pw-browsers/`).
 
-Verificado: 9 páginas para o documento de consulta, 6 para o dossiê. As 18 perguntas cabem inteiras na **página 5** — é a folha a imprimir se for imprimir só uma.
+Verificado na rev. 3: **13 páginas** para o documento de consulta, 6 para o dossiê. As **23 perguntas** ocupam as **páginas 7–8**; o **resumo de uma página** está na **página 10**. Para levar impresso o mínimo útil: páginas 7, 8 e 10.
 
 ---
 
