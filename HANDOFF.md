@@ -4,6 +4,8 @@
 **Pedido de origem:** "Pesquise Dr. Ronaldo Abud" — que evoluiu para preparar a consulta médica do Luka sobre cãibras recorrentes
 **Status:** entregue; dois PRs abertos em draft, aguardando revisão
 
+> **Consolidação:** o PR #3 (branch `claude/ronaldo-abud-prep-de514q`, de outra sessão) saiu deste branch em `8331607` e trouxe a rev. 3 do documento de consulta. Como os dois lados tocaram arquivos disjuntos, foi mergeado aqui sem conflito e o #3 foi fechado. O PR #1 carrega tudo.
+
 ---
 
 ## O que foi entregue
@@ -33,19 +35,26 @@ Não foram encontrados: CRM/RQE, consultório, Doctoralia, LinkedIn, Lattes, pro
 
 **Limitação de método que trava a confiança:** o proxy de egresso do ambiente de pesquisa bloqueou acesso direto a **todas** as fontes primárias (`medicineposgraduacao.com.br`, `cardioesporte.com.br`, `cardiofitness.com.br`, `pubmed`). O conteúdo veio de snippets de mecanismo de busca. Por isso o documento adota escala `[V]`/`[C]`/`[?]`/`[X]` e **nenhuma afirmação atinge `[V]`**. A seção 7 do dossiê deixa a rota de verificação pronta para quem retomar de uma rede sem bloqueio.
 
-### O documento de consulta mudou de eixo na rev. 2
+### O documento de consulta mudou de eixo duas vezes
 
-A versão 1 tratava o **teste de sódio no suor** como a lacuna decisiva. O relato do atleta reorientou o caso:
+**rev. 1** tratava o **teste de sódio no suor** como a lacuna decisiva.
 
-> Cãibra em membros inferiores começando na **panturrilha**, a partir do **2º set**, nos **momentos mais tensos** da partida. **Nunca em treino.** Há pelo menos **12 meses**, progressivamente mais frequente. Crosta de sal **moderada**, só em calor extremo.
+**rev. 2** — primeiro bloco de respostas do atleta: cãibra na panturrilha, a partir do 2º set, nos momentos tensos, **nunca em treino**, há 12 meses, sal moderado. "Nunca em treino" enfraqueceu a depleção de eletrólitos, e o teste de suor caiu para "descarte formal".
 
-**"Nunca em treino" é o discriminador.** Depleção de eletrólitos produziria cãibra também em treino longo no calor — e não produz. Somado ao sal moderado e ao início já no 2º set (cãibra de depleção tende a ser tardia), o fenótipo *salty sweater* perde força como causa principal.
+**rev. 3** — segundo bloco de respostas, trazido pelo branch `claude/ronaldo-abud-prep-de514q` (PR #3, consolidado aqui). Três achados materiais:
+
+> A cãibra é **específica do saque**, sempre. **Trava entre os pontos**, não durante. E o atleta **toma Gatorade em jogo e nada em treino**.
+
+**O terceiro é o discriminador mais forte do dossiê.** Ele repõe sódio exatamente na condição em que tem cãibra, e não repõe naquela em que nunca tem. Sob depleção, o cenário de risco seria o treino. Isso não apenas enfraquece o eixo eletrolítico — praticamente o inverte.
 
 Consequências, todas já aplicadas no documento:
-- Teste de sódio no suor **rebaixado** de "lacuna decisiva" para "descarte formal"
-- **CK 1.024 reposicionada**: o treino gera a CK e não gera cãibra, logo ela é predisposição de fundo, não gatilho agudo
-- Síndrome compartimental crônica **desceu** no diferencial (se manifestaria em treino também)
-- Perguntas reordenadas em **blocos A–F**, lideradas pelo padrão competitivo
+- Teste de sódio no suor **rebaixado de novo**, para "opcional, baixo rendimento"
+- **Hipótese unificadora:** volume e intensidade de saque em jogo não são replicados no treino. Amarra os três discriminadores sem invocar eletrólito, e é testável — basta contar saques em treino versus em partida
+- **CK 1.024 reposicionada** como predisposição de fundo, não gatilho — com a **creatina** somada como confundidor da leitura
+- **Componente de tensão derrubado** pelo próprio atleta; a contradição com o relato da rev. 2 ficou **registrada na seção 5**, não apagada
+- Síndrome compartimental crônica **muito enfraquecida** — trava no repouso, não no esforço
+- Perguntas reescritas: **23 itens em blocos A–F**, lideradas pelo gesto do saque
+- **Magnésio já está em uso** e as cãibras continuam — teste empírico em curso, e falhando
 
 ### O que não fiz, deliberadamente
 
@@ -78,13 +87,19 @@ Verificado: 9 páginas para o documento de consulta, 6 para o dossiê. As 18 per
 
 Ela termina com um checklist de propagação para o resto do repo:
 - `luka_tennis_findings.md` Seção 09 — fenótipo e novos marcadores
-- `data/nutrition.json` — se o sódio/hora mudar
+- `data/nutrition.json` — sódio/hora em jogo **e** introdução de reposição em treino
 - `data/physiology.json` — se entrar novo marcador de monitoramento
-- `data/physical.json` — se a conduta de treino mudar
+- `data/physical.json` — se entrar trabalho específico de panturrilha
+- `data/tactical.json` / rotina de treino — se mudar o volume de saque
 
 ### 2. Itens de fenótipo não levantados
 
-Listados na seção 5 do documento. O de maior retorno e menor custo: **a cãibra vem no saque (impulsão) ou no deslocamento lateral / frenagem?** Diz muito sobre qual padrão de recrutamento falha.
+Listados no fim da seção 5. Os de maior retorno, todos baratos:
+
+- **Piso e calçado** — jogo e treino são no mesmo piso, com o mesmo tênis? Saibro e piso rápido impõem cargas de panturrilha muito diferentes. É a maior lacuna restante, e um confundidor não controlado da hipótese do saque.
+- **Contagem de saques** em treino versus em partida, com intensidade — testa a hipótese unificadora a custo zero.
+- **Duração e horário** de treino versus partida — controla a ressalva metodológica do discriminador do Gatorade.
+- **Reconciliar as respostas A e F** — trava ao subir para sacar, ou na pausa depois do game em que sacou?
 
 ### 3. A origem do nome
 
