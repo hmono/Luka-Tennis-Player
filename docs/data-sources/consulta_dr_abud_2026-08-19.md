@@ -4,10 +4,10 @@
 **Domínio:** Cãibras recorrentes de esforço (EAMC)
 **Consulta:** 2026-08-19, 15h00 — Dr. Ronaldo Abud, médico do esporte e do exercício
 **Objetivo declarado:** resolver as cãibras recorrentes
-**Versão dos dados:** 2026-08 · rev. 3
+**Versão dos dados:** 2026-08 · rev. 4
 **Última atualização:** 2026-08-19
 **Agente responsável:** Research
-**Status:** Pré-consulta — fenótipo fechado; seção 9 a preencher após o atendimento
+**Status:** Pós-consulta — hipótese do médico registrada; conduta e exames pendentes de registro
 
 > **rev. 3** — segundo bloco de respostas do atleta (seção 5). Três mudanças materiais: a cãibra é **específica do saque**; **trava entre os pontos**, não durante; e o atleta **toma Gatorade em jogo e nada em treino**. O último inverte o argumento eletrolítico. A hipótese de componente de tensão, central na rev. 2, foi **derrubada** pelo próprio atleta e está registrada como contradição na seção 5.
 
@@ -353,44 +353,93 @@ Sair com **quatro coisas escritas**:
 
 ## 9. Registro pós-consulta
 
-*A preencher em 2026-08-19, logo após o atendimento — antes que a memória degrade.*
+*Consulta realizada em 2026-08-19, 15h. Registro parcial — ver **lacunas do registro** ao fim da seção.*
 
-### Diagnóstico de trabalho
->
+### Perfil do médico, confirmado no atendimento
+
+**Cardiologista**, com prática **ortomolecular**, entusiasta do combate aos radicais livres. [A]
+
+Confirma o que o dossiê inferia a partir da docência: o eixo dele é **bioquímico-metabólico e vascular**, não ortopédico nem neuromuscular. Ver `ronaldo_abud_dossier.md`, seção 2.
+
+### Diagnóstico de trabalho — a hipótese dele
+
+> As cãibras resultariam de **constrição dos microvasos**, em resposta ao aumento de **radicais livres** produzidos pela oxidação. A conduta segue daí: **adequar o ambiente químico** previne a formação dos radicais livres, que por sua vez deixam de provocar a vasoconstrição. [A]
+
+Cadeia causal proposta: `oxidação → radicais livres → vasoconstrição microvascular → cãibra`
+
+### Leitura crítica — o encaixe com o fenótipo
+
+*Esta subseção é análise nossa `[I]`, não fala do médico. Serve para levar de volta a ele ou ao Dr. Tales Saia, não para descartar a conduta por conta própria.*
+
+**O que sustenta a hipótese.** A primeira metade da cadeia é fisiologia estabelecida: o estresse oxidativo reduz a biodisponibilidade de óxido nítrico — o superóxido sequestra NO — e prejudica a vasodilatação dependente do endotélio. [E] Não é mecanismo inventado.
+
+**Onde ela não fecha.** O elo `vasoconstrição → cãibra` não é o mecanismo sustentado pela literatura de EAMC, e o **fenótipo do Luka contradiz o padrão isquêmico em quatro pontos**:
+
+| Achado do fenótipo | O que a hipótese vascular prevê | Conflito |
+| :--- | :--- | :--- |
+| **Trava entre os pontos**, na pausa | Sintoma **no esforço**, alívio no repouso | **Invertido.** Foi por isso que a síndrome compartimental caiu no diferencial (seção 3) — o mesmo raciocínio se aplica aqui |
+| **Sempre no saque**, panturrilha | Efeito químico sistêmico → difuso | Por que um único gesto e um único músculo? |
+| **Nunca em treino** | Treino gera ROS em abundância — a CK 1.024 é prova disso | Se ROS bastassem, o treino cramparia |
+| Alívio por **alongamento** | Intervenção mecânica não corrige perfusão | Aponta para órgão tendinoso de Golgi, não para vaso |
+
+Some-se que a contração muscular no exercício produz **vaso*dilatação*** no músculo ativo, não constrição, e que a EMG durante cãibra mostra **descarga de alta frequência de unidades motoras** — atividade neural — enquanto a contratura verdadeiramente isquêmica é eletricamente **silenciosa**. [E]
+
+**Resumo:** a hipótese é coerente isoladamente, mas não explica nenhum dos três discriminadores da seção 3. É a leitura esperada de um cardiologista ortomolecular — o caso visto pela lente da especialidade — e foi exatamente o padrão que a seção 7 pedia para observar.
 
 ### Como ele leu o padrão "sempre no saque · só em jogo · Gatorade só em jogo"
->
+> **Não registrado.** Ver lacunas abaixo — é a informação mais importante que falta.
 
 ### Exames solicitados
 | Exame | Prazo | Onde |
 | :--- | :--- | :--- |
-|  |  |  |
+| *(não registrado)* | | |
 
 ### Conduta — o que muda imediatamente
 | Área | Mudança |
 | :--- | :--- |
-| Treino (volume de saque, densidade, simulação de jogo) |  |
-| Capacidade de panturrilha (excêntrico / isométrico) |  |
-| Piso e calçado |  |
-| Hidratação / sódio (em jogo **e** em treino) |  |
-| Nutrição |  |
-| Suplementação (o que sai, o que entra, e **timing**) |  |
-| **Conduta aguda em quadra** |  |
+| Treino (volume de saque, densidade, simulação de jogo) | *(não registrado)* |
+| Capacidade de panturrilha (excêntrico / isométrico) | *(não registrado)* |
+| Piso e calçado | *(não registrado)* |
+| Hidratação / sódio (em jogo **e** em treino) | *(não registrado)* |
+| Nutrição | *(não registrado)* |
+| Suplementação (o que sai, o que entra, e **timing**) | "Adequação do ambiente químico" — **substâncias, doses e timing não registrados** |
+| **Conduta aguda em quadra** | *(não registrado)* |
 
 ### Respostas às perguntas-chave
 | # | Pergunta | Resposta |
 | :--- | :--- | :--- |
-| 1 | Como lê o padrão saque / só-em-jogo / trava-entre-pontos? |  |
-| 3 | Volume de saque não replicado no treino? |  |
-| 7 | CK é predisposição ou gatilho? |  |
-| 8 | Creatina confunde a CK? |  |
-| 11 | Gatorade só em jogo afasta a depleção? |  |
-| 14 | Magnésio já em uso — dosar mesmo assim? |  |
-| 21 | Plano de reavaliação |  |
+| 1 | Como lê o padrão saque / só-em-jogo / trava-entre-pontos? | *(não registrado)* |
+| 3 | Volume de saque não replicado no treino? | *(não registrado)* |
+| 7 | CK é predisposição ou gatilho? | *(não registrado)* |
+| 8 | Creatina confunde a CK? | *(não registrado)* |
+| 11 | Gatorade só em jogo afasta a depleção? | *(não registrado)* |
+| 14 | Magnésio já em uso — dosar mesmo assim? | *(não registrado)* |
+| 21 | Plano de reavaliação | *(não registrado)* |
 
 ### Reavaliação
-- **Data:**
-- **Critério de sucesso:**
+- **Data:** *(não registrado)*
+- **Critério de sucesso:** *(não registrado)*
+
+---
+
+### Lacunas do registro — levantar com quem esteve na consulta
+
+O **critério de saída** (seção 7) pedia quatro coisas por escrito. Nenhuma delas está registrada. Levantar enquanto a memória está fresca:
+
+- [ ] **O que exatamente foi prescrito** — substâncias, doses, e **em que momento do dia**
+- [ ] **Exames pedidos**, com prazo
+- [ ] **Plano de reavaliação** e critério de sucesso
+- [ ] **Conduta aguda** para quando a cãibra começar em quadra
+- [ ] Se ele **comentou** o padrão do saque, o "nunca em treino" ou o Gatorade — e o que disse
+- [ ] Se pediu **repetir a CK em repouso**, e se comentou a creatina
+
+### Ponto de atenção específico — timing do antioxidante
+
+Se a "adequação do ambiente químico" incluir **antioxidante em dose alta**, vale a pergunta 20 do documento, que ficou em aberto: **em que momento do dia e em que fase do bloco de treino?**
+
+A razão está no próprio domínio que o Dr. Abud ensina: ROS em concentração fisiológica **sinalizam a adaptação ao treino** — biogênese mitocondrial, defesas antioxidantes endógenas, remodelamento. Dose alta na janela pós-treino pode atenuar o ganho que o treino buscava. [E] Ver `ronaldo_abud_dossier.md`, seção 4.2.
+
+Não é motivo para recusar a conduta. É motivo para saber **quando** tomar, e para não tomar na janela pós-treino durante blocos de base.
 
 ### Propagação para o repositório
 - [ ] Atualizar `luka_tennis_findings.md` Seção 09 com o fenótipo e os novos marcadores
@@ -398,6 +447,7 @@ Sair com **quatro coisas escritas**:
 - [ ] Registrar em `data/physiology.json` se entrar novo marcador de monitoramento
 - [ ] Registrar em `data/physical.json` se entrar trabalho específico de panturrilha
 - [ ] Registrar em `data/tactical.json` / rotina de treino se mudar o volume de saque
+- [ ] Registrar a suplementação prescrita em `data/nutrition.json`, **com o timing**
 
 ---
 
@@ -407,6 +457,7 @@ Sair com **quatro coisas escritas**:
 | :--- | :--- | :--- |
 | 2026-08-18 | 1.0 | Preparação inicial a partir do painel de junho e dos dados do repositório |
 | 2026-08-19 | 2.0 | Fenótipo levantado com o atleta (seção 5). Seção 3 reescrita, perguntas reordenadas em blocos A–F, teste de sódio no suor rebaixado, resumo de uma página adicionado |
+| 2026-08-19 | 4.0 | Consulta realizada. Hipótese do médico registrada (vasoconstrição microvascular por radicais livres) com leitura crítica do encaixe com o fenótipo; lacunas do registro listadas; ponto de atenção sobre timing de antioxidante |
 | 2026-08-19 | 3.0 | Segundo bloco de respostas. Cãibra localizada no **saque** e na pausa entre pontos; **Gatorade só em jogo** inverte o eixo eletrolítico; componente de tensão derrubado (contradição registrada); suplementos mapeados (magnésio já em teste empírico, creatina como confundidor da CK); hipótese unificadora do volume de saque; perguntas reescritas (23 itens, blocos A–F) |
 
 ---
