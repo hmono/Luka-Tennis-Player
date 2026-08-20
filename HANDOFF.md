@@ -1,8 +1,8 @@
 # Handoff — branch `claude/ronaldo-abud-research-n9u96v`
 
-**Sessão:** 2026-08-18 / 2026-08-19
+**Sessão:** 2026-08-18 a 2026-08-20 — **encerrada**
 **Pedido de origem:** "Pesquise Dr. Ronaldo Abud" — que evoluiu para preparar a consulta médica do Luka sobre cãibras recorrentes
-**Status:** entregue; dois PRs abertos em draft, aguardando revisão
+**Status:** entregue e encerrado. Dois PRs abertos em draft, aguardando sua revisão. O monitoramento automático dos PRs foi desligado no fim da sessão.
 
 > **Consolidação:** o PR #3 (branch `claude/ronaldo-abud-prep-de514q`, de outra sessão) saiu deste branch em `8331607` e trouxe a rev. 3 do documento de consulta. Como os dois lados tocaram arquivos disjuntos, foi mergeado aqui sem conflito e o #3 foi fechado. O PR #1 carrega tudo.
 
@@ -35,7 +35,7 @@ Não foram encontrados: CRM/RQE, consultório, Doctoralia, LinkedIn, Lattes, pro
 
 **Limitação de método que trava a confiança:** o proxy de egresso do ambiente de pesquisa bloqueou acesso direto a **todas** as fontes primárias (`medicineposgraduacao.com.br`, `cardioesporte.com.br`, `cardiofitness.com.br`, `pubmed`). O conteúdo veio de snippets de mecanismo de busca. Por isso o documento adota escala `[V]`/`[C]`/`[?]`/`[X]` e **nenhuma afirmação atinge `[V]`**. A seção 7 do dossiê deixa a rota de verificação pronta para quem retomar de uma rede sem bloqueio.
 
-### O documento de consulta mudou de eixo duas vezes
+### O documento de consulta passou por quatro revisões
 
 **rev. 1** tratava o **teste de sódio no suor** como a lacuna decisiva.
 
@@ -55,6 +55,28 @@ Consequências, todas já aplicadas no documento:
 - Síndrome compartimental crônica **muito enfraquecida** — trava no repouso, não no esforço
 - Perguntas reescritas: **23 itens em blocos A–F**, lideradas pelo gesto do saque
 - **Magnésio já está em uso** e as cãibras continuam — teste empírico em curso, e falhando
+
+**rev. 4** — **a consulta aconteceu** (2026-08-19, 15h).
+
+Dr. Abud é **cardiologista com prática ortomolecular**, o que confirmou o que o dossiê inferia da docência. A hipótese dele:
+
+> `oxidação → radicais livres → vasoconstrição microvascular → cãibra`. Adequar o ambiente químico previne os radicais e portanto a vasoconstrição.
+
+A seção 9 registra isso fielmente e, **em subseção separada e marcada como análise nossa**, avalia o encaixe. A primeira metade da cadeia é fisiologia estabelecida — estresse oxidativo reduz a biodisponibilidade de óxido nítrico e prejudica a vasodilatação endotélio-dependente. O elo `vasoconstrição → cãibra` é onde não fecha com este fenótipo: a cãibra trava **entre os pontos** (isquemia daria sintoma no esforço e alívio no repouso), é presa a **um gesto** (efeito químico sistêmico seria difuso), **nunca ocorre em treino** (que gera ROS de sobra — a CK 1.024 é a prova), e **alongamento alivia** (nenhum mecanismo de perfusão explica).
+
+**Conduta, exames, plano de reavaliação e protocolo agudo não foram reportados** — as células estão marcadas como *não registrado*, não vazias.
+
+### Um débito meu, registrado
+
+Depois da rev. 4, ao explicar isquemia-reperfusão ao usuário, cheguei a um **steelman da hipótese do Dr. Abud que eu deveria ter construído antes de criticá-la**:
+
+> No saque, a contração explosiva da panturrilha causa isquemia funcional local (pressão intramuscular > pressão de perfusão). **Entre os pontos**, o músculo relaxa → reperfusão → rajada de ROS → peroxinitrito, perda de NO, alteração de excitabilidade → cãibra.
+
+Essa versão **explicaria o "trava entre os pontos"**, que era justamente a minha objeção mais forte. Os buracos que restam são outros: por que nunca em treino, por que só o saque, e a evidência de EMG (cãibra mostra descarga de alta frequência de unidades motoras — atividade neural; contratura isquêmica verdadeira é eletricamente silenciosa).
+
+**Perguntei ao usuário se devia registrar esse steelman no documento e não obtive resposta.** Fica como pendência — a crítica da rev. 4 é defensável, mas mais dura do que precisava ser, e reconhecer o mecanismo de reperfusão a tornaria mais justa e mais útil numa próxima conversa com o médico.
+
+> **Convergência prática, que vale mais que o debate:** seja o mecanismo final ROS de reperfusão **ou** hiperexcitabilidade neuromuscular por fadiga, a variável que muda é a mesma — quantos saques máximos aquela panturrilha aguenta antes de o limiar cair. A diferença está na conduta: o modelo químico leva a suplementar, o modelo de carga leva a treinar. O segundo é testável de graça, e a história dos ensaios clínicos de isquemia-reperfusão — mecanismo lindo, antioxidantes falharam de forma consistente — sugere qual aposta costuma pagar.
 
 ### O que não fiz, deliberadamente
 
@@ -81,35 +103,45 @@ Verificado na rev. 3: **13 páginas** para o documento de consulta, 6 para o dos
 
 ## O que ficou em aberto
 
-### 1. A seção 9 do documento de consulta está em branco
+Em ordem de valor.
 
-É o registro pós-consulta: diagnóstico de trabalho, exames pedidos com prazo, o que muda no treino, conduta aguda em quadra. Preencher **logo após o atendimento**, antes que a memória degrade.
+### 1. Completar o registro da consulta *(maior valor, e perecível)*
 
-Ela termina com um checklist de propagação para o resto do repo:
-- `luka_tennis_findings.md` Seção 09 — fenótipo e novos marcadores
-- `data/nutrition.json` — sódio/hora em jogo **e** introdução de reposição em treino
-- `data/physiology.json` — se entrar novo marcador de monitoramento
-- `data/physical.json` — se entrar trabalho específico de panturrilha
-- `data/tactical.json` / rotina de treino — se mudar o volume de saque
+A seção 9 tem as células marcadas como *não registrado*. O **critério de saída** do documento pedia quatro coisas por escrito e nenhuma foi reportada:
 
-### 2. Itens de fenótipo não levantados
+- [ ] **O que foi prescrito** — substâncias, doses, e **em que momento do dia**
+- [ ] **Exames pedidos**, com prazo
+- [ ] **Plano de reavaliação** e critério de sucesso
+- [ ] **Conduta aguda** para quando a cãibra começar em quadra
+- [ ] Se ele **comentou** o padrão do saque, o "nunca em treino" ou o Gatorade
+- [ ] Se pediu **repetir a CK em repouso**, e se comentou a creatina
 
-Listados no fim da seção 5. Os de maior retorno, todos baratos:
+**Ponto de atenção:** se a prescrição incluir antioxidante em dose alta, perguntar o **horário**. Pela própria literatura que o Dr. Abud ensina, ROS pós-treino sinalizam a adaptação que o treino buscava — e a CK do Luka está alta justamente porque ele treina forte. Não é motivo para recusar; é motivo para não tomar na janela pós-treino em blocos de base.
 
-- **Piso e calçado** — jogo e treino são no mesmo piso, com o mesmo tênis? Saibro e piso rápido impõem cargas de panturrilha muito diferentes. É a maior lacuna restante, e um confundidor não controlado da hipótese do saque.
-- **Contagem de saques** em treino versus em partida, com intensidade — testa a hipótese unificadora a custo zero.
-- **Duração e horário** de treino versus partida — controla a ressalva metodológica do discriminador do Gatorade.
-- **Reconciliar as respostas A e F** — trava ao subir para sacar, ou na pausa depois do game em que sacou?
+### 2. Testar a hipótese unificadora *(custo zero)*
 
-### 3. A origem do nome
+**Contar saques em treino versus em partida**, com intensidade. Se o volume competitivo for muito maior, a hipótese se sustenta e a conduta é de treino, não de suplemento.
 
-**Nada no registro público conecta o Dr. Abud ao Luka, ao tênis ou a Campinas.** Sem saber de onde veio a indicação, não dá para dizer se o dossiê descreve um contato relevante ou uma pista falsa. É o passo 6 da seção 7 do dossiê.
+### 3. Fechar o confundidor do piso e calçado
 
-### 4. Verificação do médico numa rede sem bloqueio
+Jogo e treino são no mesmo piso, com o mesmo tênis? Saibro e piso rápido impõem cargas de panturrilha muito diferentes. É a maior lacuna não controlada da comparação treino-jogo.
 
-Consulta CRM, Lattes/CNPq, PubMed, e a página do corpo docente do programa — elevariam a identificação de `[C]` para `[V]`.
+### 4. Reconciliar duas contradições do relato
 
----
+- **Momento:** bloco 1 disse "nos momentos mais tensos"; bloco 2 disse "não há momento definido". A rev. 3 adotou a resposta mais recente e **registrou a contradição** em vez de apagá-la.
+- **Gesto:** trava **ao subir para sacar**, ou na **pausa depois do game em que sacou**? As respostas A e F não fecham entre si.
+
+### 5. Decidir sobre o steelman
+
+Ver *Um débito meu* acima. Pendência de decisão do usuário.
+
+### 6. A origem do nome
+
+**Nada no registro público conecta o Dr. Abud ao Luka, ao tênis ou a Campinas.** Sem saber de onde veio a indicação, não dá para dizer se o dossiê descreve um contato relevante ou uma pista falsa.
+
+### 7. Verificação do médico numa rede sem bloqueio
+
+Consulta CRM, Lattes/CNPq, PubMed, e a página do corpo docente do programa — elevariam a identificação de `[C]` para `[V]`. Roteiro pronto na seção 7 do dossiê.
 
 ## Notas operacionais
 
@@ -117,3 +149,26 @@ Consulta CRM, Lattes/CNPq, PubMed, e a página do corpo docente do programa — 
 - **Verificação executada:** `npm test` (77 testes, 4 arquivos, todos passando) e `npm run build` (export estático sem alteração de rotas).
 - **`package-lock.json`** foi alterado pelo `npm install` durante a verificação e revertido antes do commit — não faz parte do diff.
 - **Artefatos de build** (`node_modules/`, `.next/`, `out/`, `next-env.d.ts`) foram removidos após a verificação. O PR #2 evita que reapareçam como não rastreados.
+
+---
+
+## Encerramento da sessão
+
+**PRs abertos, aguardando você:**
+
+| PR | Conteúdo | Estado |
+| :--- | :--- | :--- |
+| [#1](https://github.com/hmono/Luka-Tennis-Player/pull/1) | Dossiê, documento de consulta (rev. 4), este handoff, `scripts/md2pdf.py` | Aberto, draft, sem conflito |
+| [#2](https://github.com/hmono/Luka-Tennis-Player/pull/2) | `.gitignore` | Aberto, draft, sem conflito, sai de `main` |
+
+O **#3** (branch `claude/ronaldo-abud-prep-de514q`, de outra sessão) trouxe a rev. 3, foi mergeado no #1 e **fechado**.
+
+Ambos seguem como **draft** de propósito: o trabalho está completo, mas o conteúdo médico merece sua leitura antes de virar histórico do projeto.
+
+**Monitoramento desligado.** Durante a sessão os PRs foram checados de hora em hora; o último ciclo foi encerrado junto com a sessão. Não haverá mais verificações automáticas.
+
+**Regerar o PDF a qualquer momento:**
+```bash
+pip install markdown
+python scripts/md2pdf.py docs/data-sources/consulta_dr_abud_2026-08-19.md
+```
