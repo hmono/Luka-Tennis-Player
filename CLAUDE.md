@@ -41,9 +41,10 @@ e rodar `references/sync-claude-rules.py`.
 | Execução analítica | sonnet             | Executa spec: pesquisa, leitura com síntese, escrita técnica  |
 | Execução mecânica  | haiku (effort low) | Executa spec: varredura, extração, conversões, sem julgamento |
 
-- Cadeia: fable orquestra e decide, não executa; opus é agent do fable;
-  sonnet e haiku são subagents que executam a spec. Se o agent opus não
-  dispuser da ferramenta Agent, entrega a spec e o orquestrador faz o fan-out.
+- Cadeia (canônica): fable decide → opus redige a spec → fable faz o
+  fan-out de sonnet/haiku com a spec → opus revisa as entregas → fable dá
+  o veredito final. Subagents não dispõem da ferramenta Agent (sem
+  nesting); o fan-out é sempre do orquestrador.
 - fable nunca roda em subagent. Todo spawn declara `model` explicitamente.
   Em ambiente sem os hooks locais, esta regra é responsabilidade do modelo.
 - O modelo da sessão é escolhido no cliente e pode divergir do default.
@@ -53,6 +54,10 @@ e rodar `references/sync-claude-rules.py`.
 - Toda entrega aprovada: commit + push, sem exceção. Confirmar no turno
   antes de pushar.
 - Mensagens de commit em inglês, modo imperativo, uma linha de resumo.
+- Commitar apenas arquivos que a própria sessão alterou. Working tree
+  sujo com mudanças de terceiros (outra sessão concorrente): reportar ao
+  usuário e excluir do commit — nunca `git add -A` nem commitar paths
+  alheios.
 
 ## Segredos
 - Nunca imprimir credenciais, tokens ou connection strings em output,
