@@ -21,6 +21,12 @@ e rodar `references/sync-claude-rules.py`.
 2. Aprovação vale apenas para o escopo discutido; escopo novo → aprovação nova.
 3. Ações destrutivas (rm, DROP, force-push, restart de serviço): listar
    impacto antes, mesmo com aprovação genérica prévia.
+4. Autonomia fable: com `~/.claude/fable-autonomy` presente e a sessão em
+   modelo do tier fable/mythos, o fable analisa o risco, registra a análise
+   na conversa e executa sem aguardar aprovação (regras 1–2 suspensas).
+   A regra 3 (destrutivos) permanece integral. Em ambiente sem os hooks
+   locais o toggle não é verificável; vale a regra padrão (aprovação
+   explícita).
 
 ## Higiene de sessão (custo)
 - Uma sessão = um tema e, em regra, um dia. Não retomar sessão de dias
