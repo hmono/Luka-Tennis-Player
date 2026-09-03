@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "competitor": {
+    "id": "B0UF",
+    "display_name": "Luka Bojicic Ono"
+  },
+  "published": "2026-09-01",
+  "tables": [
+    {
+      "kind": "singles",
+      "position": 1973,
+      "score": 5
+    },
+    {
+      "kind": "doubles",
+      "position": 1825,
+      "score": 6
+    }
+  ]
+}

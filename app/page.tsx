@@ -1,9 +1,11 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { getPlayerProfile } from "@/lib/benchmarks";
-import { formatRank } from "@/lib/career";
+import { formatRank, getCareerHighs, getLatestRankings } from "@/lib/career";
 
 const player = getPlayerProfile();
+const careerHighs = getCareerHighs();
+const latestRankings = getLatestRankings();
 
 // Age — computed at build time from ISO birthDate
 const _birth = new Date(player.birthDate);
@@ -20,8 +22,8 @@ const monthYear     = _now.toLocaleDateString("en-US", { month: "long", year: "n
 
 const stats = [
   { value: String(age),                                          label: `Age · DOB Jan ${_birth.getFullYear()}` },
-  { value: formatRank(player.careerHighs.atpSingles),            label: "ATP Singles Career High" },
-  { value: formatRank(player.careerHighs.atpDoubles),            label: "ATP Doubles Career High" },
+  { value: formatRank(careerHighs?.singles ?? null),            label: "ATP Singles Career High" },
+  { value: formatRank(careerHighs?.doubles ?? null),            label: "ATP Doubles Career High" },
   { value: player.tournamentsPlayed.itfFutures,                  label: "ITF Future Tournaments" },
   { value: String(player.tournamentsPlayed.challenger),          label: "Challenger Appearances" },
   { value: `${handLabel} · ${backhandLabel}`,                    label: `Style · ${player.heightCm}cm / ${player.weightKg}kg` },
@@ -116,7 +118,7 @@ export default function HomePage() {
           <div className="ls-dot" style={{ background: "var(--luka-itf)" }} />
           <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>
-            Current · ATP ~{player.currentRankings.atpSingles.toLocaleString("de-DE")}
+            Current · ATP {formatRank(latestRankings?.singles.rank ?? null)}
           </span>
         </div>
         <span className="ls-arrow">——→</span>

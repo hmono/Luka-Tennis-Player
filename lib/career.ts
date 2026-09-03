@@ -1,10 +1,46 @@
-import rawCareerData from '@/data/career.json';
-import type { CareerData, CareerEvent, SurfaceRecord } from '@/types';
+import rawCareerData from "@/data/career.json";
+import rawRankingData from "@/data/rankings.json";
+import type { CareerData, CareerEvent, RankingData, RankingDisciplineSnapshot, RankingSnapshot, SurfaceRecord } from "@/types";
 
 const data = rawCareerData as CareerData;
+const rankingData = rawRankingData as RankingData;
 
-export const getCareerEvents      = (): CareerEvent[]   => data.career_events      ?? [];
-export const getSurfaceBreakdown  = (): SurfaceRecord[] => data.surface_breakdown  ?? [];
+export const getCareerEvents = (): CareerEvent[] => data.career_events ?? [];
+export const getSurfaceBreakdown = (): SurfaceRecord[] => data.surface_breakdown ?? [];
+
+export const getRankingSnapshots = (): RankingSnapshot[] =>
+  [...(rankingData.snapshots ?? [])].sort((left, right) =>
+    `${left.ranking_date}|${left.captured_at}|${left.id}`.localeCompare(
+      `${right.ranking_date}|${right.captured_at}|${right.id}`,
+    ),
+  );
+
+export const getLatestRankingSnapshot = (): RankingSnapshot | null => {
+  const snapshots = getRankingSnapshots();
+  return snapshots.at(-1) ?? null;
+};
+
+export const getLatestRankings = (): Pick<RankingSnapshot, "singles" | "doubles"> | null => {
+  const snapshot = getLatestRankingSnapshot();
+  return snapshot ? { singles: snapshot.singles, doubles: snapshot.doubles } : null;
+};
+
+export const getCareerHighs = (): { singles: number | null; doubles: number | null } | null => {
+  const snapshots = getRankingSnapshots();
+  if (snapshots.length === 0) return null;
+
+  const bestRank = (discipline: keyof Pick<RankingSnapshot, "singles" | "doubles">): number | null => {
+    const candidates = snapshots
+      .flatMap((snapshot) => {
+        const ranking: RankingDisciplineSnapshot = snapshot[discipline];
+        return [ranking.rank, ranking.career_high_rank];
+      })
+      .filter((rank): rank is number => rank !== null);
+    return candidates.length > 0 ? Math.min(...candidates) : null;
+  };
+
+  return { singles: bestRank("singles"), doubles: bestRank("doubles") };
+};
 
 export const parseRank = (value: string): number | null => {
   const match = value.match(/#(\d+)/);

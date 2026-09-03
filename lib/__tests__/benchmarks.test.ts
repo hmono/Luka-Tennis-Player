@@ -36,8 +36,8 @@ describe('getPlayerProfile', () => {
     const p = getPlayerProfile();
     expect(p).toHaveProperty('name');
     expect(p).toHaveProperty('birthDate');
-    expect(p).toHaveProperty('careerHighs');
-    expect(typeof p.careerHighs.atpSingles).toBe('number');
+    expect(p).toHaveProperty('tournamentsPlayed');
+    expect(typeof p.tournamentsPlayed.challenger).toBe('number');
   });
 });
 

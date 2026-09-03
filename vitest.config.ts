@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
@@ -13,6 +13,7 @@ export default defineConfig({
     // Component test files override to jsdom via @vitest-environment pragma.
     environment: 'node',
     globals: true,
+    exclude: [...configDefaults.exclude, 'luka-sprint/**'],
   },
   resolve: {
     alias: {

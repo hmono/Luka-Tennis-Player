@@ -1,0 +1,96 @@
+name: Update ATP Rankings
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Collect and render without persisting or sending'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repository-data-writer-main
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install automation dependencies
+        run: pip install -r requirements-automation.txt
+
+      - name: Install Chromium
+        run: playwright install chromium --with-deps
+
+      - name: Run ranking-alert tests
+        run: python -m unittest discover -s tests/ranking_alerts
+
+      - name: Dry run
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: python scripts/update_rankings.py dry-run
+
+      - name: Validate CallMeBot configuration
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        env:
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
+        run: python scripts/update_rankings.py check-config --provider callmebot
+
+      - name: Collect rankings
+        id: collect
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        run: python scripts/update_rankings.py collect
+
+      - name: Persist snapshot and outbox intent
+        if: ${{ steps.collect.outcome == 'success' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rankings.json automation/state/ranking_alerts.json
+          if ! git diff --staged --quiet; then
+            git commit -m "data: update ATP rankings [automated]"
+            if ! git push; then
+              git pull --rebase origin "${GITHUB_REF_NAME}"
+              git push
+            fi
+          fi
+
+      - name: Deliver pending notifications
+        id: deliver
+        if: ${{ steps.collect.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
+        run: python scripts/update_rankings.py deliver --provider callmebot
+
+      - name: Persist delivery state
+        if: ${{ always() && steps.collect.outcome == 'success' && steps.deliver.outcome != 'skipped' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add automation/state/ranking_alerts.json
+          if ! git diff --staged --quiet; then
+            git commit -m "data: record ranking alert delivery [automated]"
+            if ! git push; then
+              git pull --rebase origin "${GITHUB_REF_NAME}"
+              git push
+            fi
+          fi
+
+      - name: Propagate delivery failure
+        if: ${{ steps.deliver.outcome == 'failure' }}
+        run: exit 1

@@ -49,8 +49,6 @@ export interface PlayerProfile {
   heightCm: number;
   weightKg: number;
   coaches: string[];
-  careerHighs: { atpSingles: number; atpDoubles: number };
-  currentRankings: { atpSingles: number; atpDoubles: number };
   tournamentsPlayed: { itfFutures: string; challenger: number };
 }
 
@@ -59,6 +57,32 @@ export interface CareerData {
   career_events: CareerEvent[];
   surface_breakdown: SurfaceRecord[];
   surface_breakdown_baseline?: SurfaceRecord[];   // frozen pre-scraper totals
+}
+
+export interface RankingDisciplineSnapshot {
+  rank: number | null;
+  points: number;
+  career_high_rank: number | null;
+  career_high_date: string | null;
+}
+
+export interface RankingSnapshot {
+  id: string;
+  ranking_date: string;
+  captured_at: string;
+  source: 'atptour';
+  singles: RankingDisciplineSnapshot;
+  doubles: RankingDisciplineSnapshot;
+  source_revision_of?: string;
+}
+
+export interface RankingData {
+  schema_version: 1;
+  player: {
+    atp_id: string;
+    name: string;
+  };
+  snapshots: RankingSnapshot[];
 }
 
 // ─── Benchmarks ───────────────────────────────────────────────────────────────
