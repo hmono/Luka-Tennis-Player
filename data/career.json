@@ -3,8 +3,8 @@
   "surface_breakdown": [
     {
       "surface": "Hard (outdoor)",
-      "w": 20,
-      "l": 29
+      "w": 22,
+      "l": 31
     },
     {
       "surface": "Clay",
@@ -23,6 +23,46 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-08-31",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Porto Velho 1R vs D. Ortiz Gamonal",
+      "location": "Porto Velho",
+      "round": "1R",
+      "source_note": "Lost 6-7(3) 1-6",
+      "surface": "Hard (outdoor)"
+    },
+    {
+      "date": "2026-08-31",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Porto Velho Q-2R vs J. Maciel Neto",
+      "location": "Porto Velho",
+      "round": "Q-2R",
+      "source_note": "Won 5-7 6-4 10-7",
+      "surface": "Hard (outdoor)"
+    },
+    {
+      "date": "2026-08-31",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Porto Velho Q-1R vs E. Fortes",
+      "location": "Porto Velho",
+      "round": "Q-1R",
+      "source_note": "Won 6-4 6-0",
+      "surface": "Hard (outdoor)"
+    },
+    {
+      "date": "2026-08-31",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Porto Velho 1R doubles vs F. Marini/D. Ortiz Gamonal",
+      "location": "Porto Velho",
+      "round": "1R",
+      "source_note": "Lost 6-2 6-7(5) 8-10 (w/ T. Wong)",
+      "surface": "Hard (outdoor)"
+    },
     {
       "date": "2026-08-03",
       "season": "2026",
@@ -951,7 +991,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-08-09",
+  "last_updated": "2026-09-06",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
