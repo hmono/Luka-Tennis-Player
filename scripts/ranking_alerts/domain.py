@@ -14,6 +14,7 @@ PLAYER_ATP_ID = "B0UF"
 PLAYER_NAME = "Luka Bojicic Ono"
 SCHEMA_VERSION = 1
 _SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_SOURCE_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class DomainValidationError(ValueError):
@@ -62,6 +63,11 @@ def normalize_player_name(value: str) -> str:
     return " ".join(ascii_name.casefold().split())
 
 
+def _validate_source(value: str) -> None:
+    if not isinstance(value, str) or not _SOURCE_RE.fullmatch(value):
+        raise DomainValidationError("invalid_source")
+
+
 @dataclass(frozen=True, kw_only=True)
 class DisciplineRanking:
     rank: int | None
@@ -98,8 +104,7 @@ class RankingObservation:
         if self.atp_id != PLAYER_ATP_ID or normalize_player_name(self.name) != normalize_player_name(PLAYER_NAME):
             raise DomainValidationError("atp_identity_mismatch")
         _iso_date(self.ranking_date)
-        if self.source != "atptour":
-            raise DomainValidationError("invalid_source")
+        _validate_source(self.source)
         if not isinstance(self.singles, DisciplineRanking) or not isinstance(self.doubles, DisciplineRanking):
             raise DomainValidationError("atp_incomplete_observation")
 
@@ -119,8 +124,7 @@ class RankingSnapshot:
             raise DomainValidationError("invalid_snapshot_id")
         _iso_date(self.ranking_date)
         _utc_timestamp(self.captured_at)
-        if self.source != "atptour":
-            raise DomainValidationError("invalid_source")
+        _validate_source(self.source)
         if self.source_revision_of is not None and not _SHA256_RE.fullmatch(self.source_revision_of):
             raise DomainValidationError("invalid_revision_reference")
 

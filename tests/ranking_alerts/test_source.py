@@ -57,6 +57,7 @@ class SourceContractTests(unittest.TestCase):
         self.assertEqual("ranking_source_rate_limited", error.code)
         self.assertEqual("ranking_source_rate_limited", str(error))
         self.assertIn(error.code, RANKING_SOURCE_ERROR_CODES)
+        self.assertIn("ranking_source_stale", RANKING_SOURCE_ERROR_CODES)
 
     def test_unknown_error_code_is_rejected_without_echoing_input(self) -> None:
         with self.assertRaises(ValueError) as raised:

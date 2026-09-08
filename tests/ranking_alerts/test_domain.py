@@ -108,6 +108,33 @@ class DisciplineValidationTests(unittest.TestCase):
             )
 
 
+class SourceValidationTests(unittest.TestCase):
+    def test_accepts_legacy_and_pdf_source_names(self) -> None:
+        legacy = observation()
+        pdf = RankingObservation(
+            atp_id=legacy.atp_id,
+            name=legacy.name,
+            ranking_date=legacy.ranking_date,
+            singles=legacy.singles,
+            doubles=legacy.doubles,
+            source="atp-pdf",
+        )
+
+        self.assertEqual("atptour", legacy.source)
+        self.assertEqual("atp-pdf", pdf.source)
+
+    def test_rejects_unsafe_source_name(self) -> None:
+        legacy = observation()
+        with self.assertRaisesRegex(DomainValidationError, "invalid_source"):
+            RankingObservation(
+                atp_id=legacy.atp_id,
+                name=legacy.name,
+                ranking_date=legacy.ranking_date,
+                singles=legacy.singles,
+                doubles=legacy.doubles,
+                source="ATP PDF/../../",
+            )
+
 class SnapshotIdentityTests(unittest.TestCase):
     def test_snapshot_id_is_stable_and_excludes_capture_time(self) -> None:
         item = observation()

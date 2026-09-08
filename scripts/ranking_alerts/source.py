@@ -21,6 +21,7 @@ RANKING_SOURCE_ERROR_CODES = frozenset(
         "ranking_source_identity_mismatch",
         "ranking_source_incomplete",
         "ranking_source_coverage_truncated",
+        "ranking_source_stale",
     }
 )
 

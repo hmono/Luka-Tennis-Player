@@ -295,3 +295,48 @@ Em erro pós-ativação:
 5. reativar após fixture, teste de regressão e novo dry-run real.
 
 Não remover histórico válido nem force-pushar estado operacional.
+
+## 15. Spec 1 — PDFs alfabéticos oficiais em runner próprio
+
+Decisão de 2026-09-04: implementar uma fonte candidata `atp-pdf`, sem
+promovê-la a produção. Os endpoints fixos são os relatórios alfabéticos de
+singles e doubles publicados pela ATP. O adaptador faz downloads HTTPS comuns,
+limitados e em memória; não contorna Cloudflare e não persiste os PDFs.
+
+O pipeline de qualificação é deliberadamente separado do pipeline de produção:
+
+```text
+workflow_dispatch
+  -> runner dedicado [self-hosted, macOS, atp-ranking]
+  -> testes sem rede
+  -> probe ATP PDF somente leitura
+  -> evidência sanitizada
+  -> revisão humana go/no-go
+```
+
+O workflow não recebe secrets, não grava `data/rankings.json`, não altera a
+outbox e não chama CallMeBot. O schedule, a coleta persistente e a entrega só
+podem retornar em mudança posterior e explicitamente aprovada.
+
+### Gates ainda pendentes
+
+- confirmar no Mac o layout textual real de ambos os PDFs;
+- confirmar que a linha do atleta contém rank e pontos individuais corretos;
+- resolver identidade inequívoca: se o PDF não expuser ATP ID, criar crosswalk
+  local versionado com nome do relatório, nacionalidade e referência auditável;
+- comprovar que o documento está completo antes de interpretar ausência como
+  atleta não classificado;
+- comparar duas publicações consecutivas com verificação manual;
+- substituir o baseline inválido de career high por valores e referências
+  verificadas.
+
+Enquanto esses gates estiverem pendentes, o resultado operacional é `no-go`.
+Uma execução bem-sucedida do parser é apenas evidência candidata e nunca altera
+automaticamente essa decisão.
+
+### Evidência permitida
+
+Pode ser registrada somente informação sanitizada: status/código, hashes e
+tamanhos dos documentos, data de ranking, presença das duas disciplinas e
+decisão. Não commitar PDF oficial, texto integral extraído, headers, cookies ou
+conteúdo de resposta de bloqueio.

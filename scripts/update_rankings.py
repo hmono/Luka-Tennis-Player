@@ -10,9 +10,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Sequence
 
-from ranking_alerts.atp_source import AtpRankingSource, AtpSourceError, RankingSource, load_fixture
+from ranking_alerts.atp_source import AtpSourceError, load_fixture
+from ranking_alerts.career_high import (
+    DEFAULT_BASELINE_PATH,
+    CareerHighBaselineError,
+    enrich_with_baseline,
+)
 from ranking_alerts.domain import (
     OutboxItem,
+    DisciplineRanking,
     DomainValidationError,
     RankingAlertState,
     RankingDelta,
@@ -25,6 +31,7 @@ from ranking_alerts.domain import (
     format_message,
     snapshot_sort_key,
 )
+from ranking_alerts.source import RawRankingObservation, RankingSource, RankingSourceError
 from ranking_alerts.providers import (
     CallMeBotProvider,
     ConfigurationError,
@@ -84,6 +91,16 @@ def _sort_outbox(state: RankingAlertState, rankings: RankingsData) -> RankingAle
     )
 
 
+def _same_sporting_content(snapshot: RankingSnapshot, observation: RankingObservation) -> bool:
+    """Compare ranking facts while deliberately ignoring provider provenance."""
+
+    return (
+        snapshot.ranking_date == observation.ranking_date
+        and snapshot.singles == observation.singles
+        and snapshot.doubles == observation.doubles
+    )
+
+
 def plan_collection(
     rankings: RankingsData,
     state: RankingAlertState,
@@ -93,6 +110,16 @@ def plan_collection(
 ) -> CollectionOutcome:
     same_date = [item for item in rankings.snapshots if item.ranking_date == observation.ranking_date]
     latest_same_date = max(same_date, key=snapshot_sort_key) if same_date else None
+    if latest_same_date is not None and _same_sporting_content(latest_same_date, observation):
+        return CollectionOutcome(
+            snapshot_status="unchanged",
+            outbox_status="none",
+            rankings=rankings,
+            state=state,
+            snapshot=latest_same_date,
+            delta=None,
+        )
+
     candidate = build_snapshot(
         observation,
         captured_at,
@@ -143,7 +170,7 @@ def plan_collection(
         ]
 
     event_type: str | None = None
-    if sent_for_date:
+    if sent_for_date and should_notify:
         event_type = "ranking_correction"
     elif should_notify:
         event_type = "ranking_change"
@@ -181,11 +208,12 @@ def collect(
     source: RankingSource,
     rankings_path: Path = DEFAULT_RANKINGS_PATH,
     state_path: Path = DEFAULT_STATE_PATH,
+    baseline_path: Path = DEFAULT_BASELINE_PATH,
     captured_at: str | None = None,
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
-    observation = source.fetch()
+    observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
     outcome = plan_collection(rankings, state, observation, captured_at=captured_at or _utc_now())
     if outcome.snapshot_status != "unchanged":
         save_rankings(rankings_path, outcome.rankings)
@@ -247,11 +275,45 @@ def dry_run(
     source: RankingSource,
     rankings_path: Path = DEFAULT_RANKINGS_PATH,
     state_path: Path = DEFAULT_STATE_PATH,
+    baseline_path: Path = DEFAULT_BASELINE_PATH,
     captured_at: str | None = None,
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
-    return plan_collection(rankings, state, source.fetch(), captured_at=captured_at or _utc_now())
+    observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
+    return plan_collection(rankings, state, observation, captured_at=captured_at or _utc_now())
+
+
+def _observation_from_source(
+    source: RankingSource,
+    rankings: RankingsData,
+    *,
+    baseline_path: Path,
+) -> RankingObservation:
+    value = source.fetch()
+    if isinstance(value, RankingObservation):
+        return value
+    if not isinstance(value, RawRankingObservation):
+        raise DomainValidationError("atp_incomplete_observation")
+
+    if getattr(source, "name", None) != value.source:
+        raise RankingSourceError("ranking_source_identity_mismatch")
+    observation = RankingObservation(
+        atp_id=value.atp_id,
+        name=value.name,
+        ranking_date=value.ranking_date,
+        source=value.source,
+        singles=DisciplineRanking(rank=value.singles.rank, points=value.singles.points),
+        doubles=DisciplineRanking(rank=value.doubles.rank, points=value.doubles.points),
+    )
+    if rankings.snapshots and observation.ranking_date < rankings.snapshots[-1].ranking_date:
+        raise RankingSourceError("ranking_source_stale")
+
+    history = tuple(
+        snapshot for snapshot in rankings.snapshots if snapshot.ranking_date <= observation.ranking_date
+    )
+    return enrich_with_baseline(observation, history=history, baseline_path=baseline_path)
+
 
 
 class _FixtureSource:
@@ -267,6 +329,21 @@ def _paths(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--state-path", type=Path, default=DEFAULT_STATE_PATH, help=argparse.SUPPRESS)
 
 
+def _source_argument(parser: argparse.ArgumentParser, *, allow_fixture: bool = False) -> None:
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--source", choices=("atp-pdf",))
+    if allow_fixture:
+        group.add_argument("--fixture")
+
+
+def _selected_source(name: str) -> RankingSource:
+    if name == "atp-pdf":
+        from ranking_alerts.atp_pdf_source import AtpPdfRankingSource
+
+        return AtpPdfRankingSource()
+    raise DomainValidationError("invalid_source")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="ATP ranking alert automation")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -276,13 +353,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     collect_parser = commands.add_parser("collect", help="collect and persist an ATP snapshot")
     _paths(collect_parser)
+    _source_argument(collect_parser)
 
     deliver_parser = commands.add_parser("deliver", help="deliver pending outbox items")
     deliver_parser.add_argument("--provider", choices=("callmebot",), required=True)
     _paths(deliver_parser)
 
     dry_parser = commands.add_parser("dry-run", help="collect and render without side effects")
-    dry_parser.add_argument("--fixture")
+    _source_argument(dry_parser, allow_fixture=True)
     _paths(dry_parser)
     return parser
 
@@ -310,7 +388,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "collect":
             outcome = collect(
-                source=AtpRankingSource(),
+                source=_selected_source(args.source),
                 rankings_path=args.rankings_path,
                 state_path=args.state_path,
             )
@@ -325,7 +403,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"provider=callmebot delivered={count}")
             return 0
-        source: RankingSource = _FixtureSource(args.fixture) if args.fixture else AtpRankingSource()
+        source: RankingSource = (
+            _FixtureSource(args.fixture) if args.fixture else _selected_source(args.source)
+        )
         outcome = dry_run(
             source=source,
             rankings_path=args.rankings_path,
@@ -333,7 +413,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         _print_outcome(outcome, show_message=True)
         return 0
-    except (AtpSourceError, ConfigurationError, DeliveryError, DomainValidationError, StorageError) as exc:
+    except (
+        AtpSourceError,
+        CareerHighBaselineError,
+        ConfigurationError,
+        DeliveryError,
+        DomainValidationError,
+        RankingSourceError,
+        StorageError,
+    ) as exc:
         print(f"error={exc.code}", file=sys.stderr)
         return 1
     except Exception:
