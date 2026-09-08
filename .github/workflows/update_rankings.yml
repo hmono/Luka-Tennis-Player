@@ -24,18 +24,21 @@ jobs:
     # Dedicated trusted runner only. Do not expose this label to untrusted PR jobs.
     runs-on: [self-hosted, macOS, atp-ranking]
     timeout-minutes: 10
+    env:
+      PYTHON_BIN: /opt/anaconda3/bin/python3
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Verify runner Python
+        run: test -x "$PYTHON_BIN" && "$PYTHON_BIN" --version
 
       - name: Install automation dependencies
-        run: python -m pip install -r requirements-automation.txt
+        run: |
+          "$PYTHON_BIN" -m venv .venv
+          .venv/bin/python -m pip install -r requirements-automation.txt
 
       - name: Run ranking-alert tests
-        run: python -m unittest discover -s tests/ranking_alerts
+        run: .venv/bin/python -m unittest discover -s tests/ranking_alerts
 
       - name: Probe official ATP PDFs without persistence or notifications
-        run: python scripts/probe_atp_pdfs.py --timeout-seconds "${{ inputs.timeout_seconds }}"
+        run: .venv/bin/python scripts/probe_atp_pdfs.py --timeout-seconds "${{ inputs.timeout_seconds }}"

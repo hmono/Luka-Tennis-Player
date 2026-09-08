@@ -19,6 +19,8 @@ class PdfQualificationWorkflowTests(unittest.TestCase):
 
     def test_uses_dedicated_self_hosted_macos_runner(self) -> None:
         self.assertIn("runs-on: [self-hosted, macOS, atp-ranking]", self.text)
+        self.assertIn("PYTHON_BIN: /opt/anaconda3/bin/python3", self.text)
+        self.assertNotIn("actions/setup-python", self.text)
 
     def test_is_read_only_and_does_not_load_notification_secrets(self) -> None:
         self.assertIn("contents: read", self.text)
