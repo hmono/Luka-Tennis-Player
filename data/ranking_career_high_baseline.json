@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "player": {
+    "atp_id": "B0UF",
+    "name": "Luka Bojicic Ono"
+  },
+  "verified_at": "UNVERIFIED",
+  "disciplines": {
+    "singles": {
+      "rank": 0,
+      "ranking_date": "UNVERIFIED",
+      "reference": "Replace with a manually verified reference before activation."
+    },
+    "doubles": {
+      "rank": 0,
+      "ranking_date": "UNVERIFIED",
+      "reference": "Replace with a manually verified reference before activation."
+    }
+  }
+}

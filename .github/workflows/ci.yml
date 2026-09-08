@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Run web tests
+        run: npm test
+
+      - name: Install automation dependencies
+        run: pip install -r requirements-automation.txt
+
+      - name: Run ranking-alert tests
+        run: python -m unittest discover -s tests/ranking_alerts

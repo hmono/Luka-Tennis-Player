@@ -2,7 +2,7 @@
 
 [![Deploy to Cloudflare Pages](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml/badge.svg)](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml)
 
-Data-driven performance intelligence platform for Luka Bojičić Ono — professional tennis player (Campinas, Brazil · ATP ~1.951).
+Data-driven performance intelligence platform for Luka Bojičić Ono — professional tennis player (Campinas, Brazil).
 
 Six analytics modules covering career trajectory, tactical patterns, physical training, physiology monitoring, nutrition protocols, and level benchmarks across ITF, Challenger, and ATP.
 
@@ -63,7 +63,8 @@ types/
   index.ts                  # Canonical TypeScript interfaces
 
 data/                       # JSON data layer (app source of truth)
-  career.json               # Tournament results, ranking events
+  career.json               # Tournament results and legacy ranking events
+  rankings.json             # Canonical ATP singles/doubles ranking snapshots
   benchmarks.json           # Level benchmarks (ATP/Challenger/ITF)
   tactical.json             # Coaching frameworks, game patterns
   player.json               # Player bio (single source of truth)
@@ -99,11 +100,14 @@ Pages import data exclusively via typed accessors in `lib/` — never directly f
 |--------|---------|---------|
 | `scripts/update_career.py` | GitHub Actions cron | Scrapes ITF tournament results |
 | `scripts/update_physiology.py` | GitHub Actions cron | Syncs WHOOP recovery data |
+| `scripts/update_rankings.py` | GitHub Actions weekly | Collects ATP rankings and delivers pending WhatsApp alerts |
 
 Secrets required in GitHub repo Settings → Secrets:
 - `WHOOP_CLIENT_ID`
 - `WHOOP_CLIENT_SECRET`
 - `WHOOP_REFRESH_TOKEN`
+- `CALLMEBOT_PHONE`
+- `CALLMEBOT_API_KEY`
 
 ---
 

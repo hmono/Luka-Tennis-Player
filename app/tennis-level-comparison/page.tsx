@@ -10,7 +10,7 @@ import {
   padToThree,
   parseRallyDistribution,
 } from "@/lib/benchmarks";
-import { formatRank } from "@/lib/career";
+import { formatRank, getCareerHighs } from "@/lib/career";
 import type { BenchmarkEntry } from "@/types";
 
 // ── data ──────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ import type { BenchmarkEntry } from "@/types";
 const benchmarks: BenchmarkEntry[] = getBenchmarks();
 const subject                       = getBenchmarkSubject();
 const player                        = getPlayerProfile();
+const careerHighs                   = getCareerHighs();
 
 // ── player strip ──────────────────────────────────────────────
 
@@ -34,8 +35,8 @@ const backhandLabel = player.backhand === "two-handed" ? "2HBH" : "1HBH";
 
 const playerProfile = [
   { value: String(age),                               label: `Age · DOB Jan ${_birth.getFullYear()}` },
-  { value: formatRank(player.careerHighs.atpSingles), label: "ATP Singles Career High" },
-  { value: formatRank(player.careerHighs.atpDoubles), label: "ATP Doubles Career High" },
+  { value: formatRank(careerHighs?.singles ?? null), label: "ATP Singles Career High" },
+  { value: formatRank(careerHighs?.doubles ?? null), label: "ATP Doubles Career High" },
   { value: player.tournamentsPlayed.itfFutures,        label: "ITF Future Tournaments" },
   { value: String(player.tournamentsPlayed.challenger), label: "Challenger Appearances" },
   { value: `${handLabel} · ${backhandLabel}`,          label: `Style · ${player.heightCm}cm / ${player.weightKg}kg` },

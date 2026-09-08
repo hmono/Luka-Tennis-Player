@@ -12,7 +12,9 @@ import {
   extractOpponent,
   phaseColor,
   phaseWeight,
-  findRanking,
+  getCareerHighs,
+  getLatestRankings,
+  getRankingSnapshots,
 } from "@/lib/career";
 import { getPlayerProfile } from "@/lib/benchmarks";
 import type { CareerEvent, SurfaceRecord } from "@/types";
@@ -22,6 +24,9 @@ import type { CareerEvent, SurfaceRecord } from "@/types";
 const careerEvents     = getCareerEvents();
 const surfaceBreakdown = getSurfaceBreakdown();
 const player           = getPlayerProfile();
+const rankingSnapshots = getRankingSnapshots();
+const latestRankings   = getLatestRankings();
+const careerHighs      = getCareerHighs();
 
 // ── bio formatting (C5) ───────────────────────────────────────
 const [byear, bmonth, bday] = player.birthDate.split("-");
@@ -60,22 +65,17 @@ const itfSeasonRows = rankingEvents
     note: e.source_note,
   }));
 
-const atpSeasonRows = rankingEvents
-  .filter((e) => /ATP/i.test(e.title))
-  .map((e) => ({
-    season: e.season,
-    peak: /current/i.test(e.title)
-      ? formatRank(parseRank(e.title), true)
-      : formatRank(parseRank(e.title)),
-    isCareerHigh: /career high/i.test(e.title),
-    seasonEnd: e.season_end_rank != null ? formatRank(e.season_end_rank) : "—",
-    note: e.source_note,
-  }));
-
-// stat strip
-const atpSinglesCareerHigh = parseRank(findRanking(careerEvents, /ATP singles career high/i) ?? "");
-const atpDoublesCareerHigh = parseRank(findRanking(careerEvents, /ATP doubles career high/i) ?? "");
-const atpSinglesCurrent    = parseRank(findRanking(careerEvents, /ATP singles current/i) ?? "");
+// ATP rankings are read exclusively from the structured weekly snapshots.
+const atpSinglesCareerHigh = careerHighs?.singles ?? null;
+const atpDoublesCareerHigh = careerHighs?.doubles ?? null;
+const atpSinglesCurrent = latestRankings?.singles.rank ?? null;
+const atpSeasonRows = rankingSnapshots.map((snapshot) => ({
+  season: snapshot.ranking_date,
+  peak: `${formatRank(snapshot.singles.rank)} · ${snapshot.singles.points} pts`,
+  seasonEnd: `${formatRank(snapshot.doubles.rank)} · ${snapshot.doubles.points} pts`,
+  note: "ATP Tour",
+  isCareerHigh: false,
+}));
 
 const challengerAppearances = tournamentEvents.filter((e) =>
   /Challenger/i.test(e.title),
@@ -175,7 +175,7 @@ export default function CareerPage() {
         <div className="ls-item active">
           <div className="ls-dot" style={{ background: "var(--luka-itf)" }} />
           <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
-          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · {formatRank(atpSinglesCurrent, true)}</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · {formatRank(atpSinglesCurrent)}</span>
         </div>
         <span className="ls-arrow">——→</span>
         <div className="ls-item">
@@ -299,10 +299,10 @@ export default function CareerPage() {
                 <table className="ctable">
                   <thead>
                     <tr>
-                      <th className="th-hdr">Temporada</th>
-                      <th className="th-hdr">Pico</th>
-                      <th className="th-hdr">Fim de temp.</th>
-                      <th className="th-hdr">Notas</th>
+                      <th className="th-hdr">Data</th>
+                      <th className="th-hdr">Singles</th>
+                      <th className="th-hdr">Doubles</th>
+                      <th className="th-hdr">Fonte</th>
                     </tr>
                   </thead>
                   <tbody>

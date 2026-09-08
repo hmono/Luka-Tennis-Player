@@ -1,0 +1,41 @@
+name: Qualify ATP PDF Ranking Source
+
+on:
+  workflow_dispatch:
+    inputs:
+      timeout_seconds:
+        description: 'Per-request timeout for the read-only live probe'
+        type: choice
+        options:
+          - '20'
+          - '30'
+          - '45'
+        default: '20'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atp-pdf-source-qualification
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    # Dedicated trusted runner only. Do not expose this label to untrusted PR jobs.
+    runs-on: [self-hosted, macOS, atp-ranking]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install automation dependencies
+        run: python -m pip install -r requirements-automation.txt
+
+      - name: Run ranking-alert tests
+        run: python -m unittest discover -s tests/ranking_alerts
+
+      - name: Probe official ATP PDFs without persistence or notifications
+        run: python scripts/probe_atp_pdfs.py --timeout-seconds "${{ inputs.timeout_seconds }}"

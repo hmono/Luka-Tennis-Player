@@ -6,6 +6,10 @@ import {
   formatRank,
   getCareerEvents,
   getSurfaceBreakdown,
+  getCareerHighs,
+  getLatestRankingSnapshot,
+  getLatestRankings,
+  getRankingSnapshots,
   getSeasonStats,
   inferResult,
   isDoubles,
@@ -26,6 +30,15 @@ describe('getCareerEvents', () => {
 describe('getSurfaceBreakdown', () => {
   it('returns an array — guards against wrong JSON key', () => {
     expect(Array.isArray(getSurfaceBreakdown())).toBe(true);
+  });
+});
+
+describe('ranking accessors before bootstrap', () => {
+  it('returns safe empty values', () => {
+    expect(getRankingSnapshots()).toEqual([]);
+    expect(getLatestRankingSnapshot()).toBeNull();
+    expect(getLatestRankings()).toBeNull();
+    expect(getCareerHighs()).toBeNull();
   });
 });
 
