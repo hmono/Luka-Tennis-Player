@@ -1,0 +1,31 @@
+name: Probe Matchstat Ranking Source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run ranking-alert tests
+        run: python -m unittest discover -s tests/ranking_alerts
+
+      - name: Probe Matchstat
+        env:
+          MATCHSTAT_RAPIDAPI_KEY: ${{ secrets.MATCHSTAT_RAPIDAPI_KEY }}
+        run: python scripts/probe_matchstat.py
