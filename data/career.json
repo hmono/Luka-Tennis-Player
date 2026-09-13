@@ -9,7 +9,7 @@
     {
       "surface": "Clay",
       "w": 16,
-      "l": 47
+      "l": 49
     },
     {
       "surface": "Grass",
@@ -23,6 +23,26 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-09-07",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Leme (moved from Sao Luis)  Q-1R vs G. Pinho",
+      "location": "Leme",
+      "round": "Q-1R",
+      "source_note": "Lost 6-4 4-6 8-10",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-09-07",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Leme (moved from Sao Luis)  1R doubles vs R. Augusto dos Santos/V. Bini",
+      "location": "Leme",
+      "round": "1R",
+      "source_note": "Lost 3-6 6-7(4) (w/ J. Wendler Filho)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-08-31",
       "season": "2026",
@@ -975,7 +995,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-09-06",
+  "last_updated": "2026-09-13",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
