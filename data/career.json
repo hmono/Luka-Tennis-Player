@@ -3,8 +3,8 @@
   "surface_breakdown": [
     {
       "surface": "Hard (outdoor)",
-      "w": 22,
-      "l": 31
+      "w": 24,
+      "l": 33
     },
     {
       "surface": "Clay",
@@ -23,6 +23,46 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-09-14",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Belém 1R vs P. Saraiva Dos Santos",
+      "location": "Belem",
+      "round": "1R",
+      "source_note": "Lost 4-6 7-6(4) 1-6",
+      "surface": "Hard (outdoor)"
+    },
+    {
+      "date": "2026-09-14",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Belém Q-2R vs E. Crevelaro",
+      "location": "Belem",
+      "round": "Q-2R",
+      "source_note": "Won 6-2 6-4",
+      "surface": "Hard (outdoor)"
+    },
+    {
+      "date": "2026-09-14",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Belém QF doubles vs E. Almeida Junior/L. Pinto",
+      "location": "Belem",
+      "round": "QF",
+      "source_note": "Lost 5-7 3-6 (w/ V. Bini)",
+      "surface": "Hard (outdoor)"
+    },
+    {
+      "date": "2026-09-14",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Belém 1R doubles vs E. Crevelaro/V. Cunha",
+      "location": "Belem",
+      "round": "1R",
+      "source_note": "Won 2-6 6-3 10-7 (w/ V. Bini)",
+      "surface": "Hard (outdoor)"
+    },
     {
       "date": "2026-09-07",
       "season": "2026",
@@ -995,7 +1035,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-09-13",
+  "last_updated": "2026-09-20",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
