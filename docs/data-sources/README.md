@@ -10,6 +10,7 @@ Human-readable reference documents. These are the original authoring artifacts f
 | `physical_training.md` | `data/physical.json` | English |
 | `physiology_log.md` | `data/physiology.json` | Portuguese |
 | `nutrition.md` | `data/nutrition.json` | English |
+| `supplementation.md` | — (sem JSON correspondente) | Portuguese |
 
 ## Keeping them in sync
 
