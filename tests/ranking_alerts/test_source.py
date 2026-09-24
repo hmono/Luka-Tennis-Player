@@ -44,8 +44,13 @@ class SourceContractTests(unittest.TestCase):
 
         self.assertEqual("invalid_ranking_status", str(raised.exception))
 
+    def test_points_may_be_absent_but_never_inferred(self) -> None:
+        ranking = RawDisciplineRanking(status="ranked", rank=2205, points=None)
+
+        self.assertIsNone(ranking.points)
+
     def test_points_require_non_negative_integer(self) -> None:
-        for invalid_points in (-1, True, 1.5, "1", None):
+        for invalid_points in (-1, True, 1.5, "1"):
             with self.subTest(points=invalid_points), self.assertRaises(ValueError) as raised:
                 RawDisciplineRanking(status="unranked", rank=None, points=invalid_points)  # type: ignore[arg-type]
 

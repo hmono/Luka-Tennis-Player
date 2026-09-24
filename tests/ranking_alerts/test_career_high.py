@@ -48,13 +48,15 @@ def observation(*, ranking_date: str, singles_rank: int | None, doubles_rank: in
 
 
 class CareerHighBaselineTests(unittest.TestCase):
-    def test_repository_template_is_not_activatable(self) -> None:
-        with self.assertRaisesRegex(CareerHighBaselineError, "^career_high_baseline_invalid$"):
-            load_baseline(DEFAULT_BASELINE_PATH)
+    def test_repository_baseline_is_verified_against_itf_evidence(self) -> None:
+        baseline = load_baseline(DEFAULT_BASELINE_PATH)
 
-        template = json.loads(DEFAULT_BASELINE_PATH.read_text(encoding="utf-8"))
-        self.assertEqual(0, template["disciplines"]["singles"]["rank"])
-        self.assertEqual(0, template["disciplines"]["doubles"]["rank"])
+        # Values verified on 2026-09-24 (docs/spikes/2026-09-24-itf-ranking-source.md).
+        self.assertEqual((1827, "2025-12-01"), (baseline.singles.rank, baseline.singles.ranking_date))
+        self.assertEqual((1407, "2026-06-22"), (baseline.doubles.rank, baseline.doubles.ranking_date))
+        document_text = DEFAULT_BASELINE_PATH.read_text(encoding="utf-8")
+        self.assertNotIn("UNVERIFIED", document_text)
+        self.assertIn("GetPlayerOverview", json.loads(document_text)["disciplines"]["singles"]["reference"])
 
     def test_missing_and_placeholder_baselines_fail_closed(self) -> None:
         with self.assertRaises(CareerHighBaselineError):

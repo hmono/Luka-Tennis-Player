@@ -61,7 +61,8 @@ export interface CareerData {
 
 export interface RankingDisciplineSnapshot {
   rank: number | null;
-  points: number;
+  /** null when the provider does not publish points (ITF); never 0. */
+  points: number | null;
   career_high_rank: number | null;
   career_high_date: string | null;
 }
@@ -70,7 +71,7 @@ export interface RankingSnapshot {
   id: string;
   ranking_date: string;
   captured_at: string;
-  source: 'atptour';
+  source: 'atptour' | 'itf';
   singles: RankingDisciplineSnapshot;
   doubles: RankingDisciplineSnapshot;
   source_revision_of?: string;

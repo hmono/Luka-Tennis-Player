@@ -1,8 +1,21 @@
 # Especificação corretiva — fonte de rankings ATP
 
-Status: proposta para aprovação  
-Data: 2026-09-04  
+Status: superada em parte — ver `docs/spikes/2026-09-24-itf-ranking-source.md`  
+Data: 2026-09-04 (adendo 2026-09-24)  
 Escopo: aquisição de rankings; domínio, outbox e CallMeBot permanecem válidos
+
+## 0. Adendo 2026-09-24 — decisão go: fonte ITF
+
+O provider aprovado é o perfil público ITF (`RANKING_SOURCE=itf`,
+`scripts/ranking_alerts/itf_source.py`). Diferenças em relação ao texto abaixo:
+
+- pontos não são publicados pela ITF; `points` é opcional (`null`) no domínio;
+- acesso via Playwright com user-agent de navegador, exceção explícita para
+  ITF (mesmo método de `update_career.py`); a cláusula de não alterar UA
+  permanece para `atptour.com`;
+- baseline de career high verificado contra o endpoint ITF;
+- schedule semanal ativo em `ubuntu-latest`; seção 15 (PDF + runner macOS)
+  removida da implementação.
 
 ## 1. Contexto e evidência
 

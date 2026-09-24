@@ -1,44 +1,86 @@
-name: Qualify ATP PDF Ranking Source
+name: Update ATP Rankings
 
+# ATP publishes on Monday; the ITF profile carries the new publication the
+# same day. Tuesday 09:00 UTC leaves a full day of slack.
 on:
+  schedule:
+    - cron: '0 9 * * 2'
   workflow_dispatch:
     inputs:
-      timeout_seconds:
-        description: 'Per-request timeout for the read-only live probe'
+      mode:
+        description: 'collect-and-deliver persists and notifies; dry-run only validates the live source'
         type: choice
         options:
-          - '20'
-          - '30'
-          - '45'
-        default: '20'
+          - collect-and-deliver
+          - dry-run
+        default: collect-and-deliver
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: atp-pdf-source-qualification
+  group: repository-data-writer-main
   cancel-in-progress: false
 
 jobs:
-  probe:
-    # Dedicated trusted runner only. Do not expose this label to untrusted PR jobs.
-    runs-on: [self-hosted, macOS, atp-ranking]
-    timeout-minutes: 10
-    env:
-      PYTHON_BIN: /opt/anaconda3/bin/python3
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify runner Python
-        run: test -x "$PYTHON_BIN" && "$PYTHON_BIN" --version
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install automation dependencies
-        run: |
-          "$PYTHON_BIN" -m venv .venv
-          .venv/bin/python -m pip install -r requirements-automation.txt
+        run: pip install -r requirements-automation.txt
+
+      - name: Install Chromium
+        run: playwright install chromium --with-deps
 
       - name: Run ranking-alert tests
-        run: .venv/bin/python -m unittest discover -s tests/ranking_alerts
+        run: python -m unittest discover -s tests/ranking_alerts
 
-      - name: Probe official ATP PDFs without persistence or notifications
-        run: .venv/bin/python scripts/probe_atp_pdfs.py --timeout-seconds "${{ inputs.timeout_seconds }}"
+      - name: Dry run against the live ITF source
+        if: inputs.mode == 'dry-run'
+        run: python scripts/update_rankings.py dry-run --source itf
+
+      - name: Collect ranking snapshot
+        if: inputs.mode != 'dry-run'
+        run: python scripts/update_rankings.py collect --source itf
+
+      - name: Commit snapshot and pending alert intentions
+        if: inputs.mode != 'dry-run'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rankings.json automation/state/ranking_alerts.json
+          if ! git diff --staged --quiet; then
+            git commit -m "data: update rankings.json [automated]"
+            if ! git push; then
+              git pull --rebase origin "${GITHUB_REF_NAME}"
+              git push
+            fi
+          fi
+
+      - name: Deliver pending alerts
+        if: inputs.mode != 'dry-run'
+        env:
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
+        run: python scripts/update_rankings.py deliver --provider callmebot
+
+      - name: Commit delivery receipts
+        if: always() && inputs.mode != 'dry-run'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add automation/state/ranking_alerts.json
+          if ! git diff --staged --quiet; then
+            git commit -m "data: record ranking alert delivery [automated]"
+            if ! git push; then
+              git pull --rebase origin "${GITHUB_REF_NAME}"
+              git push
+            fi
+          fi
