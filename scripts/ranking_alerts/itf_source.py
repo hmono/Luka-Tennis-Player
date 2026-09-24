@@ -147,7 +147,15 @@ def capture_profile(timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> ItfProf
             context = browser.new_context(user_agent=USER_AGENT, viewport={"width": 1280, "height": 800})
             page = context.new_page()
             try:
-                page.goto(ITF_BASE_URL + PROFILE_PATH, timeout=timeout_ms, wait_until="networkidle")
+                # ``networkidle`` is unreliable on the ITF site (third-party
+                # beacons keep the network busy). Wait only for the document
+                # plus the first profile API reply, which proves the session
+                # cookies are in place.
+                with page.expect_response(
+                    lambda response: "/tennis/api/" in response.url, timeout=timeout_ms
+                ) as first_api_reply:
+                    page.goto(ITF_BASE_URL + PROFILE_PATH, timeout=timeout_ms, wait_until="domcontentloaded")
+                first_api_reply.value
             except PlaywrightTimeout:
                 # The session cookies may already be set; the API calls decide.
                 pass

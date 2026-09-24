@@ -47,3 +47,14 @@ durante a animação de contagem. Somente a API é fonte; o DOM nunca é lido.
 - D3: baseline de career high preenchido com os valores ITF acima.
 - D4: schedule ativado imediatamente; primeiro snapshot não gera alerta.
 - D5: caminho ATP PDF e runner macOS removidos.
+
+## Digest semanal (decisões 2026-09-24, segunda rodada)
+
+- D1: toda nova publicação gera um `weekly_digest`, com ou sem mudança
+  ("sem alteração" explícito). Mesma publicação recoletada: silêncio.
+- D2: canal mantido em CallMeBot WhatsApp, um destinatário.
+- D3: conteúdo mínimo (rank singles/doubles, delta, data) + career high.
+  Pontos omitidos (ITF não publica).
+- `ranking_correction` preservado para revisão de publicação já entregue.
+- Limitação: silêncio na terça significa "sem publicação nova" ou job
+  vermelho no GitHub; não há alerta de falha via WhatsApp.
