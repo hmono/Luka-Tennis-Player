@@ -4,17 +4,17 @@
     "atp_id": "B0UF",
     "name": "Luka Bojicic Ono"
   },
-  "verified_at": "UNVERIFIED",
+  "verified_at": "2026-09-24T13:09:20Z",
   "disciplines": {
     "singles": {
-      "rank": 0,
-      "ranking_date": "UNVERIFIED",
-      "reference": "Replace with a manually verified reference before activation."
+      "rank": 1827,
+      "ranking_date": "2025-12-01",
+      "reference": "ITF GetPlayerOverview matchTypeCode=S careerHighRankings 'ATP Singles Ranking' (GitHub Actions run 36003657264, 2026-09-24)"
     },
     "doubles": {
-      "rank": 0,
-      "ranking_date": "UNVERIFIED",
-      "reference": "Replace with a manually verified reference before activation."
+      "rank": 1407,
+      "ranking_date": "2026-06-22",
+      "reference": "ITF GetPlayerOverview matchTypeCode=D careerHighRankings 'ATP Doubles Ranking' (GitHub Actions run 36003657264, 2026-09-24)"
     }
   }
 }

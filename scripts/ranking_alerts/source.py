@@ -42,12 +42,16 @@ class RawDisciplineRanking:
 
     status: Literal["ranked", "unranked"]
     rank: int | None
-    points: int
+    # ``None`` means the provider does not publish points (e.g. ITF); it is
+    # distinct from ``0`` points and must never be inferred.
+    points: int | None
 
     def __post_init__(self) -> None:
         if self.status not in {"ranked", "unranked"}:
             raise ValueError("invalid_ranking_status")
-        if isinstance(self.points, bool) or not isinstance(self.points, int) or self.points < 0:
+        if self.points is not None and (
+            isinstance(self.points, bool) or not isinstance(self.points, int) or self.points < 0
+        ):
             raise ValueError("invalid_ranking_points")
         if self.status == "ranked":
             if isinstance(self.rank, bool) or not isinstance(self.rank, int) or self.rank <= 0:

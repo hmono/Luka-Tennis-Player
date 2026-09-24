@@ -69,11 +69,13 @@ const itfSeasonRows = rankingEvents
 const atpSinglesCareerHigh = careerHighs?.singles ?? null;
 const atpDoublesCareerHigh = careerHighs?.doubles ?? null;
 const atpSinglesCurrent = latestRankings?.singles.rank ?? null;
+const formatRankWithPoints = (ranking: { rank: number | null; points: number | null }): string =>
+  ranking.points == null ? formatRank(ranking.rank) : `${formatRank(ranking.rank)} · ${ranking.points} pts`;
 const atpSeasonRows = rankingSnapshots.map((snapshot) => ({
   season: snapshot.ranking_date,
-  peak: `${formatRank(snapshot.singles.rank)} · ${snapshot.singles.points} pts`,
-  seasonEnd: `${formatRank(snapshot.doubles.rank)} · ${snapshot.doubles.points} pts`,
-  note: "ATP Tour",
+  peak: formatRankWithPoints(snapshot.singles),
+  seasonEnd: formatRankWithPoints(snapshot.doubles),
+  note: snapshot.source === "itf" ? "ATP ranking via ITF profile" : "ATP Tour",
   isCareerHigh: false,
 }));
 

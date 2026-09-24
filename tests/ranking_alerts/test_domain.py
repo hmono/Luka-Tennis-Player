@@ -90,6 +90,18 @@ class DisciplineValidationTests(unittest.TestCase):
                 with self.assertRaises(DomainValidationError):
                     discipline(rank=invalid_rank, points=0)
 
+    def test_points_may_be_absent_and_then_have_no_delta(self) -> None:
+        absent = discipline(rank=100, points=None)
+        self.assertIsNone(absent.points)
+
+        delta = compare_snapshots(
+            snapshot(singles_rank=2000, singles_points=None),
+            snapshot(singles_rank=1990, singles_points=None),
+        )
+        self.assertEqual(10, delta.singles.rank_delta)
+        self.assertIsNone(delta.singles.points_delta)
+        self.assertTrue(delta.singles.has_changes)
+
     def test_rejects_negative_points(self) -> None:
         with self.assertRaises(DomainValidationError):
             discipline(rank=100, points=-1)

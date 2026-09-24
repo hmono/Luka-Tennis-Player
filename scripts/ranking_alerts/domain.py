@@ -71,14 +71,17 @@ def _validate_source(value: str) -> None:
 @dataclass(frozen=True, kw_only=True)
 class DisciplineRanking:
     rank: int | None
-    points: int
+    # ``None`` points: the provider does not publish them (ITF). Never 0.
+    points: int | None
     career_high_rank: int | None = None
     career_high_date: str | None = None
 
     def __post_init__(self) -> None:
         if self.rank is not None and (not isinstance(self.rank, int) or isinstance(self.rank, bool) or self.rank <= 0):
             raise DomainValidationError("invalid_rank")
-        if not isinstance(self.points, int) or isinstance(self.points, bool) or self.points < 0:
+        if self.points is not None and (
+            not isinstance(self.points, int) or isinstance(self.points, bool) or self.points < 0
+        ):
             raise DomainValidationError("invalid_points")
         if self.career_high_rank is not None and (
             not isinstance(self.career_high_rank, int)
@@ -313,7 +316,11 @@ def _discipline_delta(
     entered = previous.rank is None and current.rank is not None
     left = previous.rank is not None and current.rank is None
     rank_delta = previous.rank - current.rank if previous.rank is not None and current.rank is not None else None
-    points_delta = current.points - previous.points
+    points_delta = (
+        current.points - previous.points
+        if current.points is not None and previous.points is not None
+        else None
+    )
     new_high = current.rank if current.rank is not None and (known_high is None or current.rank < known_high) else None
     return DisciplineDelta(
         rank_delta=rank_delta,
@@ -355,6 +362,8 @@ def _discipline_line(label: str, ranking: DisciplineRanking, delta: DisciplineDe
         rank_part = f"{_rank(ranking.rank)} ({_signed(delta.rank_delta)})"
     else:
         rank_part = _rank(ranking.rank)
+    if ranking.points is None:
+        return f"{label}: {rank_part}"
     points = f"{ranking.points:,}".replace(",", ".") + " pts"
     if delta.points_delta is not None:
         points += f" ({_signed(delta.points_delta)})"

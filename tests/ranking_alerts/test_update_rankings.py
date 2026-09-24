@@ -271,11 +271,48 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 parser.parse_args(["collect"])
 
-        selected = parser.parse_args(["collect", "--source", "atp-pdf"])
+        selected = parser.parse_args(["collect", "--source", "itf"])
         fixture = parser.parse_args(["dry-run", "--fixture", "ranking.json"])
 
-        self.assertEqual("atp-pdf", selected.source)
+        self.assertEqual("itf", selected.source)
+        with redirect_stderr(StringIO()):
+            with self.assertRaises(SystemExit):
+                parser.parse_args(["collect", "--source", "atp-pdf"])
         self.assertEqual("ranking.json", fixture.fixture)
+
+    def test_deliver_cli_skips_provider_config_when_nothing_is_pending(self) -> None:
+        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+
+        with patch.dict("os.environ", {}, clear=True):
+            code = update_rankings.main(
+                [
+                    "deliver",
+                    "--provider",
+                    "callmebot",
+                    "--rankings-path",
+                    str(self.rankings_path),
+                    "--state-path",
+                    str(self.state_path),
+                ]
+            )
+
+        self.assertEqual(0, code)
+
+    def test_pointless_observations_produce_rank_only_messages(self) -> None:
+        first = replace(
+            observation("2026-09-01", source="itf"),
+            singles=DisciplineRanking(rank=2205, points=None),
+            doubles=DisciplineRanking(rank=1460, points=None),
+        )
+        second = replace(first, ranking_date="2026-09-08", singles=DisciplineRanking(rank=2190, points=None))
+        self.collect(first, "2026-09-01T12:00:00Z")
+        outcome = self.collect(second, "2026-09-08T12:00:00Z")
+
+        self.assertEqual("created", outcome.outbox_status)
+        message = update_rankings.format_message(outcome.snapshot, outcome.delta)
+        self.assertIn("Singles: #2.190 (+15)", message)
+        self.assertIn("Doubles: #1.460", message)
+        self.assertNotIn("pts", message)
 
     def test_delivery_failure_is_persisted_and_stops_fifo(self) -> None:
         self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")

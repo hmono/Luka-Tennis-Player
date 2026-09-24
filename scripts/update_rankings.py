@@ -329,19 +329,28 @@ def _paths(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--state-path", type=Path, default=DEFAULT_STATE_PATH, help=argparse.SUPPRESS)
 
 
+SOURCE_CHOICES = ("itf",)
+
+
 def _source_argument(parser: argparse.ArgumentParser, *, allow_fixture: bool = False) -> None:
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--source", choices=("atp-pdf",))
+    group.add_argument("--source", choices=SOURCE_CHOICES)
     if allow_fixture:
         group.add_argument("--fixture")
 
 
 def _selected_source(name: str) -> RankingSource:
-    if name == "atp-pdf":
-        from ranking_alerts.atp_pdf_source import AtpPdfRankingSource
+    if name == "itf":
+        from ranking_alerts.itf_source import ItfRankingSource
 
-        return AtpPdfRankingSource()
+        return ItfRankingSource()
     raise DomainValidationError("invalid_source")
+
+
+def has_pending_outbox(*, rankings_path: Path, state_path: Path) -> bool:
+    rankings = load_rankings(rankings_path)
+    state = load_alert_state(state_path, rankings)
+    return any(item.status == "pending" for item in state.outbox)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -395,6 +404,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             _print_outcome(outcome, show_message=False)
             return 0
         if args.command == "deliver":
+            if not has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path):
+                # Provider credentials are only required when there is work to send.
+                print("provider=callmebot delivered=0")
+                return 0
             provider = CallMeBotProvider.from_env()
             count = deliver(
                 provider=provider,
