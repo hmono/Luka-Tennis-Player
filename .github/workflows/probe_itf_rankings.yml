@@ -1,0 +1,21 @@
+name: Probe ITF Ranking Source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright
+      - run: playwright install chromium --with-deps
+      - name: Probe ITF player API (read-only, no persistence)
+        run: python scripts/probe_itf_rankings.py
