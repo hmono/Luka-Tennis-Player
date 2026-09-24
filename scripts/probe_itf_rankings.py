@@ -16,11 +16,9 @@ PLAYER_ID = "800625103"
 BASE = "https://www.itftennis.com"
 OVERVIEW_URL = f"{BASE}/en/players/luka-bojicic-ono/{PLAYER_ID}/bra/mt/s/overview/"
 CANDIDATES = [
-    f"/tennis/api/PlayerApi/GetPlayerProfile?playerId={PLAYER_ID}&circuitCode=MT",
-    f"/tennis/api/PlayerApi/GetPlayerRankings?playerId={PLAYER_ID}&circuitCode=MT",
-    f"/tennis/api/PlayerApi/GetPlayerRankingHistory?playerId={PLAYER_ID}&circuitCode=MT",
-    f"/tennis/api/PlayerApi/GetPlayerOverview?playerId={PLAYER_ID}&circuitCode=MT",
-    f"/tennis/api/PlayerApi/GetPlayerHeader?playerId={PLAYER_ID}&circuitCode=MT",
+    f"/tennis/api/PlayerApi/GetPlayerOverview?circuitCode=MT&matchTypeCode=S&playerId={PLAYER_ID}",
+    f"/tennis/api/PlayerApi/GetPlayerOverview?circuitCode=MT&matchTypeCode=D&playerId={PLAYER_ID}",
+    f"/tennis/api/PlayerRankApi/GetYearEndRankings?circuitCode=MT&matchTypeCode=D&playerId={PLAYER_ID}",
 ]
 EXCERPT = 3000
 KEY_RE = re.compile(r"rank|point|date", re.I)
