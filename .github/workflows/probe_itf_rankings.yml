@@ -2,6 +2,11 @@ name: Probe ITF Ranking Source
 
 on:
   workflow_dispatch:
+  push:
+    branches: [claude/loving-planck-xg0ery]
+    paths:
+      - scripts/probe_itf_rankings.py
+      - .github/workflows/probe_itf_rankings.yml
 
 permissions:
   contents: read
