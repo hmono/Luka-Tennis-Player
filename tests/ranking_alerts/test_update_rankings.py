@@ -95,13 +95,37 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             captured_at=captured_at,
         )
 
-    def test_bootstrap_is_persisted_without_outbox(self) -> None:
+    def test_bootstrap_is_persisted_with_a_digest_without_deltas(self) -> None:
         outcome = self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
 
         self.assertEqual("created", outcome.snapshot_status)
-        self.assertEqual("none", outcome.outbox_status)
+        self.assertEqual("created", outcome.outbox_status)
         self.assertEqual(1, len(load_rankings(self.rankings_path).snapshots))
-        self.assertEqual((), load_alert_state(self.state_path, outcome.rankings).outbox)
+        outbox = load_alert_state(self.state_path, outcome.rankings).outbox
+        self.assertEqual(("weekly_digest",), tuple(item.event_type for item in outbox))
+        message = update_rankings._message_for_snapshot(outcome.rankings, outcome.snapshot, "weekly_digest")
+        self.assertIn("ATP Ranking — 2026-09-01", message)
+        self.assertIn("Singles: #2.000 | 5 pts | CH #1.800 (2025-12-01)", message)
+        self.assertNotIn("(", message.splitlines()[1].split(" | ")[0])
+
+    def test_unchanged_publication_still_produces_a_weekly_digest(self) -> None:
+        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        outcome = self.collect(observation("2026-09-08"), "2026-09-08T12:00:00Z")
+
+        self.assertEqual("created", outcome.outbox_status)
+        self.assertEqual("weekly_digest", outcome.state.outbox[-1].event_type)
+        message = update_rankings.format_message(outcome.snapshot, outcome.delta)
+        self.assertIn("Singles: #2.000 (sem alteração) | 5 pts (0) | CH #1.800 (2025-12-01)", message)
+        self.assertIn("Doubles: #1.900 (sem alteração) | 6 pts (0) | CH #1.700 (2025-07-28)", message)
+
+    def test_same_publication_recollected_is_silent(self) -> None:
+        value = observation("2026-09-01")
+        self.collect(value, "2026-09-01T12:00:00Z")
+        outcome = self.collect(value, "2026-09-08T12:00:00Z")
+
+        self.assertEqual("unchanged", outcome.snapshot_status)
+        self.assertEqual("none", outcome.outbox_status)
+        self.assertEqual(1, len(outcome.state.outbox))
 
     def test_identical_observation_is_idempotent(self) -> None:
         value = observation("2026-09-01")
@@ -119,8 +143,9 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         )
 
         self.assertEqual("created", outcome.outbox_status)
-        self.assertEqual(1, len(outcome.state.outbox))
-        self.assertEqual(outcome.snapshot.id, outcome.state.outbox[0].snapshot_id)
+        self.assertEqual(2, len(outcome.state.outbox))
+        self.assertEqual(outcome.snapshot.id, outcome.state.outbox[-1].snapshot_id)
+        self.assertEqual("weekly_digest", outcome.state.outbox[-1].event_type)
 
     def test_revision_supersedes_unsent_intent_for_same_date(self) -> None:
         self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
@@ -134,9 +159,9 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         )
 
         self.assertEqual("revised", revised.snapshot_status)
-        self.assertEqual(1, len(revised.state.outbox))
-        self.assertNotEqual(first.state.outbox[0].id, revised.state.outbox[0].id)
-        self.assertEqual(revised.snapshot.id, revised.state.outbox[0].snapshot_id)
+        self.assertEqual(2, len(revised.state.outbox))
+        self.assertNotEqual(first.state.outbox[-1].id, revised.state.outbox[-1].id)
+        self.assertEqual(revised.snapshot.id, revised.state.outbox[-1].snapshot_id)
 
     def test_dry_run_does_not_create_or_change_files(self) -> None:
         outcome = update_rankings.dry_run(
@@ -170,21 +195,39 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             "2026-09-08T12:00:00Z",
         )
         sent_item = replace(
-            changed.state.outbox[0],
+            changed.state.outbox[-1],
             status="sent",
             sent_at="2026-09-08T12:05:00Z",
         )
 
+        state = RankingAlertState(outbox=(changed.state.outbox[0], sent_item))
         outcome = update_rankings.plan_collection(
             changed.rankings,
-            RankingAlertState(outbox=(sent_item,)),
+            state,
             observation("2026-09-08", singles_rank=2000),
             captured_at="2026-09-08T13:00:00Z",
         )
 
         self.assertEqual("revised", outcome.snapshot_status)
         self.assertEqual("none", outcome.outbox_status)
-        self.assertEqual((sent_item,), outcome.state.outbox)
+        self.assertEqual(state.outbox, outcome.state.outbox)
+
+    def test_sent_date_with_effective_delta_creates_a_correction_message(self) -> None:
+        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        changed = self.collect(observation("2026-09-08", singles_rank=1990), "2026-09-08T12:00:00Z")
+        sent_item = replace(changed.state.outbox[-1], status="sent", sent_at="2026-09-08T12:05:00Z")
+
+        outcome = update_rankings.plan_collection(
+            changed.rankings,
+            RankingAlertState(outbox=(changed.state.outbox[0], sent_item)),
+            observation("2026-09-08", singles_rank=1985),
+            captured_at="2026-09-08T13:00:00Z",
+        )
+
+        self.assertEqual("created", outcome.outbox_status)
+        self.assertEqual("ranking_correction", outcome.state.outbox[-1].event_type)
+        message = update_rankings._message_for_snapshot(outcome.rankings, outcome.snapshot, "ranking_correction")
+        self.assertTrue(message.startswith("Correção ATP Ranking — 2026-09-08"))
 
     def test_raw_source_is_converted_then_enriched_before_planning(self) -> None:
         raw = RawRankingObservation(
@@ -281,8 +324,6 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertEqual("ranking.json", fixture.fixture)
 
     def test_deliver_cli_skips_provider_config_when_nothing_is_pending(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
-
         with patch.dict("os.environ", {}, clear=True):
             code = update_rankings.main(
                 [
@@ -301,17 +342,21 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
     def test_pointless_observations_produce_rank_only_messages(self) -> None:
         first = replace(
             observation("2026-09-01", source="itf"),
-            singles=DisciplineRanking(rank=2205, points=None),
-            doubles=DisciplineRanking(rank=1460, points=None),
+            singles=DisciplineRanking(rank=2205, points=None, career_high_rank=1827, career_high_date="2025-12-01"),
+            doubles=DisciplineRanking(rank=1460, points=None, career_high_rank=1407, career_high_date="2026-06-22"),
         )
-        second = replace(first, ranking_date="2026-09-08", singles=DisciplineRanking(rank=2190, points=None))
+        second = replace(
+            first,
+            ranking_date="2026-09-08",
+            singles=DisciplineRanking(rank=2190, points=None, career_high_rank=1827, career_high_date="2025-12-01"),
+        )
         self.collect(first, "2026-09-01T12:00:00Z")
         outcome = self.collect(second, "2026-09-08T12:00:00Z")
 
         self.assertEqual("created", outcome.outbox_status)
         message = update_rankings.format_message(outcome.snapshot, outcome.delta)
-        self.assertIn("Singles: #2.190 (+15)", message)
-        self.assertIn("Doubles: #1.460", message)
+        self.assertIn("Singles: #2.190 (+15) | CH #1.827 (2025-12-01)", message)
+        self.assertIn("Doubles: #1.460 (sem alteração) | CH #1.407 (2026-06-22)", message)
         self.assertNotIn("pts", message)
 
     def test_delivery_failure_is_persisted_and_stops_fifo(self) -> None:

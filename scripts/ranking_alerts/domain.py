@@ -13,6 +13,8 @@ from typing import Any, Iterable, Mapping
 PLAYER_ATP_ID = "B0UF"
 PLAYER_NAME = "Luka Bojicic Ono"
 SCHEMA_VERSION = 1
+# "ranking_change" is kept for stored state written before the weekly digest.
+EVENT_TYPES = frozenset({"weekly_digest", "ranking_change", "ranking_correction"})
 _SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SOURCE_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
@@ -205,7 +207,7 @@ class OutboxItem:
             raise DomainValidationError("invalid_outbox_id")
         if self.id != event_id(self.snapshot_id, self.event_type):
             raise DomainValidationError("invalid_outbox_id")
-        if self.event_type not in {"ranking_change", "ranking_correction"}:
+        if self.event_type not in EVENT_TYPES:
             raise DomainValidationError("invalid_event_type")
         if self.status not in {"pending", "sent"}:
             raise DomainValidationError("invalid_outbox_status")
@@ -353,33 +355,51 @@ def _signed(value: int) -> str:
     return "0" if value == 0 else f"{value:+d}"
 
 
-def _discipline_line(label: str, ranking: DisciplineRanking, delta: DisciplineDelta) -> str:
-    if delta.entered_ranking:
+def _career_high(ranking: DisciplineRanking) -> str:
+    if ranking.career_high_rank is None:
+        return ""
+    dated = f" ({ranking.career_high_date})" if ranking.career_high_date else ""
+    return f" | CH {_rank(ranking.career_high_rank)}{dated}"
+
+
+def _discipline_line(label: str, ranking: DisciplineRanking, delta: DisciplineDelta | None) -> str:
+    if delta is None:
+        rank_part = _rank(ranking.rank)
+    elif delta.entered_ranking:
         rank_part = f"{_rank(ranking.rank)} (entrou no ranking)"
     elif delta.left_ranking:
         rank_part = "não classificado (saiu do ranking)"
     elif delta.rank_delta is not None:
-        rank_part = f"{_rank(ranking.rank)} ({_signed(delta.rank_delta)})"
+        rank_part = f"{_rank(ranking.rank)} ({'sem alteração' if delta.rank_delta == 0 else _signed(delta.rank_delta)})"
     else:
         rank_part = _rank(ranking.rank)
-    if ranking.points is None:
-        return f"{label}: {rank_part}"
-    points = f"{ranking.points:,}".replace(",", ".") + " pts"
-    if delta.points_delta is not None:
-        points += f" ({_signed(delta.points_delta)})"
-    return f"{label}: {rank_part} | {points}"
+    line = f"{label}: {rank_part}"
+    if ranking.points is not None:
+        points = f"{ranking.points:,}".replace(",", ".") + " pts"
+        if delta is not None and delta.points_delta is not None:
+            points += f" ({_signed(delta.points_delta)})"
+        line += f" | {points}"
+    return line + _career_high(ranking)
 
 
-def format_message(current: RankingSnapshot, delta: RankingDelta) -> str:
+def format_message(
+    current: RankingSnapshot,
+    delta: RankingDelta | None,
+    *,
+    correction: bool = False,
+) -> str:
+    """Render the weekly digest; ``delta`` is None for the first snapshot."""
+
+    title = "Correção ATP Ranking" if correction else "ATP Ranking"
     lines = [
-        f"ATP Ranking — {current.ranking_date}",
-        _discipline_line("Singles", current.singles, delta.singles),
-        _discipline_line("Doubles", current.doubles, delta.doubles),
+        f"{title} — {current.ranking_date}",
+        _discipline_line("Singles", current.singles, delta.singles if delta else None),
+        _discipline_line("Doubles", current.doubles, delta.doubles if delta else None),
     ]
     highs: list[str] = []
-    if delta.singles.new_career_high is not None:
+    if delta is not None and delta.singles.new_career_high is not None:
         highs.append(f"Singles {_rank(delta.singles.new_career_high)}")
-    if delta.doubles.new_career_high is not None:
+    if delta is not None and delta.doubles.new_career_high is not None:
         highs.append(f"Doubles {_rank(delta.doubles.new_career_high)}")
     if highs:
         lines.append("Novo career high: " + ", ".join(highs))

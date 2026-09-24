@@ -141,19 +141,9 @@ def plan_collection(
     snapshots = tuple(sorted(rankings.snapshots + (candidate,), key=snapshot_sort_key))
     updated_rankings = replace(rankings, snapshots=snapshots)
     previous = _previous_date_snapshot(rankings.snapshots, candidate.ranking_date)
-    if previous is None:
-        return CollectionOutcome(
-            snapshot_status=snapshot_status,
-            outbox_status="none",
-            rankings=updated_rankings,
-            state=state,
-            snapshot=candidate,
-            delta=None,
-        )
-
     history = tuple(item for item in rankings.snapshots if item.ranking_date < candidate.ranking_date)
-    delta = compare_snapshots(previous, candidate, history)
-    should_notify = delta.has_changes
+    delta = compare_snapshots(previous, candidate, history) if previous is not None else None
+    has_changes = delta is not None and delta.has_changes
     dates = _snapshot_date_by_id(rankings)
     sent_for_date = any(
         item.status == "sent" and dates.get(item.snapshot_id) == candidate.ranking_date
@@ -169,11 +159,14 @@ def plan_collection(
             if not (item.status == "pending" and dates.get(item.snapshot_id) == candidate.ranking_date)
         ]
 
+    # Every new publication produces one digest, changed or not; a revision of
+    # an already-delivered publication is only worth a message when it changes
+    # the sporting facts.
     event_type: str | None = None
-    if sent_for_date and should_notify:
-        event_type = "ranking_correction"
-    elif should_notify:
-        event_type = "ranking_change"
+    if sent_for_date:
+        event_type = "ranking_correction" if has_changes else None
+    else:
+        event_type = "weekly_digest"
 
     if event_type is not None:
         item_id = event_id(candidate.id, event_type)
@@ -221,12 +214,11 @@ def collect(
     return outcome
 
 
-def _message_for_snapshot(rankings: RankingsData, snapshot: RankingSnapshot) -> str:
+def _message_for_snapshot(rankings: RankingsData, snapshot: RankingSnapshot, event_type: str) -> str:
     previous = _previous_date_snapshot(rankings.snapshots, snapshot.ranking_date)
-    if previous is None:
-        raise StorageError("invalid_outbox_baseline")
     history = tuple(item for item in rankings.snapshots if item.ranking_date < snapshot.ranking_date)
-    return format_message(snapshot, compare_snapshots(previous, snapshot, history))
+    delta = compare_snapshots(previous, snapshot, history) if previous is not None else None
+    return format_message(snapshot, delta, correction=event_type == "ranking_correction")
 
 
 def deliver(
@@ -246,7 +238,9 @@ def deliver(
         if snapshot is None:
             raise StorageError("invalid_snapshot_reference")
         try:
-            receipt = provider.send(message=_message_for_snapshot(rankings, snapshot), event_id=item.id)
+            receipt = provider.send(
+                message=_message_for_snapshot(rankings, snapshot, item.event_type), event_id=item.id
+            )
         except DeliveryError as exc:
             failed = replace(
                 item,
@@ -378,12 +372,10 @@ def _print_outcome(outcome: CollectionOutcome, *, show_message: bool) -> None:
     print(f"snapshot={outcome.snapshot_status} outbox={outcome.outbox_status}")
     if not show_message:
         return
-    if outcome.delta is None:
-        print("message=none (baseline or unchanged)")
-    elif outcome.outbox_status == "created":
+    if outcome.outbox_status == "created":
         print(format_message(outcome.snapshot, outcome.delta))
     else:
-        print("message=none (no ranking change)")
+        print("message=none (no new publication)")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
