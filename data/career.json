@@ -8,8 +8,8 @@
     },
     {
       "surface": "Clay",
-      "w": 16,
-      "l": 49
+      "w": 17,
+      "l": 50
     },
     {
       "surface": "Grass",
@@ -23,6 +23,26 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-09-21",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Curitiba Q-3R vs V. Benitez",
+      "location": "Maringá",
+      "round": "Q-3R",
+      "source_note": "Lost 5-7 2-6",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-09-21",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 Curitiba Q-2R vs M. Napoli da Silveira",
+      "location": "Maringá",
+      "round": "Q-2R",
+      "source_note": "Won 6-3 6-3",
+      "surface": "Clay"
+    },
     {
       "date": "2026-09-14",
       "season": "2026",
@@ -1035,7 +1055,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-27",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
