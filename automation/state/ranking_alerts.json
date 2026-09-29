@@ -5,10 +5,10 @@
       "id": "sha256:95f6e641b630584a87f31a087a2a7507280b1107ec87212ff58544b9ddfe816e",
       "snapshot_id": "sha256:ed9b8245b117081ebde6b2943f422a4c9983ec30449cab63bec170d4f40518e0",
       "event_type": "weekly_digest",
-      "status": "pending",
-      "attempts": 0,
+      "status": "sent",
+      "attempts": 1,
       "created_at": "2026-09-29T15:19:42.158754Z",
-      "sent_at": null,
+      "sent_at": "2026-09-29T15:19:44Z",
       "provider": "callmebot",
       "last_error_code": null
     }
