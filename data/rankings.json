@@ -4,5 +4,24 @@
     "atp_id": "B0UF",
     "name": "Luka Bojicic Ono"
   },
-  "snapshots": []
+  "snapshots": [
+    {
+      "id": "sha256:ed9b8245b117081ebde6b2943f422a4c9983ec30449cab63bec170d4f40518e0",
+      "ranking_date": "2026-09-28",
+      "captured_at": "2026-09-29T15:19:42.158754Z",
+      "source": "itf",
+      "singles": {
+        "rank": 2237,
+        "points": null,
+        "career_high_rank": 1827,
+        "career_high_date": "2025-12-01"
+      },
+      "doubles": {
+        "rank": 1401,
+        "points": null,
+        "career_high_rank": 1401,
+        "career_high_date": "2026-09-28"
+      }
+    }
+  ]
 }
