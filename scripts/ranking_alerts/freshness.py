@@ -193,7 +193,7 @@ def assess_publication(
         actual = None
         reason = "ranking_source_schema_changed"
     if reason:
-        state = FreshnessState.STALE if reason == "ranking_source_stale" else FreshnessState.SOURCE_ERROR
+        state = FreshnessState.SOURCE_ERROR
     elif actual == expected:
         state = FreshnessState.FRESH
     else:

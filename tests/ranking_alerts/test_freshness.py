@@ -39,8 +39,16 @@ class FreshnessTests(unittest.TestCase):
         self.assertEqual(utc, brazil)
 
     def test_new_week_does_not_reset_previous_missed_sla(self):
-        self.assertEqual(FreshnessState.STALE, self.assess("2026-09-28", "2026-10-12T12:00:00Z").state)
+        result = self.assess("2026-09-28", "2026-10-12T12:00:00Z")
+        self.assertEqual(FreshnessState.STALE, result.state)
+        self.assertEqual("2026-10-05", result.expected_date)
+        self.assertEqual("2026-10-08T15:00:00Z", result.cutoff)
         self.assertEqual(FreshnessState.PENDING_PUBLICATION, self.assess("2026-10-05", "2026-10-12T12:00:00Z").state)
+
+    def test_provider_regression_is_source_error_before_new_week_cutoff(self):
+        result = assess_publication("2026-09-28", now=at("2026-10-12T12:00:00Z"), calendar=self.calendar, last_valid_date="2026-10-05")
+        self.assertEqual(FreshnessState.SOURCE_ERROR, result.state)
+        self.assertEqual("ranking_source_stale", result.reason)
 
     def test_current_edition_is_fresh_with_any_ranks(self):
         self.assertEqual(FreshnessState.FRESH, self.assess("2026-10-05", "2026-10-09T12:00:00Z").state)

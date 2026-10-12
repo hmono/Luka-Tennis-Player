@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import json
 from contextlib import redirect_stderr
 from dataclasses import replace
 from datetime import datetime
@@ -19,7 +20,7 @@ from ranking_alerts.domain import DisciplineRanking, RankingAlertState, RankingO
 from ranking_alerts.providers import DeliveryError
 from ranking_alerts.source import RankingSourceError, RawDisciplineRanking, RawRankingObservation
 from ranking_alerts.storage import load_alert_state, load_rankings
-from ranking_alerts.freshness import FreshnessState
+from ranking_alerts.freshness import DEFAULT_CALENDAR_PATH, FreshnessState, calendar_from_dict
 
 
 def observation(
@@ -88,6 +89,11 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         root = Path(self.temp_dir.name)
         self.rankings_path = root / "data" / "rankings.json"
         self.state_path = root / "automation" / "state" / "ranking_alerts.json"
+        # Synthetic calendar for old integration fixtures, independently of
+        # the bounded, reviewed production sprint calendar.
+        config = json.loads(DEFAULT_CALENDAR_PATH.read_text())
+        config.update(valid_from="2026-01-01", valid_until="2026-12-31")
+        self.calendar = calendar_from_dict(config)
 
     def collect(self, value: RankingObservation, captured_at: str):
         return update_rankings.collect(
@@ -96,6 +102,7 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             state_path=self.state_path,
             captured_at=captured_at,
             clock=lambda: datetime.fromisoformat(captured_at.replace("Z", "+00:00")),
+            calendar=self.calendar,
         )
 
     def test_bootstrap_is_persisted_with_a_digest_without_deltas(self) -> None:
@@ -222,6 +229,7 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             state_path=self.state_path,
             captured_at="2026-08-31T12:00:00Z",
             clock=lambda: datetime.fromisoformat("2026-08-31T12:00:00+00:00"),
+            calendar=self.calendar,
         )
 
         self.assertEqual("created", outcome.snapshot_status)
@@ -357,6 +365,7 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
                 baseline_path=Path(self.temp_dir.name) / "missing-baseline.json",
                 captured_at="2026-09-07T12:00:00Z",
                 clock=lambda: datetime.fromisoformat("2026-09-07T12:00:00+00:00"),
+                calendar=self.calendar,
             )
 
         self.assertEqual(before_rankings, self.rankings_path.read_bytes())

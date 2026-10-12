@@ -322,10 +322,9 @@ def _freshness_checked_observation(
     except RankingSourceError as exc:
         actual_date = getattr(source, "last_telemetry", {}).get("source_ranking_date")
         assessment = assess_publication(actual_date, now=now, calendar=calendar, last_valid_date=last_date)
-        if exc.code != "ranking_source_stale":
-            assessment = replace(assessment, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
-        else:
-            assessment = replace(assessment, state=FreshnessState.STALE, reason=exc.code)
+        # A response older than already-persisted facts is a source regression,
+        # not evidence that the current edition missed its publication SLA.
+        assessment = replace(assessment, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         exc.freshness = assessment
         raise
     assessment = assess_publication(observation.ranking_date, now=now, calendar=calendar, last_valid_date=last_date)
