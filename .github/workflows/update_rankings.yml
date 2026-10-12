@@ -70,6 +70,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/rankings.json automation/state/ranking_alerts.json
+          if [ -f automation/state/ranking_incidents.json ]; then
+            git add automation/state/ranking_incidents.json
+          fi
           if ! git diff --staged --quiet; then
             git commit -m "data: update rankings.json [automated]"
             if ! git push; then
@@ -92,6 +95,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add automation/state/ranking_alerts.json
+          if [ -f automation/state/ranking_incidents.json ]; then
+            git add automation/state/ranking_incidents.json
+          fi
           if ! git diff --staged --quiet; then
             git commit -m "data: record ranking alert delivery [automated]"
             if ! git push; then

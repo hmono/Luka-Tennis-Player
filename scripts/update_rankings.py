@@ -58,6 +58,10 @@ from ranking_alerts.storage import (
     save_alert_state,
     save_rankings,
 )
+from ranking_alerts.incidents import (
+    DEFAULT_INCIDENTS_PATH, deliver_incidents, load_incidents, pending_incidents,
+    plan_recovery, plan_stale, save_incidents, format_stale,
+)
 
 DEFAULT_RANKINGS_PATH = Path("data/rankings.json")
 DEFAULT_STATE_PATH = Path("automation/state/ranking_alerts.json")
@@ -387,6 +391,7 @@ class _FixtureSource:
 def _paths(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--rankings-path", type=Path, default=DEFAULT_RANKINGS_PATH, help=argparse.SUPPRESS)
     parser.add_argument("--state-path", type=Path, default=DEFAULT_STATE_PATH, help=argparse.SUPPRESS)
+    parser.add_argument("--incidents-path", type=Path, default=DEFAULT_INCIDENTS_PATH, help=argparse.SUPPRESS)
 
 
 SOURCE_CHOICES = ("itf",)
@@ -478,6 +483,7 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
             print("provider=callmebot config=valid")
             return 0
         if args.command == "collect":
+            ledger = load_incidents(args.incidents_path)
             source = _selected_source(args.source)
             outcome = collect(
                 source=source,
@@ -487,10 +493,15 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
                 clock=clock,
             )
             assessment = outcome.freshness
+            recovered = plan_recovery(ledger, ranking_date=outcome.snapshot.ranking_date, now=assessment.checked_at)
+            if recovered != ledger:
+                save_incidents(args.incidents_path, recovered)
+            print(f"incident_recovery={len(recovered.events) - len(ledger.events)}")
             _print_outcome(outcome, show_message=False)
             return 0
         if args.command == "deliver":
-            if not has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path):
+            ledger = load_incidents(args.incidents_path)
+            if not has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path) and not pending_incidents(ledger):
                 # Provider credentials are only required when there is work to send.
                 print("provider=callmebot provider_accepted=0")
                 return 0
@@ -503,11 +514,14 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
                 rankings_path=args.rankings_path,
                 state_path=args.state_path,
             )
+            count += deliver_incidents(provider=provider, path=args.incidents_path,
+                                       now=clock().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"))
             print(f"provider=callmebot provider_accepted={count}")
             return 0
         source: RankingSource = (
             _FixtureSource(args.fixture) if args.fixture else _selected_source(args.source)
         )
+        ledger = load_incidents(args.incidents_path)
         outcome = dry_run(
             source=source,
             rankings_path=args.rankings_path,
@@ -516,6 +530,8 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
             clock=clock,
         )
         assessment = outcome.freshness
+        recovered = plan_recovery(ledger, ranking_date=outcome.snapshot.ranking_date, now=assessment.checked_at)
+        print(f"incident_recovery_would_resolve={len(recovered.events) - len(ledger.events)}")
         _print_outcome(outcome, show_message=True)
         return 0
     except (
@@ -532,6 +548,26 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
         assessment = getattr(exc, "freshness", None)
         if assessment:
             print(f"freshness={assessment.state.value} expected_date={assessment.expected_date} actual_date={assessment.actual_date} cutoff={assessment.cutoff} source_age_days={assessment.source_age_days}")
+        if assessment and assessment.state == FreshnessState.STALE and args.command in {"collect", "dry-run"}:
+            try:
+                ledger = load_incidents(args.incidents_path)
+                new_ledger = plan_stale(
+                    ledger, expected_date=assessment.expected_date,
+                    last_valid_date=assessment.actual_date or assessment.last_valid_date,
+                    source=getattr(source, "name", "itf"),
+                    cutoff_at=assessment.cutoff, now=assessment.checked_at,
+                )
+                created = new_ledger != ledger
+                if args.command == "collect" and created:
+                    save_incidents(args.incidents_path, new_ledger)
+                print(f"snapshot=blocked outbox=none incident={'would_create' if args.command == 'dry-run' and created else 'created' if created else 'unchanged'}")
+                if args.command == "dry-run" and created:
+                    print(format_stale(new_ledger.events[-1]))
+                return 0
+            except StorageError as ledger_error:
+                error_code = ledger_error.code
+                print(f"error={ledger_error.code}", file=sys.stderr)
+                return 1
         print(f"error={exc.code}", file=sys.stderr)
         return 1
     except Exception:

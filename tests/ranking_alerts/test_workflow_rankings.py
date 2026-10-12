@@ -40,6 +40,13 @@ class RankingsWorkflowTests(unittest.TestCase):
         self.assertNotIn("probe_atp_pdfs", self.text)
         self.assertNotIn("API_TENNIS_API_KEY", self.text)
 
+    def test_incident_ledger_is_pushed_before_provider_and_after_receipts(self) -> None:
+        commits = [step for step in self.steps if "git push" in step]
+        self.assertEqual(2, len(commits))
+        for step in commits:
+            self.assertIn("if [ -f automation/state/ranking_incidents.json ]", step)
+            self.assertLess(step.index("git add automation/state/ranking_incidents.json"), step.index("git push"))
+
     def test_dispatch_defaults_to_dry_run_and_release_gates_all_writers(self) -> None:
         self.assertIn("default: dry-run", self.text)
         writers = [step for step in self.steps if any(token in step for token in ("collect --source", "git add", "deliver --provider"))]
