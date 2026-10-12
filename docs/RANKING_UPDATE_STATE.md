@@ -1,6 +1,7 @@
 # Estado — atualização semanal de rankings
 
-Atualizado: 2026-09-24 (sessão fable)
+Atualizado: 12/10/2026 UTC, sprint #17, branch local
+`fix/atp-ranking-freshness-202610`. Código implementado; publicação não liberada.
 
 ## Decisão
 
@@ -8,17 +9,59 @@ Fonte produtiva: ITF player profile API (`RANKING_SOURCE=itf`). Go registrado
 em `docs/spikes/2026-09-24-itf-ranking-source.md`. Caminho ATP PDF e runner
 macOS removidos.
 
-## Pendências
+## Histórico e fonte
 
-| Item | Responsável | Prazo |
-|---|---|---|
-| Revisar e mesclar o PR da branch `claude/loving-planck-xg0ery` | ono | antes de terça 09:00 UTC (29/09) para a primeira coleta agendada |
-| Confirmar secrets `CALLMEBOT_PHONE` e `CALLMEBOT_API_KEY` no repositório | ono | antes de terça 29/09: todo snapshot gera digest, o passo `deliver` falha sem os secrets |
-| Gate 7 (duas publicações): conferir manualmente o snapshot de 28/09 contra a ATP | ono | após a run de 29/09 |
+A edição 05/10 foi confirmada ao vivo: simples 2250, duplas 1417; pontos não
+publicados continuam `null`. Backfill acrescentou somente o snapshot, sem
+evento retroativo. Snapshot anterior e outbox/receipts preservados.
+Evidência: `docs/evidence/atp-2026-10-05-itf.json`.
+
+Perfil/título/DOM e crosswalk ATP B0UF ↔ ITF 800625103 são validados;
+simples e duplas exigem datas explícitas iguais. Não há fallback automático.
 
 ## Operação
 
-- Agenda: terça 09:00 UTC (`update_rankings.yml`), runner `ubuntu-latest`.
-- Manual: `workflow_dispatch` com `mode=dry-run` valida a fonte sem gravar.
+- Agenda implementada: terça–sexta 12:00 UTC (09h BRT), runner `ubuntu-latest`;
+  resumo com atraso >60 min e idade da fonte.
+- Manual default `dry-run`; schedule também usa dry-run enquanto a variável
+  `ATP_RANKING_DELIVERY_ENABLED` não for explicitamente `true`. A mesma variável
+  no ambiente é exigida pelo CLI deliver antes de construir o provider.
+  Nenhuma variável do repositório foi alterada nesta sessão.
+- Freshness: FRESH/PENDING_PUBLICATION/STALE/SOURCE_ERROR, cutoff quinta 12h BRT,
+  clock injetável e calendário `config/atp_publication_calendar.json` com
+  exceções referenciadas. Validade termina pelo relógio em 26/10: revisar e
+  estender antes de 27/10, inclusive para coletar a edição de 26/10 na terça.
+  ATP não publica em todas as segundas do ano; não existe rollover automático.
+- STALE: ledger append-only separado `automation/state/ranking_incidents.json`,
+  criado somente quando há incidente real, deduplicado por edição esperada,
+  intenção persistida antes do provider; recuperação cancela intenção ainda
+  não enviada e preserva auditoria. O ledger é commitado/pushed antes e depois
+  do provider, mantendo `repository-data-writer-main`.
 - Mensagem: digest semanal em toda nova publicação (rank, delta, career high); `Correção` em revisão já entregue.
-- Rollback: desabilitar o schedule; snapshots e outbox permanecem para auditoria.
+- CallMeBot exige confirmação explícita de fila; 200+erro, 204 e respostas
+  ambíguas não confirmam aceite. Falhas permanentes/ambíguas continuam auditáveis
+  sem retry automático; transitórias têm retry limitado.
+- `sent` legado continua legível; novos receipts registram
+  `delivery_status=provider_accepted`, sem afirmar entrega ao dispositivo.
+  Ainda há risco at-least-once se ocorrer crash após aceite remoto antes de
+  persistir/push do receipt; não há deduplicação comprovada no provider.
+- Backfill sem `--apply` é read-only; com `--apply` não enfileira mensagens.
+  Conflitos de revisão ou de career highs posteriores exigem reconciliação
+  revisada, preservando hashes e receipts existentes.
+- Rollback: desabilitar schedule/flag, manter dispatch dry-run e preservar
+  snapshots, outbox, receipts e ledger. Não apagar evidências.
+
+## Gates pendentes
+
+Regressão CI configurada em `.github/workflows/ranking_checks.yml`: Python,
+frontend e build em PR/push da branch. A branch permanece local, portanto
+ainda não há execução GitHub CI destes commits.
+
+- CI GitHub verde e dispatch real em dry-run na revisão final.
+- Conferência manual de edição nova oficialmente publicada nas duas disciplinas
+  e observação de duas publicações consecutivas quando disponíveis.
+- Revisar calendário/exceções oficiais e secrets de produção sem expô-los.
+- Falha original de identidade: não reproduzida nas novas capturas, com perfil
+  correto confirmado ao vivo. Causa transitória exata não comprovada;
+  instrumentação distingue navegação, bloqueio, redirecionamento, estrutura,
+  parcialidade e divergência de atleta, sem relaxar identidade.

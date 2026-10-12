@@ -1,0 +1,53 @@
+name: ATP Ranking Release Checks
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'tests/ranking_alerts/**'
+      - 'config/atp_publication_calendar.json'
+      - 'data/rankings.json'
+      - 'lib/**'
+      - 'app/**'
+      - 'components/**'
+      - 'types/**'
+      - 'vitest*'
+      - '.github/workflows/**'
+      - 'package*.json'
+  push:
+    branches: [main, 'fix/atp-ranking-freshness-*']
+    paths:
+      - 'scripts/**'
+      - 'tests/ranking_alerts/**'
+      - 'config/atp_publication_calendar.json'
+      - 'data/rankings.json'
+      - 'lib/**'
+      - 'app/**'
+      - 'components/**'
+      - 'types/**'
+      - 'vitest*'
+      - '.github/workflows/**'
+      - 'package*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python unit and isolated integration tests
+        run: python -m unittest discover -s tests/ranking_alerts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
