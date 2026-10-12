@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from contextlib import redirect_stderr
 from dataclasses import replace
+from datetime import datetime
 from io import StringIO
 import tempfile
 import unittest
@@ -18,6 +19,7 @@ from ranking_alerts.domain import DisciplineRanking, RankingAlertState, RankingO
 from ranking_alerts.providers import DeliveryError
 from ranking_alerts.source import RankingSourceError, RawDisciplineRanking, RawRankingObservation
 from ranking_alerts.storage import load_alert_state, load_rankings
+from ranking_alerts.freshness import FreshnessState
 
 
 def observation(
@@ -93,10 +95,11 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             rankings_path=self.rankings_path,
             state_path=self.state_path,
             captured_at=captured_at,
+            clock=lambda: datetime.fromisoformat(captured_at.replace("Z", "+00:00")),
         )
 
     def test_bootstrap_is_persisted_with_a_digest_without_deltas(self) -> None:
-        outcome = self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        outcome = self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
 
         self.assertEqual("created", outcome.snapshot_status)
         self.assertEqual("created", outcome.outbox_status)
@@ -104,13 +107,13 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         outbox = load_alert_state(self.state_path, outcome.rankings).outbox
         self.assertEqual(("weekly_digest",), tuple(item.event_type for item in outbox))
         message = update_rankings._message_for_snapshot(outcome.rankings, outcome.snapshot, "weekly_digest")
-        self.assertIn("ATP Ranking — 2026-09-01", message)
+        self.assertIn("ATP Ranking — 2026-08-31", message)
         self.assertIn("Singles: #2.000 | 5 pts | CH #1.800 (2025-12-01)", message)
         self.assertNotIn("(", message.splitlines()[1].split(" | ")[0])
 
     def test_unchanged_publication_still_produces_a_weekly_digest(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
-        outcome = self.collect(observation("2026-09-08"), "2026-09-08T12:00:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
+        outcome = self.collect(observation("2026-09-07"), "2026-09-07T12:00:00Z")
 
         self.assertEqual("created", outcome.outbox_status)
         self.assertEqual("weekly_digest", outcome.state.outbox[-1].event_type)
@@ -119,27 +122,76 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertIn("Doubles: #1.900 (sem alteração) | 6 pts (0) | CH #1.700 (2025-07-28)", message)
 
     def test_same_publication_recollected_is_silent(self) -> None:
-        value = observation("2026-09-01")
-        self.collect(value, "2026-09-01T12:00:00Z")
-        outcome = self.collect(value, "2026-09-08T12:00:00Z")
+        value = observation("2026-08-31")
+        self.collect(value, "2026-08-31T12:00:00Z")
+        outcome = self.collect(value, "2026-09-07T12:00:00Z")
 
         self.assertEqual("unchanged", outcome.snapshot_status)
         self.assertEqual("none", outcome.outbox_status)
         self.assertEqual(1, len(outcome.state.outbox))
 
     def test_identical_observation_is_idempotent(self) -> None:
-        value = observation("2026-09-01")
-        self.collect(value, "2026-09-01T12:00:00Z")
-        outcome = self.collect(value, "2026-09-01T13:00:00Z")
+        value = observation("2026-08-31")
+        self.collect(value, "2026-08-31T12:00:00Z")
+        outcome = self.collect(value, "2026-08-31T13:00:00Z")
 
         self.assertEqual("unchanged", outcome.snapshot_status)
         self.assertEqual(1, len(load_rankings(self.rankings_path).snapshots))
 
+    def test_stale_publication_after_cutoff_preserves_both_files(self) -> None:
+        self.collect(observation("2026-09-28"), "2026-09-29T12:00:00Z")
+        before = (self.rankings_path.read_bytes(), self.state_path.read_bytes())
+        with self.assertRaises(RankingSourceError) as raised:
+            self.collect(observation("2026-09-28"), "2026-10-08T15:00:00Z")
+        self.assertEqual("ranking_source_stale", raised.exception.code)
+        assessment = raised.exception.freshness
+        self.assertEqual(FreshnessState.STALE, assessment.state)
+        self.assertEqual("2026-10-05", assessment.expected_date)
+        self.assertEqual("2026-09-28", assessment.last_valid_date)
+        self.assertEqual(before, (self.rankings_path.read_bytes(), self.state_path.read_bytes()))
+
+    def test_pending_then_fresh_new_edition_with_identical_ranks_is_one_digest(self) -> None:
+        previous = observation("2026-09-28")
+        self.collect(previous, "2026-09-29T12:00:00Z")
+        pending = self.collect(previous, "2026-10-06T12:00:00Z")
+        self.assertEqual(FreshnessState.PENDING_PUBLICATION, pending.freshness.state)
+        self.assertEqual("none", pending.outbox_status)
+        published = self.collect(replace(previous, ranking_date="2026-10-05"), "2026-10-07T12:00:00Z")
+        self.assertEqual(FreshnessState.FRESH, published.freshness.state)
+        self.assertEqual(2, len(published.state.outbox))
+        repeated = self.collect(replace(previous, ranking_date="2026-10-05"), "2026-10-08T12:00:00Z")
+        self.assertEqual("none", repeated.outbox_status)
+        self.assertEqual(2, len(repeated.state.outbox))
+
+    def test_future_and_unexpected_edition_leave_files_untouched(self) -> None:
+        self.collect(observation("2026-09-28"), "2026-09-29T12:00:00Z")
+        before = (self.rankings_path.read_bytes(), self.state_path.read_bytes())
+        for edition in ("2026-10-12", "2026-10-06"):
+            with self.subTest(edition=edition), self.assertRaises(RankingSourceError) as raised:
+                self.collect(observation(edition), "2026-10-08T15:00:00Z")
+            self.assertEqual(FreshnessState.SOURCE_ERROR, raised.exception.freshness.state)
+            self.assertEqual(before, (self.rankings_path.read_bytes(), self.state_path.read_bytes()))
+
+    def test_source_failure_has_assessment_and_dry_run_never_writes(self) -> None:
+        class IncompleteSource:
+            def fetch(self):
+                raise RankingSourceError("ranking_source_incomplete")
+        with self.assertRaises(RankingSourceError) as raised:
+            update_rankings.dry_run(
+                source=IncompleteSource(),
+                rankings_path=self.rankings_path,
+                state_path=self.state_path,
+                clock=lambda: datetime.fromisoformat("2026-10-08T15:00:00+00:00"),
+            )
+        self.assertEqual(FreshnessState.SOURCE_ERROR, raised.exception.freshness.state)
+        self.assertFalse(self.rankings_path.exists())
+        self.assertFalse(self.state_path.exists())
+
     def test_change_creates_one_aggregated_pending_item(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
         outcome = self.collect(
-            observation("2026-09-08", singles_rank=1990, singles_points=7),
-            "2026-09-08T12:00:00Z",
+            observation("2026-09-07", singles_rank=1990, singles_points=7),
+            "2026-09-07T12:00:00Z",
         )
 
         self.assertEqual("created", outcome.outbox_status)
@@ -148,14 +200,14 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertEqual("weekly_digest", outcome.state.outbox[-1].event_type)
 
     def test_revision_supersedes_unsent_intent_for_same_date(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
         first = self.collect(
-            observation("2026-09-08", singles_rank=1990),
-            "2026-09-08T12:00:00Z",
+            observation("2026-09-07", singles_rank=1990),
+            "2026-09-07T12:00:00Z",
         )
         revised = self.collect(
-            observation("2026-09-08", singles_rank=1985),
-            "2026-09-08T13:00:00Z",
+            observation("2026-09-07", singles_rank=1985),
+            "2026-09-07T13:00:00Z",
         )
 
         self.assertEqual("revised", revised.snapshot_status)
@@ -165,10 +217,11 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
 
     def test_dry_run_does_not_create_or_change_files(self) -> None:
         outcome = update_rankings.dry_run(
-            source=FakeSource(observation("2026-09-01")),
+            source=FakeSource(observation("2026-08-31")),
             rankings_path=self.rankings_path,
             state_path=self.state_path,
-            captured_at="2026-09-01T12:00:00Z",
+            captured_at="2026-08-31T12:00:00Z",
+            clock=lambda: datetime.fromisoformat("2026-08-31T12:00:00+00:00"),
         )
 
         self.assertEqual("created", outcome.snapshot_status)
@@ -176,12 +229,12 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertFalse(self.state_path.exists())
 
     def test_provider_change_with_same_sporting_content_is_unchanged(self) -> None:
-        original = observation("2026-09-01")
-        self.collect(original, "2026-09-01T12:00:00Z")
+        original = observation("2026-08-31")
+        self.collect(original, "2026-08-31T12:00:00Z")
 
         outcome = self.collect(
             replace(original, source="atp-pdf"),
-            "2026-09-01T13:00:00Z",
+            "2026-08-31T13:00:00Z",
         )
 
         self.assertEqual("unchanged", outcome.snapshot_status)
@@ -189,23 +242,23 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertEqual(1, len(outcome.rankings.snapshots))
 
     def test_sent_date_without_effective_delta_does_not_create_correction(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
         changed = self.collect(
-            observation("2026-09-08", singles_rank=1990),
-            "2026-09-08T12:00:00Z",
+            observation("2026-09-07", singles_rank=1990),
+            "2026-09-07T12:00:00Z",
         )
         sent_item = replace(
             changed.state.outbox[-1],
             status="sent",
-            sent_at="2026-09-08T12:05:00Z",
+            sent_at="2026-09-07T12:05:00Z",
         )
 
         state = RankingAlertState(outbox=(changed.state.outbox[0], sent_item))
         outcome = update_rankings.plan_collection(
             changed.rankings,
             state,
-            observation("2026-09-08", singles_rank=2000),
-            captured_at="2026-09-08T13:00:00Z",
+            observation("2026-09-07", singles_rank=2000),
+            captured_at="2026-09-07T13:00:00Z",
         )
 
         self.assertEqual("revised", outcome.snapshot_status)
@@ -213,32 +266,32 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertEqual(state.outbox, outcome.state.outbox)
 
     def test_sent_date_with_effective_delta_creates_a_correction_message(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
-        changed = self.collect(observation("2026-09-08", singles_rank=1990), "2026-09-08T12:00:00Z")
-        sent_item = replace(changed.state.outbox[-1], status="sent", sent_at="2026-09-08T12:05:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
+        changed = self.collect(observation("2026-09-07", singles_rank=1990), "2026-09-07T12:00:00Z")
+        sent_item = replace(changed.state.outbox[-1], status="sent", sent_at="2026-09-07T12:05:00Z")
 
         outcome = update_rankings.plan_collection(
             changed.rankings,
             RankingAlertState(outbox=(changed.state.outbox[0], sent_item)),
-            observation("2026-09-08", singles_rank=1985),
-            captured_at="2026-09-08T13:00:00Z",
+            observation("2026-09-07", singles_rank=1985),
+            captured_at="2026-09-07T13:00:00Z",
         )
 
         self.assertEqual("created", outcome.outbox_status)
         self.assertEqual("ranking_correction", outcome.state.outbox[-1].event_type)
         message = update_rankings._message_for_snapshot(outcome.rankings, outcome.snapshot, "ranking_correction")
-        self.assertTrue(message.startswith("Correção ATP Ranking — 2026-09-08"))
+        self.assertTrue(message.startswith("Correção ATP Ranking — 2026-09-07"))
 
     def test_raw_source_is_converted_then_enriched_before_planning(self) -> None:
         raw = RawRankingObservation(
             source="atp-pdf",
             atp_id="B0UF",
             name="Luka Bojicic Ono",
-            ranking_date="2026-09-01",
+            ranking_date="2026-08-31",
             singles=RawDisciplineRanking(status="ranked", rank=2000, points=5),
             doubles=RawDisciplineRanking(status="ranked", rank=1900, points=6),
         )
-        enriched = replace(observation("2026-09-01"), source="atp-pdf")
+        enriched = replace(observation("2026-08-31"), source="atp-pdf")
         baseline_path = Path(self.temp_dir.name) / "baseline.json"
 
         with patch.object(update_rankings, "enrich_with_baseline", return_value=enriched) as enrich:
@@ -259,7 +312,7 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             source="atp-pdf",
             atp_id="B0UF",
             name="Luka Bojicic Ono",
-            ranking_date="2026-09-01",
+            ranking_date="2026-08-31",
             singles=RawDisciplineRanking(status="ranked", rank=2000, points=5),
             doubles=RawDisciplineRanking(status="ranked", rank=1900, points=6),
         )
@@ -272,7 +325,7 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
                 baseline_path=Path(self.temp_dir.name) / "baseline.json",
             )
 
-        latest = self.collect(observation("2026-09-08"), "2026-09-08T12:00:00Z")
+        latest = self.collect(observation("2026-09-07"), "2026-09-07T12:00:00Z")
         with self.assertRaisesRegex(RankingSourceError, "ranking_source_stale"):
             update_rankings._observation_from_source(
                 RawFakeSource(raw),
@@ -281,14 +334,14 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
             )
 
     def test_invalid_baseline_leaves_rankings_and_outbox_byte_for_byte_unchanged(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
         before_rankings = self.rankings_path.read_bytes()
         before_state = self.state_path.read_bytes()
         raw = RawRankingObservation(
             source="atp-pdf",
             atp_id="B0UF",
             name="Luka Bojicic Ono",
-            ranking_date="2026-09-08",
+            ranking_date="2026-09-07",
             singles=RawDisciplineRanking(status="ranked", rank=1990, points=7),
             doubles=RawDisciplineRanking(status="ranked", rank=1900, points=6),
         )
@@ -302,7 +355,8 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
                 rankings_path=self.rankings_path,
                 state_path=self.state_path,
                 baseline_path=Path(self.temp_dir.name) / "missing-baseline.json",
-                captured_at="2026-09-08T12:00:00Z",
+                captured_at="2026-09-07T12:00:00Z",
+                clock=lambda: datetime.fromisoformat("2026-09-07T12:00:00+00:00"),
             )
 
         self.assertEqual(before_rankings, self.rankings_path.read_bytes())
@@ -341,17 +395,17 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
 
     def test_pointless_observations_produce_rank_only_messages(self) -> None:
         first = replace(
-            observation("2026-09-01", source="itf"),
+            observation("2026-08-31", source="itf"),
             singles=DisciplineRanking(rank=2205, points=None, career_high_rank=1827, career_high_date="2025-12-01"),
             doubles=DisciplineRanking(rank=1460, points=None, career_high_rank=1407, career_high_date="2026-06-22"),
         )
         second = replace(
             first,
-            ranking_date="2026-09-08",
+            ranking_date="2026-09-07",
             singles=DisciplineRanking(rank=2190, points=None, career_high_rank=1827, career_high_date="2025-12-01"),
         )
-        self.collect(first, "2026-09-01T12:00:00Z")
-        outcome = self.collect(second, "2026-09-08T12:00:00Z")
+        self.collect(first, "2026-08-31T12:00:00Z")
+        outcome = self.collect(second, "2026-09-07T12:00:00Z")
 
         self.assertEqual("created", outcome.outbox_status)
         message = update_rankings.format_message(outcome.snapshot, outcome.delta)
@@ -360,9 +414,9 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertNotIn("pts", message)
 
     def test_delivery_failure_is_persisted_and_stops_fifo(self) -> None:
-        self.collect(observation("2026-09-01"), "2026-09-01T12:00:00Z")
-        self.collect(observation("2026-09-08", singles_rank=1990), "2026-09-08T12:00:00Z")
-        self.collect(observation("2026-09-15", singles_rank=1980), "2026-09-15T12:00:00Z")
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
+        self.collect(observation("2026-09-07", singles_rank=1990), "2026-09-07T12:00:00Z")
+        self.collect(observation("2026-09-14", singles_rank=1980), "2026-09-14T12:00:00Z")
         provider = FailingProvider()
 
         with self.assertRaises(DeliveryError):

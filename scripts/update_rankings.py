@@ -32,6 +32,16 @@ from ranking_alerts.domain import (
     snapshot_sort_key,
 )
 from ranking_alerts.source import RawRankingObservation, RankingSource, RankingSourceError
+from ranking_alerts.freshness import (
+    DEFAULT_CALENDAR_PATH,
+    CalendarError,
+    EditionCalendar,
+    FreshnessAssessment,
+    FreshnessState,
+    assess_publication,
+    load_calendar,
+    utc_now,
+)
 from ranking_alerts.providers import (
     CallMeBotProvider,
     ConfigurationError,
@@ -63,6 +73,7 @@ class CollectionOutcome:
     state: RankingAlertState
     snapshot: RankingSnapshot
     delta: RankingDelta | None
+    freshness: FreshnessAssessment | None = None
 
 
 def _latest_for_date(snapshots: Sequence[RankingSnapshot], ranking_date: str) -> RankingSnapshot | None:
@@ -203,11 +214,16 @@ def collect(
     state_path: Path = DEFAULT_STATE_PATH,
     baseline_path: Path = DEFAULT_BASELINE_PATH,
     captured_at: str | None = None,
+    clock: Callable[[], datetime] = utc_now,
+    calendar: EditionCalendar | None = None,
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
-    observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
-    outcome = plan_collection(rankings, state, observation, captured_at=captured_at or _utc_now())
+    observation, freshness = _freshness_checked_observation(
+        source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
+    )
+    outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
+    outcome = replace(outcome, freshness=freshness)
     if outcome.snapshot_status != "unchanged":
         save_rankings(rankings_path, outcome.rankings)
         save_alert_state(state_path, outcome.state, outcome.rankings)
@@ -271,11 +287,53 @@ def dry_run(
     state_path: Path = DEFAULT_STATE_PATH,
     baseline_path: Path = DEFAULT_BASELINE_PATH,
     captured_at: str | None = None,
+    clock: Callable[[], datetime] = utc_now,
+    calendar: EditionCalendar | None = None,
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
-    observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
-    return plan_collection(rankings, state, observation, captured_at=captured_at or _utc_now())
+    observation, freshness = _freshness_checked_observation(
+        source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
+    )
+    return replace(
+        plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at),
+        freshness=freshness,
+    )
+
+
+def _freshness_checked_observation(
+    source: RankingSource,
+    rankings: RankingsData,
+    *,
+    baseline_path: Path,
+    now: datetime,
+    calendar: EditionCalendar,
+) -> tuple[RankingObservation, FreshnessAssessment]:
+    """Only validated current publications may reach sporting persistence.
+
+    Errors carry a structured assessment for operational incident handling.
+    An incident can be persisted separately without making a stale snapshot.
+    Historical backfill should use explicit verified observations and
+    ``plan_collection`` rather than bypass this live-source gate silently.
+    """
+    last_date = max((snapshot.ranking_date for snapshot in rankings.snapshots), default=None)
+    try:
+        observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
+    except RankingSourceError as exc:
+        actual_date = getattr(source, "last_telemetry", {}).get("source_ranking_date")
+        assessment = assess_publication(actual_date, now=now, calendar=calendar, last_valid_date=last_date)
+        if exc.code != "ranking_source_stale":
+            assessment = replace(assessment, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
+        else:
+            assessment = replace(assessment, state=FreshnessState.STALE, reason=exc.code)
+        exc.freshness = assessment
+        raise
+    assessment = assess_publication(observation.ranking_date, now=now, calendar=calendar, last_valid_date=last_date)
+    if assessment.state in {FreshnessState.STALE, FreshnessState.SOURCE_ERROR}:
+        error = RankingSourceError(assessment.reason or "ranking_source_stale")
+        error.freshness = assessment
+        raise error
+    return observation, assessment
 
 
 def _observation_from_source(
@@ -327,6 +385,7 @@ SOURCE_CHOICES = ("itf",)
 
 
 def _source_argument(parser: argparse.ArgumentParser, *, allow_fixture: bool = False) -> None:
+    parser.add_argument("--calendar-path", type=Path, default=DEFAULT_CALENDAR_PATH)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--source", choices=SOURCE_CHOICES)
     if allow_fixture:
@@ -369,6 +428,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _print_outcome(outcome: CollectionOutcome, *, show_message: bool) -> None:
+    if outcome.freshness:
+        report = outcome.freshness
+        print(f"freshness={report.state.value} expected_date={report.expected_date} actual_date={report.actual_date} cutoff={report.cutoff} source_age_days={report.source_age_days}")
     print(f"snapshot={outcome.snapshot_status} outbox={outcome.outbox_status}")
     if not show_message:
         return
@@ -392,6 +454,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 source=_selected_source(args.source),
                 rankings_path=args.rankings_path,
                 state_path=args.state_path,
+                calendar=load_calendar(args.calendar_path),
             )
             _print_outcome(outcome, show_message=False)
             return 0
@@ -415,18 +478,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             source=source,
             rankings_path=args.rankings_path,
             state_path=args.state_path,
+            calendar=load_calendar(args.calendar_path),
         )
         _print_outcome(outcome, show_message=True)
         return 0
     except (
         AtpSourceError,
         CareerHighBaselineError,
+        CalendarError,
         ConfigurationError,
         DeliveryError,
         DomainValidationError,
         RankingSourceError,
         StorageError,
     ) as exc:
+        assessment = getattr(exc, "freshness", None)
+        if assessment:
+            print(f"freshness={assessment.state.value} expected_date={assessment.expected_date} actual_date={assessment.actual_date} cutoff={assessment.cutoff} source_age_days={assessment.source_age_days}")
         print(f"error={exc.code}", file=sys.stderr)
         return 1
     except Exception:

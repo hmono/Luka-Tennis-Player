@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "calendar_version": "2026-10-12",
+  "valid_from": "2026-01-01",
+  "valid_until": "2026-12-31",
+  "publication_weekday": 0,
+  "reference": "https://www.atptour.com/en/rankings/rankings-faq",
+  "cutoff": {
+    "timezone": "America/Sao_Paulo",
+    "days_after_edition": 3,
+    "time": "12:00"
+  },
+  "exceptions": []
+}
