@@ -22,6 +22,11 @@ RANKING_SOURCE_ERROR_CODES = frozenset(
         "ranking_source_incomplete",
         "ranking_source_coverage_truncated",
         "ranking_source_stale",
+        "ranking_source_navigation",
+        "ranking_source_redirect",
+        "ranking_source_dependency",
+        "ranking_source_future",
+        "ranking_source_edition_invalid",
     }
 )
 
