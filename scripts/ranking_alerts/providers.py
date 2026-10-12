@@ -14,7 +14,6 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from html.parser import HTMLParser
 from typing import Callable, Protocol
 
 CALLMEBOT_ENDPOINT = "https://api.callmebot.com/whatsapp.php"
@@ -44,29 +43,6 @@ class DeliveryReceipt:
     delivered_to_device: bool = False
 
 
-class _StatusMarkup(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.depth = 0
-        self.current: list[str] = []
-        self.statuses: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: object) -> None:
-        if tag in {"b", "strong"}:
-            self.depth += 1
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in {"b", "strong"} and self.depth:
-            self.depth -= 1
-            if not self.depth:
-                self.statuses.append("".join(self.current).strip())
-                self.current = []
-
-    def handle_data(self, data: str) -> None:
-        if self.depth:
-            self.current.append(data)
-
-
 def _response_code(body: bytes, *, message: str) -> str | None:
     """Only explicit queue acknowledgement establishes provider acceptance.
 
@@ -82,14 +58,30 @@ def _response_code(body: bytes, *, message: str) -> str | None:
         text = body.decode("utf-8", errors="strict")
     except UnicodeDecodeError:
         return "provider_response_ambiguous"
-    text = text.replace(message, "").replace(html.escape(message), "")
+    # The provider can normalize line breaks while echoing alert text. Remove
+    # both literal and escaped forms with flexible whitespace, before locating
+    # the authoritative footer. Never interpret copied markers in the echo.
+    removed_echo = False
+    for echo in {message, html.escape(message), html.escape(message, quote=False)}:
+        parts = re.split(r"(\s+)", echo)
+        pattern = "".join(r"\s+" if part.isspace() else re.escape(part) for part in parts)
+        text, count = re.subn(pattern, "", text)
+        removed_echo = removed_echo or count > 0
     if re.search(r"\b(error|invalid|failed|failure|unauthorized|forbidden)\b|not\s+(?:queued|sent)|unable\s+to", text, re.I):
         return "provider_application_error"
-    parser = _StatusMarkup()
-    parser.feed(text)
-    if any(status == "Message queued." for status in parser.statuses):
-        return None
     if text.strip() in {"Message queued.", "Message queued. You will receive it in a few seconds."}:
+        return None
+    footer = re.search(
+        r"(?:\s|<p>|<br\s*/?>)*<(b|strong)>\s*Message queued\.\s*</\1>\s*"
+        r"(?:You will receive it in a few seconds\.)?\s*(?:</(?:p|body|html)>\s*)*$",
+        text,
+    )
+    if footer is not None:
+        echoed = re.search(r"Text to send:\s*", text, re.I)
+        # Unsupported changes to the echo are ambiguous, even if a status
+        # marker appears inside it. This is intentionally fail-closed.
+        if echoed is not None and (not removed_echo or text[echoed.end():footer.start()].strip()):
+            return "provider_response_ambiguous"
         return None
     return "provider_response_ambiguous"
 

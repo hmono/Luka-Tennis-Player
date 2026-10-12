@@ -147,6 +147,31 @@ class CallMeBotProviderTests(unittest.TestCase):
             provider(opener).send(message=message, event_id="event")
         self.assertEqual("provider_response_ambiguous", raised.exception.code)
 
+    def test_normalized_or_reformatted_echo_cannot_supply_acknowledgement(self) -> None:
+        cases = (
+            ("<b>Message queued.</b>\nYou will receive it in a few seconds.",
+             "<p>Text to send: <b>Message queued.</b> You will receive it in a few seconds."),
+            ("<b>Message queued.</b>", "<p>Text to send: <strong>Message queued.</strong>"),
+            ("<b>Message queued.</b>", "<p>Text to send: &lt;b&gt;Message queued.&lt;/b&gt;"),
+        )
+        for message, body in cases:
+            with self.subTest(message=message, body=body):
+                with self.assertRaises(DeliveryError) as raised:
+                    provider(SequenceOpener(FakeResponse(body=body.encode()))).send(message=message, event_id="event")
+                self.assertEqual("provider_response_ambiguous", raised.exception.code)
+                self.assertFalse(raised.exception.retryable)
+
+    def test_real_footer_after_echo_is_accepted(self) -> None:
+        message = "ATP Ranking\nSingles: #1973"
+        body = "<p>Message to: +5511999999999<p>Text to send: ATP Ranking Singles: #1973<p><b>Message queued.</b> You will receive it in a few seconds."
+        receipt = provider(SequenceOpener(FakeResponse(body=body.encode()))).send(message=message, event_id="event")
+        self.assertEqual("provider_accepted", receipt.delivery_status)
+
+    def test_marker_with_unknown_trailing_content_is_ambiguous(self) -> None:
+        with self.assertRaises(DeliveryError) as raised:
+            provider(SequenceOpener(FakeResponse(body=b"<b>Message queued.</b><p>Unexpected reply"))).send(message="ATP Ranking", event_id="event")
+        self.assertEqual("provider_response_ambiguous", raised.exception.code)
+
     def test_plain_queue_acknowledgement_is_accepted(self) -> None:
         receipt = provider(SequenceOpener(FakeResponse(body=b"Message queued."))).send(message="ATP Ranking", event_id="event")
         self.assertEqual("provider_accepted", receipt.delivery_status)
