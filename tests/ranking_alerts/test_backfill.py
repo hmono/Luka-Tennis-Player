@@ -75,6 +75,34 @@ class BackfillTests(unittest.TestCase):
         self.assertEqual(stored, self.path.read_bytes())
         self.assertEqual(self.state_original, self.state.read_bytes())
 
+    def test_old_revision_cannot_be_treated_as_latest_noop(self):
+        from dataclasses import replace
+        from scripts.ranking_alerts.domain import observation_from_snapshot
+        self.run_backfill(apply=True)
+        rankings = load_rankings(self.path)
+        original = rankings.snapshots[-1]
+        revised_observation = replace(observation_from_snapshot(original), singles=replace(original.singles, rank=2251))
+        revised = build_snapshot(revised_observation, "2026-10-13T12:00:00Z", source_revision_of=original.id)
+        save_rankings(self.path, RankingsData(snapshots=rankings.snapshots + (revised,)))
+        stored = self.path.read_bytes()
+        with self.assertRaisesRegex(DomainValidationError, "backfill_revision_requires_review"):
+            self.run_backfill(apply=True)
+        self.assertEqual(stored, self.path.read_bytes())
+
+    def test_historical_insertion_cannot_silently_change_later_career_highs(self):
+        from scripts.ranking_alerts.career_high import enrich_with_baseline
+        rankings = load_rankings(self.path)
+        later_observation = RankingObservation(atp_id="B0UF", name="Luka Bojicic Ono", source="itf",
+            ranking_date="2026-10-12", singles=DisciplineRanking(rank=1900, points=None),
+            doubles=DisciplineRanking(rank=1417, points=None))
+        later = build_snapshot(enrich_with_baseline(later_observation, history=rankings.snapshots), "2026-10-13T12:00:00Z")
+        save_rankings(self.path, RankingsData(snapshots=rankings.snapshots + (later,)))
+        stored = self.path.read_bytes()
+        with self.assertRaisesRegex(DomainValidationError, "backfill_career_high_requires_review"):
+            self.run_backfill(source=Source(singles=1700), apply=True)
+        self.assertEqual(stored, self.path.read_bytes())
+        self.assertEqual(self.state_original, self.state.read_bytes())
+
 
 def load_rankings_before(payload):
     import json

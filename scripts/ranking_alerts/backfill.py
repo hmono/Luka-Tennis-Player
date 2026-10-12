@@ -9,7 +9,7 @@ from pathlib import Path
 from .career_high import DEFAULT_BASELINE_PATH, enrich_with_baseline
 from .domain import (
     DisciplineRanking, DomainValidationError, RankingObservation, RankingsData,
-    build_snapshot, normalize_player_name, snapshot_sort_key,
+    build_snapshot, normalize_player_name, observation_from_snapshot, snapshot_sort_key,
 )
 from .source import RawRankingObservation, RankingSource, RankingSourceError
 from .storage import load_alert_state, load_rankings, save_rankings
@@ -59,13 +59,23 @@ def backfill(*, source: RankingSource, as_of: str, rankings_path: Path, state_pa
     candidate = build_snapshot(observation, captured_at)
     existing = tuple(snapshot for snapshot in rankings.snapshots if snapshot.ranking_date == as_of)
     if existing:
-        if not any(snapshot.singles == candidate.singles and snapshot.doubles == candidate.doubles for snapshot in existing):
+        latest = existing[-1]
+        if latest.singles != candidate.singles or latest.doubles != candidate.doubles:
             raise DomainValidationError("backfill_revision_requires_review")
-        return BackfillOutcome("unchanged", rankings, existing[-1].id, as_of)
+        return BackfillOutcome("unchanged", rankings, latest.id, as_of)
     updated = RankingsData(
         schema_version=rankings.schema_version, atp_id=rankings.atp_id, player_name=rankings.player_name,
         snapshots=tuple(sorted(rankings.snapshots + (candidate,), key=snapshot_sort_key)),
     )
+    for later in rankings.snapshots:
+        if later.ranking_date <= as_of:
+            continue
+        prior = tuple(snapshot for snapshot in updated.snapshots if snapshot.ranking_date < later.ranking_date)
+        recalculated = enrich_with_baseline(observation_from_snapshot(later), history=prior, baseline_path=baseline_path)
+        if recalculated.singles != later.singles or recalculated.doubles != later.doubles:
+            # Do not rewrite hashed historical facts or receipts to repair a
+            # newly discovered career high. Require explicit reconciliation.
+            raise DomainValidationError("backfill_career_high_requires_review")
     if apply:
         save_rankings(rankings_path, updated)
     return BackfillOutcome("created" if apply else "would_create", updated, candidate.id, as_of)
