@@ -22,6 +22,24 @@
         "career_high_rank": 1401,
         "career_high_date": "2026-09-28"
       }
+    },
+    {
+      "id": "sha256:ba2dc4801aa342d5d15755788ad4a5e1177de5642ac056e896778a2d3ccef92b",
+      "ranking_date": "2026-10-05",
+      "captured_at": "2026-10-12T20:56:27.918252Z",
+      "source": "itf",
+      "singles": {
+        "rank": 2250,
+        "points": null,
+        "career_high_rank": 1827,
+        "career_high_date": "2025-12-01"
+      },
+      "doubles": {
+        "rank": 1417,
+        "points": null,
+        "career_high_rank": 1401,
+        "career_high_date": "2026-09-28"
+      }
     }
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "source": "itf",
+  "qualification": "existing verified ATP/ITF identity crosswalk",
+  "atp_id": "B0UF",
+  "itf_player_id": "800625103",
+  "name": "Luka Bojicic Ono",
+  "ranking_date": "2026-10-05",
+  "capture_started_at": "2026-10-12T20:53:23.587590Z",
+  "captured_at": "2026-10-12T20:53:28.872179Z",
+  "profile_url": "https://www.itftennis.com/en/players/luka-bojicic-ono/800625103/bra/mt/s/overview/",
+  "profile_http_status": 200,
+  "identity_verified": true,
+  "singles": {
+    "ranking_date": "2026-10-05",
+    "rank": 2250,
+    "points": null,
+    "status": "ranked",
+    "http_status": 200,
+    "retrieved_at": "2026-10-12T20:53:28.863217Z"
+  },
+  "doubles": {
+    "ranking_date": "2026-10-05",
+    "rank": 1417,
+    "points": null,
+    "status": "ranked",
+    "http_status": 200,
+    "retrieved_at": "2026-10-12T20:53:28.872066Z"
+  }
+}
