@@ -246,11 +246,13 @@ def deliver(
     state_path: Path = DEFAULT_STATE_PATH,
     now: Callable[[], str] = _utc_now,
 ) -> int:
+    if provider.name != "callmebot":
+        raise ConfigurationError("invalid_delivery_provider")
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
     sent_count = 0
     for item in state.outbox:
-        if item.status != "pending":
+        if item.status != "pending" or not item.retryable:
             continue
         snapshot = next((value for value in rankings.snapshots if value.id == item.snapshot_id), None)
         if snapshot is None:
@@ -259,11 +261,14 @@ def deliver(
             receipt = provider.send(
                 message=_message_for_snapshot(rankings, snapshot, item.event_type), event_id=item.id
             )
+            if receipt.provider != "callmebot" or receipt.delivery_status != "provider_accepted":
+                raise DeliveryError("provider_response_ambiguous", max(1, getattr(provider, "last_attempt_count", 1)))
         except DeliveryError as exc:
             failed = replace(
                 item,
                 attempts=item.attempts + exc.attempts,
                 last_error_code=exc.code,
+                retryable=exc.retryable,
             )
             state = replace(state, outbox=tuple(failed if value.id == item.id else value for value in state.outbox))
             save_alert_state(state_path, state, rankings)
@@ -275,6 +280,8 @@ def deliver(
             attempts=item.attempts + attempt_count,
             sent_at=receipt.accepted_at or now(),
             last_error_code=None,
+            retryable=False,
+            delivery_status="provider_accepted",
         )
         state = replace(state, outbox=tuple(delivered if value.id == item.id else value for value in state.outbox))
         save_alert_state(state_path, state, rankings)
@@ -404,7 +411,7 @@ def _selected_source(name: str) -> RankingSource:
 def has_pending_outbox(*, rankings_path: Path, state_path: Path) -> bool:
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
-    return any(item.status == "pending" for item in state.outbox)
+    return any(item.status == "pending" and item.retryable for item in state.outbox)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -485,15 +492,18 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
         if args.command == "deliver":
             if not has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path):
                 # Provider credentials are only required when there is work to send.
-                print("provider=callmebot delivered=0")
+                print("provider=callmebot provider_accepted=0")
                 return 0
+            import os
+            if os.environ.get("ATP_RANKING_DELIVERY_ENABLED") != "true":
+                raise ConfigurationError("ranking_delivery_disabled")
             provider = CallMeBotProvider.from_env()
             count = deliver(
                 provider=provider,
                 rankings_path=args.rankings_path,
                 state_path=args.state_path,
             )
-            print(f"provider=callmebot delivered={count}")
+            print(f"provider=callmebot provider_accepted={count}")
             return 0
         source: RankingSource = (
             _FixtureSource(args.fixture) if args.fixture else _selected_source(args.source)

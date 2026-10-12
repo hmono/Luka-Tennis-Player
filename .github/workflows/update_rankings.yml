@@ -81,6 +81,7 @@ jobs:
       - name: Deliver pending alerts
         if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
         env:
+          ATP_RANKING_DELIVERY_ENABLED: ${{ vars.ATP_RANKING_DELIVERY_ENABLED }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
         run: python scripts/update_rankings.py deliver --provider callmebot

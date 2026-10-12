@@ -201,6 +201,9 @@ class OutboxItem:
     sent_at: str | None = None
     provider: str = "callmebot"
     last_error_code: str | None = None
+    # Optional additions preserve existing historical receipts byte-for-byte.
+    retryable: bool = True
+    delivery_status: str | None = None
 
     def __post_init__(self) -> None:
         if not _SHA256_RE.fullmatch(self.id) or not _SHA256_RE.fullmatch(self.snapshot_id):
@@ -222,6 +225,12 @@ class OutboxItem:
             raise DomainValidationError("invalid_provider")
         if self.last_error_code is not None and not re.fullmatch(r"[a-z0-9_]+", self.last_error_code):
             raise DomainValidationError("invalid_error_code")
+        if not isinstance(self.retryable, bool):
+            raise DomainValidationError("invalid_retryable")
+        if self.delivery_status not in {None, "provider_accepted", "delivered_to_device"}:
+            raise DomainValidationError("invalid_delivery_status")
+        if self.delivery_status is not None and self.status != "sent":
+            raise DomainValidationError("invalid_delivery_status")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -474,7 +483,7 @@ def rankings_from_dict(value: Any) -> RankingsData:
 
 
 def outbox_to_dict(item: OutboxItem) -> dict[str, Any]:
-    return {
+    result = {
         "id": item.id,
         "snapshot_id": item.snapshot_id,
         "event_type": item.event_type,
@@ -485,6 +494,11 @@ def outbox_to_dict(item: OutboxItem) -> dict[str, Any]:
         "provider": item.provider,
         "last_error_code": item.last_error_code,
     }
+    if not item.retryable:
+        result["retryable"] = False
+    if item.delivery_status is not None:
+        result["delivery_status"] = item.delivery_status
+    return result
 
 
 def outbox_from_dict(value: Any) -> OutboxItem:
@@ -492,9 +506,10 @@ def outbox_from_dict(value: Any) -> OutboxItem:
         "id", "snapshot_id", "event_type", "status", "attempts", "created_at",
         "sent_at", "provider", "last_error_code",
     }
-    if not isinstance(value, Mapping) or set(value) != required:
+    optional = {"retryable", "delivery_status"}
+    if not isinstance(value, Mapping) or not required.issubset(value) or set(value) - required - optional:
         raise DomainValidationError("invalid_outbox_item")
-    return OutboxItem(**{key: value[key] for key in required})
+    return OutboxItem(**dict(value))
 
 
 def state_to_dict(state: RankingAlertState) -> dict[str, Any]:
