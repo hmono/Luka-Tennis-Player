@@ -74,6 +74,13 @@ class ItfParserTests(unittest.TestCase):
         value = replace(capture(), final_url=ITF_BASE_URL + PROFILE_PATH + "?ignored=true", dom_identity="Luka Bojicic Ono Men's Singles Overview")
         self.assertEqual("B0UF", parse_capture(value).atp_id)
 
+    def test_live_capture_requires_dom_identity_and_rejects_name_prefixes(self) -> None:
+        for name, code in ((None, "ranking_source_incomplete"), ("", "ranking_source_incomplete"), ("Luka Bojicic Ono Junior", "ranking_source_identity_mismatch")):
+            value = replace(capture(), final_url=ITF_BASE_URL + PROFILE_PATH, dom_identity=name)
+            with self.subTest(name=name), self.assertRaises(RankingSourceError) as raised:
+                parse_capture(value)
+            self.assertEqual(code, raised.exception.code)
+
     def test_telemetry_redacts_arbitrary_text_urls_and_nonallowlisted_headers(self) -> None:
         value = replace(
             capture(title="secret-title"),
@@ -122,9 +129,16 @@ class ItfParserTests(unittest.TestCase):
                 parse_capture(capture(singles=None, singles_status=status))
             self.assertEqual(code, raised.exception.code)
 
-    def test_missing_atp_entry_in_well_formed_reply_is_unranked(self) -> None:
-        observation = parse_capture(capture(doubles={"rankings": [], "careerHighRankings": []}))
+    def test_missing_either_atp_entry_fails_closed_without_borrowing_date(self) -> None:
+        for discipline in ("singles", "doubles"):
+            value = capture(**{discipline: {"rankings": [], "careerHighRankings": []}})
+            with self.subTest(discipline=discipline), self.assertRaises(RankingSourceError) as raised:
+                parse_capture(value)
+            self.assertEqual("ranking_source_incomplete", raised.exception.code)
 
+    def test_explicit_dated_null_rank_is_unranked_in_same_publication(self) -> None:
+        value = capture(doubles={"rankings": [{"name": "ATP Doubles Ranking", "rank": None, "date": "21 September 2026"}]})
+        observation = parse_capture(value)
         self.assertEqual("unranked", observation.doubles.status)
         self.assertIsNone(observation.doubles.rank)
         self.assertEqual("2026-09-21", observation.ranking_date)
@@ -142,6 +156,7 @@ class ItfParserTests(unittest.TestCase):
             {"name": "ATP Doubles Ranking", "rank": True, "date": "21 September 2026"},
             {"name": "ATP Doubles Ranking", "rank": 1460, "date": "2026-09-21"},
             {"name": "ATP Doubles Ranking", "rank": 1460, "date": None},
+            {"name": "ATP Doubles Ranking", "date": "21 September 2026"},
         ):
             with self.subTest(entry=entry), self.assertRaises(RankingSourceError) as raised:
                 parse_capture(capture(doubles={"rankings": [entry]}))

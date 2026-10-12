@@ -108,6 +108,17 @@ def _identity_matches(value: str | None) -> bool:
     return actual == expected or actual.startswith(expected + " ")
 
 
+def _dom_identity_matches(value: str | None) -> bool:
+    """Match the whole athlete heading, allowing only known ITF UI suffixes."""
+    actual = normalize_player_name(value)
+    expected = normalize_player_name(PLAYER_NAME)
+    return actual in {
+        expected,
+        expected + " men's singles overview",
+        expected + " men's doubles overview",
+    }
+
+
 def _page_kind(title: str) -> str:
     if _identity_matches(title):
         return "athlete_profile"
@@ -128,7 +139,7 @@ def capture_telemetry(capture: ItfProfileCapture) -> dict[str, Any]:
         "final_url": _safe_url(capture.final_url),
         "page_title": "Luka Bojicic Ono Tennis Player Profile | ITF" if kind == "athlete_profile" else f"[{kind} title redacted]",
         "page_kind": kind,
-        "dom_identity": PLAYER_NAME if _identity_matches(capture.dom_identity) else ("missing" if capture.dom_identity is None else "other"),
+        "dom_identity": PLAYER_NAME if _dom_identity_matches(capture.dom_identity) else ("missing" if not capture.dom_identity else "other"),
         "cache_headers": _cache_headers(capture.cache_headers),
     }
     for discipline in ("singles", "doubles"):
@@ -185,10 +196,12 @@ def _discipline(response: ItfOverviewResponse, discipline: str) -> tuple[RawDisc
     if len(entries) > 1:
         raise RankingSourceError("ranking_source_schema_changed")
     if not entries:
-        # A well-formed reply without the ATP entry: the player is not ranked
-        # in this discipline. A malformed reply never reaches this branch.
-        return RawDisciplineRanking(status="unranked", rank=None, points=None), None
+        # Missing coverage provides neither an unranked fact nor an edition.
+        # Never borrow the other discipline's date to complete an observation.
+        raise RankingSourceError("ranking_source_incomplete")
     entry = entries[0]
+    if "rank" not in entry:
+        raise RankingSourceError("ranking_source_schema_changed")
     rank = entry.get("rank")
     ranking_date = _ranking_date(entry.get("date"))
     if rank is None:
@@ -217,20 +230,20 @@ def parse_capture(capture: ItfProfileCapture) -> RawRankingObservation:
         raise RankingSourceError("ranking_source_schema_changed")
     if not _identity_matches(capture.page_title):
         raise RankingSourceError("ranking_source_identity_mismatch")
-    if capture.dom_identity is not None and not _identity_matches(capture.dom_identity):
+    if capture.final_url is not None and not capture.dom_identity:
+        raise RankingSourceError("ranking_source_incomplete")
+    if capture.dom_identity is not None and not _dom_identity_matches(capture.dom_identity):
         raise RankingSourceError("ranking_source_identity_mismatch")
     singles, singles_date = _discipline(capture.singles, "singles")
     doubles, doubles_date = _discipline(capture.doubles, "doubles")
-    dates = {value for value in (singles_date, doubles_date) if value is not None}
-    if len(dates) != 1:
-        # No official date at all, or singles and doubles from different
-        # publications: neither can be persisted as one observation.
+    if singles_date is None or doubles_date is None or singles_date != doubles_date:
+        # Both disciplines must explicitly confirm the same publication.
         raise RankingSourceError("ranking_source_incomplete")
     return RawRankingObservation(
         source=SOURCE_NAME,
         atp_id=PLAYER_ATP_ID,
         name=PLAYER_NAME,
-        ranking_date=dates.pop(),
+        ranking_date=singles_date,
         singles=singles,
         doubles=doubles,
     )
