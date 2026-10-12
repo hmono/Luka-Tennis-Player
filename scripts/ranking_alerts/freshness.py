@@ -86,7 +86,7 @@ class EditionCalendar:
 
 def calendar_from_dict(value: Any) -> EditionCalendar:
     try:
-        if not isinstance(value, Mapping) or value.get("schema_version") != 1:
+        if not isinstance(value, Mapping) or type(value.get("schema_version")) is not int or value.get("schema_version") != 1:
             raise CalendarError()
         version = value["calendar_version"]
         reference = value["reference"]

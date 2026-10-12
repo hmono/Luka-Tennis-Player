@@ -89,6 +89,14 @@ class FreshnessTests(unittest.TestCase):
         with self.assertRaises(CalendarError):
             self.assess("2026-10-05", "2026-10-06T12:00:00")
 
+    def test_calendar_version_rejects_boolean_and_float_schema(self):
+        for version in (True, 1.0, "1"):
+            with self.subTest(version=version):
+                config = json.loads(DEFAULT_CALENDAR_PATH.read_text())
+                config["schema_version"] = version
+                with self.assertRaises(CalendarError):
+                    calendar_from_dict(config)
+
 
 if __name__ == "__main__":
     unittest.main()
