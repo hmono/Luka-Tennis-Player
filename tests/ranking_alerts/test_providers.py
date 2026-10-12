@@ -20,9 +20,11 @@ ACCEPTED_AT = datetime(2026, 9, 1, 12, 0, tzinfo=timezone.utc)
 
 
 class FakeResponse:
-    def __init__(self, status: int = 200, headers: dict[str, str] | None = None):
+    def __init__(self, status: int = 200, headers: dict[str, str] | None = None, body: bytes = b"<b>Message queued.</b> You will receive it in a few seconds."):
         self.status = status
         self.headers = headers or {}
+        self.body = body
+        self.closed = False
 
     def __enter__(self):
         return self
@@ -31,7 +33,10 @@ class FakeResponse:
         return False
 
     def read(self, *args, **kwargs) -> bytes:
-        return b"provider response deliberately ignored"
+        return self.body[:args[0]] if args else self.body
+
+    def close(self) -> None:
+        self.closed = True
 
 
 def http_error(status: int, headers: dict[str, str] | None = None) -> HTTPError:
@@ -88,8 +93,8 @@ class ConfigurationTests(unittest.TestCase):
 
 
 class CallMeBotProviderTests(unittest.TestCase):
-    def test_url_encodes_query_parameters_and_accepts_any_2xx(self) -> None:
-        opener = SequenceOpener(FakeResponse(status=204))
+    def test_url_encodes_query_parameters_and_requires_queue_acknowledgement(self) -> None:
+        opener = SequenceOpener(FakeResponse(status=200))
         client = provider(opener)
         message = "ATP Ranking — Singles: #1.973 (+6) & 5 pts"
 
@@ -105,10 +110,54 @@ class CallMeBotProviderTests(unittest.TestCase):
         self.assertEqual([message], query["text"])
         self.assertEqual([API_KEY], query["apikey"])
         self.assertEqual("callmebot", receipt.provider)
-        self.assertEqual(204, receipt.http_status)
+        self.assertEqual(200, receipt.http_status)
+        self.assertEqual("provider_accepted", receipt.delivery_status)
+        self.assertFalse(receipt.delivered_to_device)
         self.assertEqual("2026-09-01T12:00:00Z", receipt.accepted_at)
         self.assertEqual([15.0], opener.timeouts)
         self.assertEqual(1, client.last_attempt_count)
+
+    def test_application_error_with_200_is_not_success_or_retried(self) -> None:
+        for body in (b"ERROR: Invalid APIKEY", b"<b>Message queued.</b><p>Error: failed", b"<b>Message not sent</b>"):
+            with self.subTest(body=body):
+                response = FakeResponse(body=body)
+                opener = SequenceOpener(response)
+                client = provider(opener)
+                with self.assertRaises(DeliveryError) as raised:
+                    client.send(message="ATP Ranking", event_id="event")
+                self.assertEqual("provider_application_error", raised.exception.code)
+                self.assertFalse(raised.exception.retryable)
+                self.assertEqual(1, len(opener.requests))
+                self.assertTrue(response.closed)
+
+    def test_ambiguous_and_204_replies_require_review_without_retry(self) -> None:
+        for status, body in ((204, b""), (200, b""), (200, b"OK"), (202, b'{"success":true}'), (200, b"x" * 16385), (200, b"\xff")):
+            with self.subTest(status=status, body_length=len(body)):
+                opener = SequenceOpener(FakeResponse(status=status, body=body))
+                with self.assertRaises(DeliveryError) as raised:
+                    provider(opener).send(message="ATP Ranking", event_id="event")
+                self.assertEqual("provider_response_ambiguous", raised.exception.code)
+                self.assertFalse(raised.exception.retryable)
+                self.assertEqual(1, len(opener.requests))
+
+    def test_echoed_message_cannot_supply_queue_acknowledgement(self) -> None:
+        message = "<b>Message queued.</b>"
+        opener = SequenceOpener(FakeResponse(body=f"<p>Text to send: {message}".encode()))
+        with self.assertRaises(DeliveryError) as raised:
+            provider(opener).send(message=message, event_id="event")
+        self.assertEqual("provider_response_ambiguous", raised.exception.code)
+
+    def test_plain_queue_acknowledgement_is_accepted(self) -> None:
+        receipt = provider(SequenceOpener(FakeResponse(body=b"Message queued."))).send(message="ATP Ranking", event_id="event")
+        self.assertEqual("provider_accepted", receipt.delivery_status)
+        self.assertFalse(receipt.delivered_to_device)
+
+    def test_application_reply_never_exposes_credentials_or_body(self) -> None:
+        body = f"Error: https://api.callmebot.com/whatsapp.php?apikey={API_KEY}&phone={PHONE}"
+        with self.assertRaises(DeliveryError) as raised:
+            provider(SequenceOpener(FakeResponse(body=body.encode()))).send(message="ATP Ranking", event_id="event")
+        self.assertEqual("provider_application_error", str(raised.exception))
+        self.assertIsNone(raised.exception.__cause__)
 
     def test_429_respects_bounded_retry_after_then_succeeds(self) -> None:
         sleeps: list[float] = []
@@ -133,6 +182,7 @@ class CallMeBotProviderTests(unittest.TestCase):
 
         self.assertEqual("http_500", raised.exception.code)
         self.assertEqual(4, raised.exception.attempts)
+        self.assertTrue(raised.exception.retryable)
         self.assertEqual(4, client.last_attempt_count)
         self.assertEqual(3, len(sleeps))
 
@@ -145,6 +195,7 @@ class CallMeBotProviderTests(unittest.TestCase):
 
         self.assertEqual("http_401", raised.exception.code)
         self.assertEqual(1, raised.exception.attempts)
+        self.assertFalse(raised.exception.retryable)
         self.assertEqual(1, len(opener.requests))
 
     def test_timeout_is_retryable_and_redacted(self) -> None:
@@ -157,6 +208,7 @@ class CallMeBotProviderTests(unittest.TestCase):
         error = raised.exception
         self.assertEqual("transport_timeout", error.code)
         self.assertEqual(4, error.attempts)
+        self.assertTrue(error.retryable)
         self.assertNotIn(PHONE, str(error))
         self.assertNotIn(API_KEY, str(error))
         self.assertNotIn("signed URL", str(error))
@@ -190,6 +242,8 @@ class DryRunProviderTests(unittest.TestCase):
         self.assertEqual("dry-run", receipt.provider)
         self.assertEqual("2026-09-01T12:00:00Z", receipt.accepted_at)
         self.assertIsNone(receipt.http_status)
+        self.assertEqual("dry_run", receipt.delivery_status)
+        self.assertFalse(receipt.delivered_to_device)
 
 
 if __name__ == "__main__":
