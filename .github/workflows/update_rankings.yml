@@ -1,10 +1,10 @@
 name: Update ATP Rankings
 
-# ATP publishes on Monday; the ITF profile carries the new publication the
-# same day. Tuesday 09:00 UTC leaves a full day of slack.
+# Recheck Tuesday–Friday at 09:00 BRT. GitHub cron can start late; timing is
+# recorded separately from the Thursday 12:00 BRT publication deadline.
 on:
   schedule:
-    - cron: '0 9 * * 2'
+    - cron: '0 12 * * 2-5'
   workflow_dispatch:
     inputs:
       mode:
@@ -13,10 +13,11 @@ on:
         options:
           - collect-and-deliver
           - dry-run
-        default: collect-and-deliver
+        default: dry-run
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: repository-data-writer-main
@@ -33,6 +34,19 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Record expected slot and actual workflow start
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '{created_at: .created_at, run_started_at: .run_started_at}' > "${RUNNER_TEMP}/atp-run-timing.json"
+          python scripts/update_rankings.py telemetry --event-name "${GITHUB_EVENT_NAME}" --run-metadata "${RUNNER_TEMP}/atp-run-timing.json"
+
+      - name: Require explicit release for collect-and-deliver
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'collect-and-deliver' && vars.ATP_RANKING_DELIVERY_ENABLED != 'true'
+        run: |
+          echo 'ATP collection and delivery remain disabled. Set ATP_RANKING_DELIVERY_ENABLED=true only after release approval.' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
       - name: Install automation dependencies
         run: pip install -r requirements-automation.txt
 
@@ -43,15 +57,15 @@ jobs:
         run: python -m unittest discover -s tests/ranking_alerts
 
       - name: Dry run against the live ITF source
-        if: inputs.mode == 'dry-run'
+        if: inputs.mode == 'dry-run' || (github.event_name == 'schedule' && vars.ATP_RANKING_DELIVERY_ENABLED != 'true')
         run: python scripts/update_rankings.py dry-run --source itf
 
       - name: Collect ranking snapshot
-        if: inputs.mode != 'dry-run'
+        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
         run: python scripts/update_rankings.py collect --source itf
 
       - name: Commit snapshot and pending alert intentions
-        if: inputs.mode != 'dry-run'
+        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -65,14 +79,14 @@ jobs:
           fi
 
       - name: Deliver pending alerts
-        if: inputs.mode != 'dry-run'
+        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
         env:
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
         run: python scripts/update_rankings.py deliver --provider callmebot
 
       - name: Commit delivery receipts
-        if: always() && inputs.mode != 'dry-run'
+        if: always() && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

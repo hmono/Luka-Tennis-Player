@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import json
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import replace
 from datetime import datetime
 from io import StringIO
@@ -191,6 +191,38 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
                 clock=lambda: datetime.fromisoformat("2026-10-08T15:00:00+00:00"),
             )
         self.assertEqual(FreshnessState.SOURCE_ERROR, raised.exception.freshness.state)
+        self.assertFalse(self.rankings_path.exists())
+        self.assertFalse(self.state_path.exists())
+
+    def test_cli_failure_still_reports_source_telemetry_without_mutating_state(self) -> None:
+        self.collect(observation("2026-10-05"), "2026-10-06T12:00:00Z")
+        before = (self.rankings_path.read_bytes(), self.state_path.read_bytes())
+        source = FakeSource(observation("2026-10-19"))
+        source.last_telemetry = {"source": "itf", "source_ranking_date": "2026-10-19", "singles": {"http_status": 200, "ranking_date": "2026-10-19"}, "body": "private"}
+        summary = Path(self.temp_dir.name) / "summary.md"
+        output = StringIO()
+        with patch.object(update_rankings, "_selected_source", return_value=source), patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(summary)}), redirect_stdout(output), redirect_stderr(StringIO()):
+            code = update_rankings.main(
+                ["dry-run", "--source", "itf", "--rankings-path", str(self.rankings_path), "--state-path", str(self.state_path)],
+                clock=lambda: datetime.fromisoformat("2026-10-14T12:00:00+00:00"),
+            )
+        self.assertEqual(1, code)
+        self.assertIn("source_telemetry=", output.getvalue())
+        self.assertIn("SOURCE_ERROR", summary.read_text())
+        self.assertIn("ranking_source_future", summary.read_text())
+        self.assertNotIn("private", summary.read_text())
+        self.assertEqual(before, (self.rankings_path.read_bytes(), self.state_path.read_bytes()))
+
+    def test_cli_schedule_summary_does_not_collect_send_or_write_state(self) -> None:
+        metadata = Path(self.temp_dir.name) / "run.json"
+        metadata.write_text(json.dumps({"created_at": "2026-10-13T12:10:00Z", "run_started_at": "2026-10-13T13:30:00Z"}))
+        summary = Path(self.temp_dir.name) / "summary.md"
+        with patch.object(update_rankings, "_selected_source") as source, patch.object(update_rankings.CallMeBotProvider, "from_env") as provider, patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(summary)}), redirect_stdout(StringIO()):
+            code = update_rankings.main(["telemetry", "--event-name", "schedule", "--run-metadata", str(metadata), "--rankings-path", str(self.rankings_path), "--state-path", str(self.state_path)])
+        self.assertEqual(0, code)
+        source.assert_not_called()
+        provider.assert_not_called()
+        self.assertIn("DELAY >60 minutes", summary.read_text())
         self.assertFalse(self.rankings_path.exists())
         self.assertFalse(self.state_path.exists())
 

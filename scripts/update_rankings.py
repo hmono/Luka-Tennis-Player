@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
@@ -42,6 +43,7 @@ from ranking_alerts.freshness import (
     load_calendar,
     utc_now,
 )
+from ranking_alerts.telemetry import emit_collection_summary, emit_schedule_summary, schedule_timing
 from ranking_alerts.providers import (
     CallMeBotProvider,
     ConfigurationError,
@@ -423,6 +425,11 @@ def build_parser() -> argparse.ArgumentParser:
     dry_parser = commands.add_parser("dry-run", help="collect and render without side effects")
     _source_argument(dry_parser, allow_fixture=True)
     _paths(dry_parser)
+
+    telemetry_parser = commands.add_parser("telemetry", help="summarize workflow scheduling without changing state")
+    telemetry_parser.add_argument("--event-name", choices=("schedule", "workflow_dispatch"), required=True)
+    telemetry_parser.add_argument("--run-metadata", type=Path, required=True)
+    _paths(telemetry_parser)
     return parser
 
 
@@ -439,9 +446,24 @@ def _print_outcome(outcome: CollectionOutcome, *, show_message: bool) -> None:
         print("message=none (no new publication)")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = utc_now) -> int:
     args = build_parser().parse_args(argv)
+    source = None
+    assessment = None
+    error_code = None
     try:
+        if args.command == "telemetry":
+            metadata = json.loads(args.run_metadata.read_text(encoding="utf-8"))
+            report = schedule_timing(
+                event=args.event_name,
+                created_at=datetime.fromisoformat(metadata["created_at"].replace("Z", "+00:00")),
+                started_at=datetime.fromisoformat(metadata["run_started_at"].replace("Z", "+00:00")),
+            )
+            rankings = load_rankings(args.rankings_path)
+            last_date = max((snapshot.ranking_date for snapshot in rankings.snapshots), default=None)
+            source_age = (datetime.fromisoformat(report.started_at.replace("Z", "+00:00")).date() - datetime.fromisoformat(last_date).date()).days if last_date else None
+            emit_schedule_summary(report, source_age_days=source_age)
+            return 0
         if args.command == "check-config":
             import os
 
@@ -449,12 +471,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("provider=callmebot config=valid")
             return 0
         if args.command == "collect":
+            source = _selected_source(args.source)
             outcome = collect(
-                source=_selected_source(args.source),
+                source=source,
                 rankings_path=args.rankings_path,
                 state_path=args.state_path,
                 calendar=load_calendar(args.calendar_path),
+                clock=clock,
             )
+            assessment = outcome.freshness
             _print_outcome(outcome, show_message=False)
             return 0
         if args.command == "deliver":
@@ -478,7 +503,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             rankings_path=args.rankings_path,
             state_path=args.state_path,
             calendar=load_calendar(args.calendar_path),
+            clock=clock,
         )
+        assessment = outcome.freshness
         _print_outcome(outcome, show_message=True)
         return 0
     except (
@@ -491,14 +518,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         RankingSourceError,
         StorageError,
     ) as exc:
+        error_code = exc.code
         assessment = getattr(exc, "freshness", None)
         if assessment:
             print(f"freshness={assessment.state.value} expected_date={assessment.expected_date} actual_date={assessment.actual_date} cutoff={assessment.cutoff} source_age_days={assessment.source_age_days}")
         print(f"error={exc.code}", file=sys.stderr)
         return 1
     except Exception:
+        error_code = "unexpected_failure"
         print("error=unexpected_failure", file=sys.stderr)
         return 1
+    finally:
+        if args.command in {"collect", "dry-run"}:
+            try:
+                emit_collection_summary(assessment, source_telemetry=getattr(source, "last_telemetry", None), error_code=error_code)
+            except OSError:
+                print("telemetry=summary_unavailable", file=sys.stderr)
 
 
 if __name__ == "__main__":
