@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import { applyD1Migrations, reset } from 'cloudflare:test';
+import { applyD1Migrations, reset, type D1Migration } from 'cloudflare:test';
 import { beforeEach } from 'vitest';
 
 declare module 'cloudflare:workers' {
