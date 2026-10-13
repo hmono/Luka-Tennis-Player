@@ -319,8 +319,8 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
         if obsolete:
             ledger = _transition(ledger, item, state="suppressed", now=now(), error_code="superseded_backlog")
     persist(ledger)
-    sends = 0
-    # Operational alerts go first; sporting failure cannot suppress the sink.
+    sends = {"sporting": 0, "operational": 0}
+    # Separate budgets prevent an unavailable channel from starving the other.
     initial = ledger.latest()
     queue = sorted(initial, key=lambda key: (initial[key]["channel"] != "operational", initial[key]["at"], key))
     for identity in queue:
@@ -333,8 +333,8 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
             continue
         if (item["channel"] == "operational" and ops_alert is None) or (item["channel"] == "sporting" and provider is None):
             continue
-        if sends >= max_sends:
-            break
+        if sends[item["channel"]] >= max_sends:
+            continue
         if item["channel"] == "sporting" and item["attempts"] >= max_attempts:
             ledger = _transition(ledger, item, state="rejected", now=now(), error_code="retry_exhausted")
             if item["channel"] == "sporting":
@@ -346,7 +346,7 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
                              attempt_id=uuid4().hex, provider="independent-ops" if item["channel"] == "operational" else provider.name,
                              error_code=None)
         persist(ledger)
-        sends += 1
+        sends[item["channel"]] += 1
         reserved = ledger.latest()[identity]
         http_status = None
         try:

@@ -172,6 +172,19 @@ class AutonomousRuntimeTests(unittest.TestCase):
         self.run_cycle()
         self.assertTrue(any(event.startswith("edition:") for _, event in self.provider.messages))
 
+    def test_operations_outage_backlog_does_not_starve_sporting_delivery(self):
+        from ranking_alerts.autonomous_delivery import DeliveryLedger, plan_operational, save_delivery
+        ledger = DeliveryLedger()
+        for index in range(12):
+            ledger = plan_operational(ledger, event_id=f"outage-{index}",
+                                      message="Independent operations channel unavailable", now="2026-10-13T12:00:00Z")
+        save_delivery(self.root / autonomous_rankings.DEFAULT_DELIVERY_PATH, ledger)
+        result = autonomous_rankings.run_cycle(source=self.source, root=self.root,
+            now=lambda: self.instant, checkpoint=lambda: None, provider_factory=lambda: self.provider,
+            ops_alert=lambda event, text: False)
+        self.assertGreater(result["notification"]["ops_pending"], 0)
+        self.assertEqual(2, len(self.provider.messages))
+
     def test_two_real_git_executors_send_only_winning_remote_claim(self):
         from ranking_alerts.durability import GitCheckpoint
         def git(root, *args):
