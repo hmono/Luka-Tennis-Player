@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
+import json
 import sys
 import tempfile
 import unittest
@@ -144,6 +146,77 @@ class AutonomousRuntimeTests(unittest.TestCase):
         self.source.edition = "2026-10-12"
         self.run_cycle()
         self.assertGreater(len(self.provider.messages), attempts)
+
+    def test_provider_configuration_failure_still_alerts_independently(self):
+        from ranking_alerts.providers import ConfigurationError
+        def factory():
+            raise ConfigurationError("invalid_configuration")
+        result = autonomous_rankings.run_cycle(source=self.source, root=self.root,
+            now=lambda: self.instant, checkpoint=lambda: None, provider_factory=factory,
+            ops_alert=lambda event, text: self.alerts.append((event, text)) or True)
+        self.assertEqual("unavailable", result["provider_configuration"])
+        self.assertEqual([], self.provider.messages)
+        self.assertTrue(any("provider unavailable" in text for _, text in self.alerts))
+
+    def test_two_real_git_executors_send_only_winning_remote_claim(self):
+        from ranking_alerts.durability import GitCheckpoint
+        def git(root, *args):
+            return subprocess.run(["git", *args], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+        remote = self.root / "remote.git"
+        git(self.root, "init", "--bare", str(remote))
+        seed = self.root / "seed"
+        seed.mkdir()
+        git(seed, "init", "-b", "main")
+        git(seed, "config", "user.name", "test")
+        git(seed, "config", "user.email", "test@example.invalid")
+        shutil.copytree(self.root / "data", seed / "data")
+        git(seed, "add", "data")
+        git(seed, "commit", "-m", "seed")
+        git(seed, "remote", "add", "origin", str(remote))
+        git(seed, "push", "origin", "main")
+        git(remote, "symbolic-ref", "HEAD", "refs/heads/main")
+        clones = [self.root / "executor-a", self.root / "executor-b"]
+        for clone in clones:
+            git(self.root, "clone", str(remote), str(clone))
+            git(clone, "config", "user.name", "test")
+            git(clone, "config", "user.email", "test@example.invalid")
+        marker = self.root / "provider-requests.txt"
+        # No shared local lock between clones: the remote push is the deciding fence.
+        worker = '''import sys
+from pathlib import Path
+from datetime import datetime, timezone
+sys.path.insert(0, sys.argv[1])
+import autonomous_rankings
+from ranking_alerts.durability import GitCheckpoint, state_lock
+from ranking_alerts.providers import DeliveryReceipt
+from ranking_alerts.source import RawRankingObservation, RawDisciplineRanking
+from ranking_alerts.storage import StorageError
+class Source:
+    name='itf'
+    def fetch(self):
+        return RawRankingObservation(atp_id='B0UF', name='Luka Bojicic Ono', source='itf', ranking_date='2026-10-05', singles=RawDisciplineRanking(status='ranked',rank=2250,points=None), doubles=RawDisciplineRanking(status='ranked',rank=1417,points=None))
+class Provider:
+    name='callmebot'
+    last_attempt_count=1
+    def send(self, *, message, event_id):
+        with Path(sys.argv[3]).open('a') as f: f.write(event_id+'\\n')
+        return DeliveryReceipt(provider='callmebot',accepted_at='2026-10-13T12:17:00Z',http_status=200)
+root=Path(sys.argv[2])
+try:
+    with state_lock(root/'automation/state/ranking_alerts.json'):
+        autonomous_rankings.run_cycle(source=Source(),root=root,now=lambda:datetime(2026,10,13,12,17,tzinfo=timezone.utc), checkpoint=GitCheckpoint(root),provider_factory=Provider,ops_alert=lambda a,b:True)
+    print('completed')
+except StorageError as e: print(e.code)
+'''
+        children = [subprocess.Popen([sys.executable, "-c", worker, str(SCRIPTS), str(clone), str(marker)],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for clone in clones]
+        results = [child.communicate(timeout=45) for child in children]
+        self.assertTrue(all(child.returncode == 0 for child in children), results)
+        self.assertEqual(1, sum("completed" in out for out, _ in results), results)
+        self.assertEqual(1, sum("ranking_checkpoint_failed" in out for out, _ in results), results)
+        requests = marker.read_text().splitlines()
+        self.assertEqual(2, len(requests))  # winning edition + weekly status
+        self.assertEqual(len(requests), len(set(requests)))
 
 
 if __name__ == "__main__":
