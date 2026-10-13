@@ -1,0 +1,10 @@
+Workflow: https://github.com/hmono/Luka-Tennis-Player/actions/runs/38395023002
+Code commit: 816eed21256191bf28ab84c6dbf5a2e3add431dc
+Mode: dry-run; conclusion: success
+Collect / checkpoint / deliver / receipts: skipped
+
+2026-10-13T12:08:16.4225217Z incident_recovery_would_resolve=0
+2026-10-13T12:08:16.4225914Z freshness=PENDING_PUBLICATION expected_date=2026-10-12 actual_date=2026-10-05 cutoff=2026-10-15T15:00:00Z source_age_days=8
+2026-10-13T12:08:16.4226772Z snapshot=unchanged outbox=none
+2026-10-13T12:08:16.4227014Z message=none (no new publication)
+2026-10-13T12:08:16.4230179Z source_telemetry={"atp_id": "B0UF", "cache_headers": {"Cache-Control": "max-age=300", "Date": "Tue, 13 Oct 2026 12:08:14 GMT"}, "completed_at": "2026-10-13T12:08:16.376108Z", "dom_identity": "Luka Bojicic Ono", "doubles": {"cache_headers": {"Cache-Control": "max-age=0", "Date": "Tue, 13 Oct 2026 12:08:16 GMT", "Last-Modified": "Tue, 13 Oct 2026 12:08:16 GMT"}, "http_status": 200, "json_object": true, "rank": 1417, "ranking_date": "2026-10-05", "retrieved_at": "2026-10-13T12:08:16.376031Z"}, "final_url": "https://www.itftennis.com/en/players/luka-bojicic-ono/800625103/bra/mt/s/overview/", "itf_player_id": "800625103", "navigation_error": null, "navigation_status": 200, "page_kind": "athlete_profile", "page_title": "Luka Bojicic Ono Tennis Player Profile | ITF", "singles": {"cache_headers": {"Cache-Control": "max-age=0", "Date": "Tue, 13 Oct 2026 12:08:16 GMT", "Last-Modified": "Tue, 13 Oct 2026 12:08:15 GMT"}, "http_status": 200, "json_object": true, "rank": 2250, "ranking_date": "2026-10-05", "retrieved_at": "2026-10-13T12:08:16.209959Z"}, "source": "itf", "source_ranking_date": "2026-10-05", "started_at": "2026-10-13T12:08:13.271290Z"}

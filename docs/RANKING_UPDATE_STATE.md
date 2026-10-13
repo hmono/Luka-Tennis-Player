@@ -1,7 +1,9 @@
 # Estado — atualização semanal de rankings
 
-Atualizado: 12/10/2026 UTC, sprint #17, branch local
-`fix/atp-ranking-freshness-202610`. Código implementado; publicação não liberada.
+Atualizado: 13/10/2026 UTC, sprint #17, PR #18 draft,
+`fix/atp-ranking-freshness-202610`. Homologação e gates finais em
+[`ATP_RANKING_HOMOLOGATION_20261013.md`](ATP_RANKING_HOMOLOGATION_20261013.md).
+Merge e ativação não liberados.
 
 ## Decisão
 
@@ -21,7 +23,8 @@ simples e duplas exigem datas explícitas iguais. Não há fallback automático.
 
 ## Operação
 
-- Agenda implementada: terça–sexta 12:00 UTC (09h BRT), runner `ubuntu-latest`;
+- Agenda implementada: terça–sexta 12:00 UTC (09h BRT) e quinta 15:05 UTC
+  (12h05 BRT, após cutoff), runner `ubuntu-latest`;
   resumo com atraso >60 min e idade da fonte.
 - Manual default `dry-run`; schedule também usa dry-run enquanto a variável
   `ATP_RANKING_DELIVERY_ENABLED` não for explicitamente `true`. A mesma variável
@@ -32,19 +35,32 @@ simples e duplas exigem datas explícitas iguais. Não há fallback automático.
   exceções referenciadas. Validade termina pelo relógio em 26/10: revisar e
   estender antes de 27/10, inclusive para coletar a edição de 26/10 na terça.
   ATP não publica em todas as segundas do ano; não existe rollover automático.
-- STALE: ledger append-only separado `automation/state/ranking_incidents.json`,
+- STALE e SOURCE_ERROR: ledger append-only separado `automation/state/ranking_incidents.json`,
   criado somente quando há incidente real, deduplicado por edição esperada,
-  intenção persistida antes do provider; recuperação cancela intenção ainda
+  SOURCE_ERROR por categoria (identity/http/timeout/schema/unavailable) e edição;
+  intenção e reserva UUID persistidas e publicadas antes do provider; recuperação cancela intenção ainda
   não enviada e preserva auditoria. O ledger é commitado/pushed antes e depois
   do provider, mantendo `repository-data-writer-main`.
 - Mensagem: digest semanal em toda nova publicação (rank, delta, career high); `Correção` em revisão já entregue.
 - CallMeBot exige confirmação explícita de fila; 200+erro, 204 e respostas
   ambíguas não confirmam aceite. Falhas permanentes/ambíguas continuam auditáveis
-  sem retry automático; transitórias têm retry limitado.
+  sem retry automático. Somente rejeição HTTP 429 admite retry limitado;
+  timeout, transport, 408 e 5xx ficam bloqueados para revisão.
 - `sent` legado continua legível; novos receipts registram
   `delivery_status=provider_accepted`, sem afirmar entrega ao dispositivo.
-  Ainda há risco at-least-once se ocorrer crash após aceite remoto antes de
-  persistir/push do receipt; não há deduplicação comprovada no provider.
+  Reserva não retryable é publicada antes do request e permanece em caso de
+  crash/resultado incerto. A próxima execução sinaliza revisão necessária, sem
+  repetir o envio. Pode haver mensagem não enviada/sem confirmação: sem
+  idempotência do provider não se promete exactly-once.
+- Coleta usa journal local para recuperar conjuntamente snapshots, outbox e
+  recuperação de incidentes. Checkpoint valida/publica o bundle; não faz rebase.
+  Writers CLI/backfill usam lock local; Actions compartilham concurrency group
+  e checkout atualizado da branch. Entrega produtiva exige main, caminhos
+  canônicos e `--durable-git`; somente coleta FRESH permite mensagens esportivas.
+  Nos outros estados, o workflow usa `--incidents-only` e mantém falhas visíveis.
+- Intenções substituídas ficam na outbox com `superseded_by`. Correções comparam
+  com o último receipt aceito da mesma edição. Retorno A→B→A ou revisão com
+  tentativa incerta exige reconciliação explícita, sem alterar o histórico.
 - Backfill sem `--apply` é read-only; com `--apply` não enfileira mensagens.
   Conflitos de revisão ou de career highs posteriores exigem reconciliação
   revisada, preservando hashes e receipts existentes.
@@ -54,13 +70,14 @@ simples e duplas exigem datas explícitas iguais. Não há fallback automático.
 ## Gates pendentes
 
 Regressão CI configurada em `.github/workflows/ranking_checks.yml`: Python,
-frontend e build em PR/push da branch. A branch permanece local, portanto
-ainda não há execução GitHub CI destes commits.
+frontend e build em PR/push da branch. Evidências da revisão final, CI e dry-run
+estão no relatório de homologação acima.
 
-- CI GitHub verde e dispatch real em dry-run na revisão final.
 - Conferência manual de edição nova oficialmente publicada nas duas disciplinas
   e observação de duas publicações consecutivas quando disponíveis.
-- Revisar calendário/exceções oficiais e secrets de produção sem expô-los.
+- Obter cronograma/alterações oficiais suficientes para 27/10–31/12; extensão
+  bloqueada conforme [revisão documental](evidence/atp-publication-calendar-2026-10-13.md).
+- Revisar secrets de produção sem expô-los e autorizar merge/ativação separadamente.
 - Falha original de identidade: não reproduzida nas novas capturas, com perfil
   correto confirmado ao vivo. Causa transitória exata não comprovada;
   instrumentação distingue navegação, bloqueio, redirecionamento, estrutura,
