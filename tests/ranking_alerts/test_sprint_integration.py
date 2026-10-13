@@ -15,7 +15,7 @@ if str(SCRIPTS) not in sys.path:
 import update_rankings
 from ranking_alerts.domain import DisciplineRanking, RankingObservation, RankingsData, build_snapshot
 from ranking_alerts.incidents import load_incidents, pending_incidents
-from ranking_alerts.providers import DeliveryReceipt
+from ranking_alerts.providers import DeliveryError, DeliveryReceipt
 from ranking_alerts.source import RawDisciplineRanking, RawRankingObservation, RankingSourceError
 from ranking_alerts.storage import load_alert_state, load_rankings, save_rankings
 
@@ -107,12 +107,16 @@ class SprintIntegrationTests(unittest.TestCase):
         self.assertIn("ATP Ranking — 2026-10-05", self.provider.messages[1][0])
         self.assertEqual((), pending_incidents(load_incidents(self.incidents)))
 
-    def test_source_error_never_creates_incident_or_changes_valid_state(self):
+    def test_source_error_persists_independent_incident_without_changing_valid_state(self):
         code, _, error, calls = self.main("collect", "2026-10-08T15:00:00Z", Source(error="ranking_source_blocked"))
         self.assertEqual(1, code)
         self.assertIn("error=ranking_source_blocked", error)
         self.assertEqual(0, calls)
-        self.assertFalse(self.incidents.exists())
+        ledger = load_incidents(self.incidents)
+        self.assertEqual("ranking_source_error:http:2026-10-05", ledger.events[0]["incident_id"])
+        before = self.incidents.read_bytes()
+        self.assertEqual(1, self.main("collect", "2026-10-09T12:00:00Z", Source(error="ranking_source_blocked"))[0])
+        self.assertEqual(before, self.incidents.read_bytes())
         self.assertEqual(self.original_rankings, self.rankings.read_bytes())
         self.assertEqual(self.original_state, self.state.read_bytes())
 
@@ -124,6 +128,103 @@ class SprintIntegrationTests(unittest.TestCase):
         self.assertIn("ranking_delivery_disabled", error)
         self.assertEqual(0, calls)
         self.assertEqual(ledger_bytes, self.incidents.read_bytes())
+
+    def test_source_error_classes_before_cutoff_leave_sporting_files_unchanged(self):
+        for error, category in (("ranking_source_identity_mismatch", "identity"),
+                                ("ranking_source_authentication", "http"),
+                                ("ranking_source_timeout", "timeout"),
+                                ("ranking_source_schema_changed", "schema"),
+                                ("ranking_source_dependency", "unavailable")):
+            with self.subTest(error=error):
+                code, output, errors, calls = self.main("collect", "2026-10-06T12:00:00Z", Source(error=error))
+                self.assertEqual(1, code)
+                self.assertIn("freshness=SOURCE_ERROR", output)
+                self.assertIn("incident=created", output)
+                self.assertIn(f"error={error}", errors)
+                self.assertEqual(0, calls)
+                event = load_incidents(self.incidents).events[-1]
+                self.assertEqual(category, event["source_error_category"])
+                self.assertEqual("2026-09-28", event["last_valid_date"])
+                self.assertEqual(self.original_rankings, self.rankings.read_bytes())
+                self.assertEqual(self.original_state, self.state.read_bytes())
+        self.assertEqual(5, len(pending_incidents(load_incidents(self.incidents))))
+
+    def test_source_error_dry_run_previews_without_mutation_or_provider(self):
+        code, output, errors, calls = self.main("dry-run", "2026-10-06T12:00:00Z", Source(error="ranking_source_timeout"))
+        self.assertEqual(1, code)
+        self.assertIn("incident=would_create", output)
+        self.assertIn("SOURCE_ERROR", output)
+        self.assertIn("ranking_source_timeout", errors)
+        self.assertEqual(0, calls)
+        self.assertFalse(self.incidents.exists())
+        self.assertEqual(self.original_rankings, self.rankings.read_bytes())
+        self.assertEqual(self.original_state, self.state.read_bytes())
+
+    def test_corrupt_outbox_does_not_block_source_error_persistence_or_delivery(self):
+        self.state.write_text("corrupt sporting outbox")
+        code, _, errors, calls = self.main("collect", "2026-10-06T12:00:00Z", Source(error="ranking_source_timeout"))
+        self.assertEqual(1, code)
+        self.assertIn("ranking_source_timeout", errors)
+        self.assertEqual(0, calls)
+        self.assertEqual(1, len(pending_incidents(load_incidents(self.incidents))))
+        code, _, errors, calls = self.main("deliver", "2026-10-08T15:01:00Z", enabled=True)
+        self.assertEqual(1, code)
+        self.assertIn("invalid_json_storage", errors)
+        self.assertEqual(1, calls)
+        self.assertEqual(1, len(self.provider.messages))
+        self.assertEqual("provider_accepted", load_incidents(self.incidents).events[-1]["kind"])
+        self.assertEqual("corrupt sporting outbox", self.state.read_text())
+        self.assertEqual(self.original_rankings, self.rankings.read_bytes())
+
+    def test_sporting_provider_failure_does_not_block_incident_delivery(self):
+        self.assertEqual(0, self.main("collect", "2026-10-08T12:00:00Z", Source("2026-10-05"))[0])
+        self.assertEqual(1, self.main("collect", "2026-10-08T12:01:00Z", Source(error="ranking_source_timeout"))[0])
+        original_send = self.provider.send
+        def send(*, message, event_id):
+            if message.startswith("ATP Ranking"):
+                self.provider.messages.append((message, event_id))
+                raise DeliveryError("http_503", 1, retryable=True)
+            return original_send(message=message, event_id=event_id)
+        self.provider.send = send
+        code, _, errors, calls = self.main("deliver", "2026-10-08T15:01:00Z", enabled=True)
+        self.assertEqual(1, code)
+        self.assertIn("http_503", errors)
+        self.assertEqual(1, calls)
+        self.assertEqual(2, len(self.provider.messages))
+        self.assertEqual("provider_accepted", load_incidents(self.incidents).events[-1]["kind"])
+        outbox = load_alert_state(self.state, load_rankings(self.rankings)).outbox
+        self.assertEqual("http_503", outbox[-1].last_error_code)
+
+    def test_unexpected_source_exception_is_redacted_and_persisted(self):
+        class BrokenSource:
+            name = "itf"
+            def fetch(self):
+                raise RuntimeError("https://private?apikey=secret cookie=private-session")
+        code, output, errors, calls = self.main("collect", "2026-10-06T12:00:00Z", BrokenSource())
+        self.assertEqual(1, code)
+        self.assertEqual(0, calls)
+        self.assertNotIn("secret", output + errors + self.incidents.read_text())
+        self.assertNotIn("private-session", output + errors + self.incidents.read_text())
+        event = load_incidents(self.incidents).events[-1]
+        self.assertEqual("unavailable", event["source_error_category"])
+        self.assertEqual("ranking_source_incomplete", event["source_error_code"])
+
+    def test_domain_identity_and_incomplete_observations_become_source_errors(self):
+        class BrokenSource:
+            name = "itf"
+            def fetch(self):
+                return RawRankingObservation(atp_id="OTHER", name="Luka Bojicic Ono", source="itf",
+                    ranking_date="2026-10-05", singles=RawDisciplineRanking(status="ranked", rank=1, points=None),
+                    doubles=RawDisciplineRanking(status="ranked", rank=1, points=None))
+        code, _, errors, _ = self.main("collect", "2026-10-06T12:00:00Z", BrokenSource())
+        self.assertEqual(1, code)
+        self.assertIn("ranking_source_identity_mismatch", errors)
+        self.assertEqual("identity", load_incidents(self.incidents).events[-1]["source_error_category"])
+        with patch.object(BrokenSource, "fetch", return_value={"malformed": True}):
+            code, _, errors, _ = self.main("collect", "2026-10-06T12:01:00Z", BrokenSource())
+        self.assertEqual(1, code)
+        self.assertIn("ranking_source_schema_changed", errors)
+        self.assertEqual("schema", load_incidents(self.incidents).events[-1]["source_error_category"])
 
 
 if __name__ == "__main__":

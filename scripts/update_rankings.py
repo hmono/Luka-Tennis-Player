@@ -60,7 +60,7 @@ from ranking_alerts.storage import (
 )
 from ranking_alerts.incidents import (
     DEFAULT_INCIDENTS_PATH, deliver_incidents, load_incidents, pending_incidents,
-    plan_recovery, plan_stale, save_incidents, format_stale,
+    plan_recovery, plan_stale, plan_source_error, save_incidents, format_incident,
 )
 
 DEFAULT_RANKINGS_PATH = Path("data/rankings.json")
@@ -224,10 +224,10 @@ def collect(
     calendar: EditionCalendar | None = None,
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
-    state = load_alert_state(state_path, rankings)
     observation, freshness = _freshness_checked_observation(
         source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
     )
+    state = load_alert_state(state_path, rankings)
     outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
     outcome = replace(outcome, freshness=freshness)
     if outcome.snapshot_status != "unchanged":
@@ -304,10 +304,10 @@ def dry_run(
     calendar: EditionCalendar | None = None,
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
-    state = load_alert_state(state_path, rankings)
     observation, freshness = _freshness_checked_observation(
         source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
     )
+    state = load_alert_state(state_path, rankings)
     return replace(
         plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at),
         freshness=freshness,
@@ -332,14 +332,20 @@ def _freshness_checked_observation(
     last_date = max((snapshot.ranking_date for snapshot in rankings.snapshots), default=None)
     try:
         observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
-    except RankingSourceError as exc:
-        actual_date = getattr(source, "last_telemetry", {}).get("source_ranking_date")
+    except (RankingSourceError, DomainValidationError, AtpSourceError, TimeoutError) as exc:
+        if not isinstance(exc, RankingSourceError):
+            code = ("ranking_source_identity_mismatch" if getattr(exc, "code", None) == "atp_identity_mismatch"
+                    else "ranking_source_timeout" if isinstance(exc, TimeoutError)
+                    else "ranking_source_schema_changed")
+            exc = RankingSourceError(code)
+        telemetry = getattr(source, "last_telemetry", None)
+        actual_date = telemetry.get("source_ranking_date") if isinstance(telemetry, dict) else None
         assessment = assess_publication(actual_date, now=now, calendar=calendar, last_valid_date=last_date)
         # A response older than already-persisted facts is a source regression,
         # not evidence that the current edition missed its publication SLA.
         assessment = replace(assessment, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         exc.freshness = assessment
-        raise
+        raise exc from None
     assessment = assess_publication(observation.ranking_date, now=now, calendar=calendar, last_valid_date=last_date)
     if assessment.state in {FreshnessState.STALE, FreshnessState.SOURCE_ERROR}:
         error = RankingSourceError(assessment.reason or "ranking_source_stale")
@@ -354,8 +360,18 @@ def _observation_from_source(
     *,
     baseline_path: Path,
 ) -> RankingObservation:
-    value = source.fetch()
+    try:
+        value = source.fetch()
+    except (RankingSourceError, DomainValidationError, AtpSourceError, TimeoutError):
+        raise
+    except Exception:
+        # Browser/HTTP adapter exceptions may carry URLs, cookies or bodies.
+        raise RankingSourceError("ranking_source_incomplete") from None
     if isinstance(value, RankingObservation):
+        if getattr(source, "name", value.source) != value.source:
+            raise RankingSourceError("ranking_source_identity_mismatch")
+        if rankings.snapshots and value.ranking_date < max(item.ranking_date for item in rankings.snapshots):
+            raise RankingSourceError("ranking_source_stale")
         return value
     if not isinstance(value, RawRankingObservation):
         raise DomainValidationError("atp_incomplete_observation")
@@ -501,7 +517,15 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
             return 0
         if args.command == "deliver":
             ledger = load_incidents(args.incidents_path)
-            if not has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path) and not pending_incidents(ledger):
+            sporting_error = None
+            try:
+                sporting_pending = has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path)
+            except StorageError as exc:
+                sporting_error = exc
+                sporting_pending = False
+            if not sporting_pending and not pending_incidents(ledger):
+                if sporting_error is not None:
+                    raise sporting_error
                 # Provider credentials are only required when there is work to send.
                 print("provider=callmebot provider_accepted=0")
                 return 0
@@ -509,14 +533,19 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
             if os.environ.get("ATP_RANKING_DELIVERY_ENABLED") != "true":
                 raise ConfigurationError("ranking_delivery_disabled")
             provider = CallMeBotProvider.from_env()
-            count = deliver(
-                provider=provider,
-                rankings_path=args.rankings_path,
-                state_path=args.state_path,
-            )
+            count = 0
+            if sporting_pending:
+                try:
+                    count = deliver(provider=provider, rankings_path=args.rankings_path, state_path=args.state_path)
+                except (DeliveryError, StorageError) as exc:
+                    sporting_error = exc
+            # Operational incidents use their own ledger and remain actionable
+            # when sporting persistence or the sporting provider attempt fails.
             count += deliver_incidents(provider=provider, path=args.incidents_path,
                                        now=clock().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"))
             print(f"provider=callmebot provider_accepted={count}")
+            if sporting_error is not None:
+                raise sporting_error
             return 0
         source: RankingSource = (
             _FixtureSource(args.fixture) if args.fixture else _selected_source(args.source)
@@ -548,21 +577,28 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
         assessment = getattr(exc, "freshness", None)
         if assessment:
             print(f"freshness={assessment.state.value} expected_date={assessment.expected_date} actual_date={assessment.actual_date} cutoff={assessment.cutoff} source_age_days={assessment.source_age_days}")
-        if assessment and assessment.state == FreshnessState.STALE and args.command in {"collect", "dry-run"}:
+        if assessment and assessment.state in {FreshnessState.STALE, FreshnessState.SOURCE_ERROR} and args.command in {"collect", "dry-run"}:
             try:
                 ledger = load_incidents(args.incidents_path)
-                new_ledger = plan_stale(
-                    ledger, expected_date=assessment.expected_date,
-                    last_valid_date=assessment.actual_date or assessment.last_valid_date,
-                    source=getattr(source, "name", "itf"),
-                    cutoff_at=assessment.cutoff, now=assessment.checked_at,
-                )
+                details = dict(expected_date=assessment.expected_date,
+                               last_valid_date=assessment.last_valid_date,
+                               source=getattr(source, "name", "itf"),
+                               cutoff_at=assessment.cutoff, now=assessment.checked_at)
+                if assessment.state == FreshnessState.STALE:
+                    details["last_valid_date"] = assessment.actual_date or assessment.last_valid_date
+                    new_ledger = plan_stale(ledger, **details)
+                else:
+                    new_ledger = plan_source_error(ledger, **details, error_code=assessment.reason,
+                                                   telemetry=getattr(source, "last_telemetry", None))
                 created = new_ledger != ledger
                 if args.command == "collect" and created:
                     save_incidents(args.incidents_path, new_ledger)
                 print(f"snapshot=blocked outbox=none incident={'would_create' if args.command == 'dry-run' and created else 'created' if created else 'unchanged'}")
                 if args.command == "dry-run" and created:
-                    print(format_stale(new_ledger.events[-1]))
+                    print(format_incident(new_ledger.events[-1]))
+                if assessment.state == FreshnessState.SOURCE_ERROR:
+                    print(f"error={exc.code}", file=sys.stderr)
+                    return 1
                 return 0
             except StorageError as ledger_error:
                 error_code = ledger_error.code
