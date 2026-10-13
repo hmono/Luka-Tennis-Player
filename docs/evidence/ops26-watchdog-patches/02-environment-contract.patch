@@ -1,0 +1,29 @@
+--- a/deployment/atp-watchdog/environment.example
++++ b/deployment/atp-watchdog/environment.example
+@@ -5,12 +5,23 @@
+ ATP_RANKING_DELIVERY_ENABLED=false
+ ATP_WATCHDOG_ENABLED=false
+ ATP_WATCHDOG_RECOVERY_ENABLED=false
+-# Prefer a GitHub App: installation tokens renew automatically by the service.
+-# Requires openssl and a readable protected private key provisioned once.
++# Prefer a GitHub App installed ONLY on the named repository.
++# App maximum permissions: Actions read (monitor) / write (optional recovery);
++# Metadata read is implicit. No Contents, Issues or administration permission.
++# Client never calls the workflow-enable API (Actions write intrinsically can).
++# Grants are explicitly downscoped to this repository and Actions alone.
++# Installation tokens renew 60s before expiry; no per-edition credential step.
++# Requires OpenSSL RSA signing, synced clock, private key root:atp-watchdog 0640
++# in protected directory 0750 (or service-owned 0600); no key symlinks.
++# Never give the independent inbox principal access to this signing key.
+ ATP_WATCHDOG_APP_ID=
+ ATP_WATCHDOG_APP_INSTALLATION_ID=
+ ATP_WATCHDOG_APP_PRIVATE_KEY_PATH=
+-# Optional fallback static token; operator must provide automated renewal.
++# Optional supplied read-only token for --dry-run: disabled/dry-run never mint
++# an App token, create state, dispatch or send alerts. Without a supplied token
++# App-mode dry-run fails closed as MONITOR_UNAVAILABLE.
++# Static-token production fallback is NOT evidence of indefinite autonomy:
++# operator must separately provide and verify automated expiration/rotation.
+ ATP_WATCHDOG_GITHUB_TOKEN=
+ ATP_OPS_WEBHOOK_URL=
+ ATP_OPS_WEBHOOK_TOKEN=

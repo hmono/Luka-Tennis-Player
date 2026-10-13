@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=atp-watchdog
-Group=atp-watchdog
+User=atp-ops-inbox
+Group=atp-ops-inbox
 WorkingDirectory=/opt/luka-tennis
 EnvironmentFile=/etc/atp-ops-inbox.env
 ExecStart=/usr/bin/python3 -m scripts.ranking_alerts.ops_receiver
@@ -19,6 +19,21 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Admission ceilings only; these templates are not installed on ONO.
+CPUQuota=10%
+MemoryMax=256M
+TasksMax=32
+Nice=15
+IOWeight=10
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=20
 
 [Install]
 WantedBy=multi-user.target

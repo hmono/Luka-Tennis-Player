@@ -1,0 +1,23 @@
+test_forwarding_outage_timeout_and_restart_retry_durable_sink (test_ops_receiver.OpsInboxTests.test_forwarding_outage_timeout_and_restart_retry_durable_sink) ... ok
+test_forwarding_requires_explicit_matching_durable_ack (test_ops_receiver.OpsInboxTests.test_forwarding_requires_explicit_matching_durable_ack) ... ok
+test_http_accepts_exact_character_bounds (test_ops_receiver.OpsInboxTests.test_http_accepts_exact_character_bounds) ... ok
+test_http_ack_only_after_visible_commit (test_ops_receiver.OpsInboxTests.test_http_ack_only_after_visible_commit) ... ok
+test_http_auth_paths_acceptance_conflict_and_restart (test_ops_receiver.OpsInboxTests.test_http_auth_paths_acceptance_conflict_and_restart) ... ok
+test_http_failed_commit_never_returns_accepted (test_ops_receiver.OpsInboxTests.test_http_failed_commit_never_returns_accepted) ... ok
+test_http_lock_returns_retryable_503_then_recovers (test_ops_receiver.OpsInboxTests.test_http_lock_returns_retryable_503_then_recovers) ... ok
+test_http_payload_bounds_and_json_shapes_never_accept (test_ops_receiver.OpsInboxTests.test_http_payload_bounds_and_json_shapes_never_accept) ... ok
+test_http_rejects_truncated_eof_and_ambiguous_framing (test_ops_receiver.OpsInboxTests.test_http_rejects_truncated_eof_and_ambiguous_framing) ... ok
+test_http_timeout_rejects_partial_body_without_acceptance (test_ops_receiver.OpsInboxTests.test_http_timeout_rejects_partial_body_without_acceptance) ... ok
+test_http_worker_cap_returns_sanitized_overload_and_recovers (test_ops_receiver.OpsInboxTests.test_http_worker_cap_returns_sanitized_overload_and_recovers) ... ok
+test_invalid_forward_configuration_never_contacts_destination (test_ops_receiver.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) ... ok
+test_persistent_dedup_and_conflicting_ids (test_ops_receiver.OpsInboxTests.test_persistent_dedup_and_conflicting_ids) ... ok
+test_real_database_lock_recovers_forwarding_without_service_restart (test_ops_receiver.OpsInboxTests.test_real_database_lock_recovers_forwarding_without_service_restart) ... ok
+test_restart_replays_after_sink_commit_and_local_mark_failure (test_ops_receiver.OpsInboxTests.test_restart_replays_after_sink_commit_and_local_mark_failure) ... ok
+test_startup_requires_release_and_sanitizes_storage_failure (test_ops_receiver.OpsInboxTests.test_startup_requires_release_and_sanitizes_storage_failure) ... ok
+test_wal_full_and_closed_owned_connections (test_ops_receiver.OpsInboxTests.test_wal_full_and_closed_owned_connections) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 3.072s
+
+OK
+elapsed=3.47 cpu=14% maxrss_kib=29944

@@ -1,0 +1,91 @@
+test_wal_full_and_closed_owned_connections (ops_receiver_contract_tests.OpsInboxTests.test_wal_full_and_closed_owned_connections) ... FAIL
+test_forwarding_requires_explicit_matching_durable_ack (ops_receiver_contract_tests.OpsInboxTests.test_forwarding_requires_explicit_matching_durable_ack) ... FAIL
+test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) ... 
+  test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https:///events') ... FAIL
+  test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https://user:pass@ops.example.test/events') ... FAIL
+  test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https://ops.example.test/events#fragment') ... FAIL
+  test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https://ops.example.test/events') ... FAIL
+
+======================================================================
+FAIL: test_wal_full_and_closed_owned_connections (ops_receiver_contract_tests.OpsInboxTests.test_wal_full_and_closed_owned_connections)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 75, in test_wal_full_and_closed_owned_connections
+    self.inbox.accept('event', 'synthetic outage')
+  File "/home/ono/ops26/ops-inbox/scripts/ranking_alerts/ops_receiver.py", line 38, in accept
+    with self.connect() as database:
+         ^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1134, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1138, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1199, in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 71, in tracked
+    self.assertEqual('wal', database.execute('PRAGMA journal_mode').fetchone()[0])
+AssertionError: 'wal' != 'delete'
+- wal
++ delete
+
+
+======================================================================
+FAIL: test_forwarding_requires_explicit_matching_durable_ack (ops_receiver_contract_tests.OpsInboxTests.test_forwarding_requires_explicit_matching_durable_ack)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 168, in test_forwarding_requires_explicit_matching_durable_ack
+    self.assertEqual(0, self.inbox.forward(forward_sender))
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https:///events')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 181, in test_invalid_forward_configuration_never_contacts_destination
+    transport.assert_not_called()
+  File "/usr/lib/python3.12/unittest/mock.py", line 905, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected '_request' to not have been called. Called 1 times.
+Calls: [call('https:///events', token='synthetic-token', payload={'event_id': 'event', 'message': 'synthetic outage'}, event_id='event')].
+
+======================================================================
+FAIL: test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https://user:pass@ops.example.test/events')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 181, in test_invalid_forward_configuration_never_contacts_destination
+    transport.assert_not_called()
+  File "/usr/lib/python3.12/unittest/mock.py", line 905, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected '_request' to not have been called. Called 1 times.
+Calls: [call('https://user:pass@ops.example.test/events', token='synthetic-token', payload={'event_id': 'event', 'message': 'synthetic outage'}, event_id='event')].
+
+======================================================================
+FAIL: test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https://ops.example.test/events#fragment')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 181, in test_invalid_forward_configuration_never_contacts_destination
+    transport.assert_not_called()
+  File "/usr/lib/python3.12/unittest/mock.py", line 905, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected '_request' to not have been called. Called 1 times.
+Calls: [call('https://ops.example.test/events#fragment', token='synthetic-token', payload={'event_id': 'event', 'message': 'synthetic outage'}, event_id='event')].
+
+======================================================================
+FAIL: test_invalid_forward_configuration_never_contacts_destination (ops_receiver_contract_tests.OpsInboxTests.test_invalid_forward_configuration_never_contacts_destination) (destination='https://ops.example.test/events')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ono/ops26/ops-inbox/tests/ranking_alerts/test_ops_receiver.py", line 181, in test_invalid_forward_configuration_never_contacts_destination
+    transport.assert_not_called()
+  File "/usr/lib/python3.12/unittest/mock.py", line 905, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected '_request' to not have been called. Called 1 times.
+Calls: [call('https://ops.example.test/events', token='', payload={'event_id': 'event', 'message': 'synthetic outage'}, event_id='event')].
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.155s
+
+FAILED (failures=6)
+Command exited with non-zero status 1
+elapsed=0.50 cpu=55% maxrss_kib=30892

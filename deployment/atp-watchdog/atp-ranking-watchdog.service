@@ -17,6 +17,21 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Admission ceilings only; these templates are not installed on ONO.
+CPUQuota=10%
+MemoryMax=128M
+TasksMax=32
+Nice=15
+IOWeight=10
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=20
 # Alert status failures are observable in journal, but timer keeps recurring.
 SuccessExitStatus=1
 TimeoutStartSec=300
