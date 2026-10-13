@@ -23,10 +23,10 @@ Sucesso de um step ou `provider_accepted` não prova entrega ao dispositivo.
 | 12/10 classificada com evidência ou registrada inconclusiva | Atendido como **INCONCLUSIVA** em simples/duplas, sem inferência de não publicação; [A](evidence/atp-2026-10-12-publication.md) |
 | Extensão proporcional à evidência | Nenhuma extensão aprovada. `valid_until: 26/10` herdado, não recertificado; [B](evidence/atp-publication-calendar-2026-h2.md) |
 | Duas novas edições oficiais consecutivas, S/D B0UF | **Pendente externo**. 28/09 e 05/10 preexistentes não são novas edições pós-sprint; 12/10 inconclusiva; demais candidatas ainda futuras |
-| P1 no código encontrados por C | H2-QA-01 e H2-QA-04 reproduzidos e corrigidos; aguardam revisão independente da integração |
+| P1 no código | H2-QA-01/H2-QA-04 e H2-REV-01/H2-REV-02 reproduzidos e corrigidos; reverificação descrita no [relatório independente](evidence/atp-h2-independent-review-20261013.md) |
 | P1 operacional legado em main | **Aberto**, H2-QA-02; flag ausente não desativa workflow antigo. Tratamento separado autorizado necessário |
-| Testes, build, CI e dry-run no mesmo head final | Validação final será publicada com SHA/URLs na issue #24 e no PR; resultados de heads anteriores não bastam |
-| Revisão independente Astra/max | Pendente após integração e validação |
+| Testes, build, CI e dry-run no mesmo head final | Resultado exclusivamente no [registro por SHA final](https://github.com/hmono/Luka-Tennis-Player/issues/24#issuecomment-6146425191), após o último commit; candidatos anteriores não bastam |
+| Revisão independente Astra/max | [Relatório e reproduções](evidence/atp-h2-independent-review-20261013.md); sem GO documental/operacional antecipado |
 | Auditoria e dados | Relatórios base preservados; snapshots, outbox e receipts reais não modificados |
 
 A [integração #23](ATP_RANKING_H2_INTEGRATION_20261013.md) registra a reconciliação
@@ -69,7 +69,7 @@ de recebimento continua fora da autorização desta sprint.
 ## Registro de validação imutável por head
 
 Os resultados finais com SHA completo e URLs de Actions serão publicados como
-relatório de execução na [issue #24](https://github.com/hmono/Luka-Tennis-Player/issues/24)
+relatório de execução no [relatório final da issue #24](https://github.com/hmono/Luka-Tennis-Player/issues/24#issuecomment-6146425191)
 e no [PR #18](https://github.com/hmono/Luka-Tennis-Player/pull/18) após o último
 commit. Isso permite executar todos os checks no próprio head final sem criar
 um novo commit somente para gravar seus links. Enquanto esse registro não

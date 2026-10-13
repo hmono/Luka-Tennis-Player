@@ -131,15 +131,25 @@ seu efeito indevido de entrega foi corrigido em H2-QA-01.
 
 ## Validação e trilha final
 
-Repros originais foram executadas pelo coordenador com mocks/temporários antes
-da correção. Após a mudança, 88 testes dirigidos de integração, incidentes,
-freshness, workflow, entrega e durabilidade passaram. A suíte completa passou
-com **231 testes Python**, frontend com **80 testes** e build aprovado. O teste
-legado que exigia FIFO de edições antigas foi ajustado ao contrato novo,
+Reproduções originais foram executadas pelo coordenador com mocks/temporários
+antes das correções e repetidas após integração. A revisão independente
+Astra/max encontrou mais dois P1 depois dos testes verdes iniciais; ambos
+receberam regressões e correção. O código final `24a5ce9` passou localmente em
+**237 testes Python**, **81 testes frontend** e **build Next.js**. Os casos
+incluem calendário, no_edition/moved sintéticos, cutoff/expiração local,
+idempotência, recuperação, fronteiras durante checkpoint/retry e revisão de CH.
+
+O teste legado que exigia FIFO de edições antigas foi ajustado ao contrato novo,
 verificando preservação integral do backlog e falha apenas na edição atual.
-CI e dispatch ITF dry-run serão registrados no SHA publicado, sem usar
-envio real. O relatório final e os links por head estão na
-[issue #24](https://github.com/hmono/Luka-Tennis-Player/issues/24) e no
-[gate H2](ATP_RANKING_FINAL_GATE_202610.md); a revisão independente ocorre após
-a integração. Os resultados da base não são apresentados como aprovação do head
-novo. Arquivos reais de dados/outbox/receipts permanecem byte a byte preservados.
+A corrida real entre dois clones/remote Git temporários resultou em uma chamada
+mock e um push rejeitado. Isso não comprova exactly-once do provider externo.
+
+O [relatório independente](evidence/atp-h2-independent-review-20261013.md)
+registra reproduções, reverificações e limitações. Após o último commit
+documental, o head completo, Python/frontend/build remotos, CI e dispatch ITF
+`dry-run` são registrados no [relatório final por SHA da issue #24](https://github.com/hmono/Luka-Tennis-Player/issues/24#issuecomment-6146425191)
+e no [PR #18](https://github.com/hmono/Luka-Tennis-Player/pull/18).
+O [gate H2](ATP_RANKING_FINAL_GATE_202610.md) permanece NO-GO pelas pendências
+externas. Resultados da base e de candidatos intermediários não aprovam o
+head final. Os dez arquivos de dados/outbox/receipts reais conferidos por hash
+permanecem byte a byte iguais à base H2 `147b1e4`; nenhum ledger real foi criado.
