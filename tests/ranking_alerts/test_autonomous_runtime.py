@@ -110,7 +110,7 @@ class AutonomousRuntimeTests(unittest.TestCase):
         self.instant += timedelta(days=1)
         self.assertEqual("NO_NEW_EDITION_OBSERVED", self.run_cycle()["collection"])
         self.assertEqual(before, (self.root / "data/rankings.json").read_bytes())
-        ops = [key for _, key in self.provider.messages if "source-error" in key]
+        ops = [text for _, text in self.alerts if "SOURCE_ERROR" in text]
         self.assertEqual(1, len(ops))
 
     def test_dry_run_has_no_state_writes_or_requests(self):
