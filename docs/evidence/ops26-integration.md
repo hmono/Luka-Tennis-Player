@@ -90,8 +90,13 @@ alterado. O checkout primário sujo foi preservado integralmente.
   134,63 s elapsed, CPU agregada 5%, pico RSS 35.440 KiB, nice15. Comando:
   `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/ranking_alerts -q`.
   Métricas são do processo de teste e não certificam consumo futuro do serviço.
-- Frontend/build remotos e revisão independente: resultados finais adicionados
-  após a conclusão dos checks.
+- No código integrado `25c8a94`, a [regressão remota](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38457571977)
+  passou: **312 Python, 81 frontend e build Next/export**, concluída às
+  19:47:53 UTC. O [CI do PR](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38457571955)
+  também passou. O [PR #32](https://github.com/hmono/Luka-Tennis-Player/pull/32)
+  permanece draft, sem merge. Nenhum dependency install/build ocorreu na ONO.
+- Revisão independente iniciada após integração e checks, em novo agente
+  **GPT-6 Astra/max**, worktree exclusivo `ops26/independent-review`.
 
 O CI remoto usa os workflows existentes `CI` e `ATP Ranking Release Checks`
 no PR de staging. Eles executam testes/build, sem deploy. O workflow de deploy
@@ -107,6 +112,9 @@ monitor externo do host/watchdog/inbox, backup/restore e controle de crescimento
 Os dados SQLite crescem sem retenção automática segura; não apagar pendências
 ou IDs para esconder esse bloqueio. FIFO do forwarding pode atrasar eventos
 novos quando os primeiros 100 falham permanentemente (P2 registrado por C).
+O watchdog também seleciona somente oito pendências ordenadas por ID; falhas
+permanentes no começo podem atrasar as demais. Ambos requerem política de
+progresso/capacidade antes da operação contínua.
 
 Falhas transitórias simuladas têm recuperação automática; revogação de chave,
 falha de disco/host, alteração do contrato do sink e manutenção de capacidade
@@ -116,3 +124,52 @@ mas tampouco se declara operação perpétua sem manutenção de infraestrutura.
 A revisão OPS-05 registra a classificação consolidada e as reproduções. P0/P1
 de código devem ser corrigidos antes de aprovação técnica; bloqueios externos
 mantêm staging/ativação fechados. Nenhum merge em main foi autorizado/executado.
+
+## Correções exigidas pela revisão independente
+
+O revisor reproduziu dois P1 com fixtures novas sobre `25c8a94`: histórico
+retido de 500 runs tornava a observação permanentemente indisponível; um novo
+episódio disabled após recuperação/restart perdia seu alerta por ID constante.
+O coordenador corrigiu ambos em `3cb3e8d`: filtro `created` de dois dias com
+overflow recente ainda fechado; identidade de episódio/generation persistida,
+preservada durante indisponibilidade contínua e renovada após state active.
+O parâmetro de intervalo é documentado na [API oficial de workflow runs](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow).
+As duas reproduções passaram localmente após a correção (2,182 s), assim como
+os 25 testes focados do scheduler (29,484 s, nice15).
+
+Um terceiro P1 foi reproduzido pelo revisor com HTTP loopback: o timeout de
+inatividade permitia corpo com bytes lentos manter a única thread de forwarding
+ocupada sem fim. `3cb3e8d` move a requisição a um filho Python transitório com
+deadline total no pai e kill/wait, incluindo DNS/connect/headers/body. Não usa
+threads abandonadas, secrets em argv ou arquivos temporários; erros/status e
+headers de cooldown são reduzidos a campos sanitizados. Novo arquivo de runtime:
+`scripts/ranking_alerts/http_transport.py`. O custo extra de processo deve ser
+medido em staging; as cotas propostas não equivalem a essa homologação.
+O JSON passa a usar UTF-8 para evitar que escape ASCII multiplique payload
+Unicode válido além do limite do próximo inbox (P2 encontrado pelo revisor).
+
+A reverificação independente de `3cb3e8d` (cherry-pick `bf53221` do revisor)
+passou em **seis testes adversariais, 20,176 s, nice15**: dois P1 originais,
+fronteira de 500/501 runs recentes, episódio estável durante falha de API/restart
+e perda de ack, deadlines reais em cabeçalho/corpo HTTP lentos com filho
+recolhido e próxima requisição funcionando, mais 2.000 caracteres `é` enviados
+a um inbox loopback com limite de 8 KiB. Credenciais e endpoints são sintéticos.
+O revisor confirmou **nenhum P0/P1 de código conhecido aberto**; Unicode P2
+também corrigido. Starvation/crescimento/idade da fila e provisionamento externo
+continuam como riscos/bloqueios, sem alterar os gates NO_GO.
+
+Uma sétima regressão independente passou (0,290 s): HTTP429 real em loopback
+preserva status e headers de cooldown ao atravessar o worker, sem propagar
+corpo/URL/token/header privado; HTTP302 não segue `Location`. As sete regressões
+e o [relatório final independente](ops26-independent-review.md) foram integrados
+no commit `52daaab`. Parecer final: **TECHNICAL_GO** para o código corrigido
+`3cb3e8d`, mantendo **STAGING_NO_GO / ACTIVATION_NO_GO**.
+
+O dry-run real anônimo foi repetido com o novo transporte às **20:03:10 UTC**:
+`disabled_manually`, `released=false`, zero alertas/recuperações, exit1 esperado
+e nenhum diretório de estado criado. Nenhuma credencial App foi emitida.
+Os resultados da regressão final no head do PR são registrados em
+[checks do PR #32](https://github.com/hmono/Luka-Tennis-Player/pull/32/checks)
+e nas issues [#30](https://github.com/hmono/Luka-Tennis-Player/issues/30) e
+[#31](https://github.com/hmono/Luka-Tennis-Player/issues/31), sem confundir o
+SHA do código revisado com commits posteriores de testes/documentação.

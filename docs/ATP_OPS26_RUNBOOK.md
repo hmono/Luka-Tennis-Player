@@ -34,7 +34,7 @@ Validar os arquivos sem instalar:
 systemd-analyze verify deployment/atp-watchdog/atp-ranking-watchdog.service \
   deployment/atp-watchdog/atp-ranking-watchdog.timer \
   deployment/atp-watchdog/atp-ops-inbox.service
-python3 -m unittest discover -s tests/ranking_alerts
+nice -n 15 env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/ranking_alerts
 ```
 
 Na ONO, executar somente testes isolados de baixo custo, serializados e com
@@ -119,6 +119,16 @@ indisponível e workflow desabilitado têm identidades deduplicadas. Recuperaç�
 futura tem orçamento de duas reservas por slot e backoff de 30 minutos;
 workflow desabilitado nunca é reativado pelo watchdog. HTTP ambíguo não concede
 tentativa extra. A fila operacional preserva pendências e reenvia o mesmo ID.
+
+A consulta de runs usa janela recente de dois dias, para que o crescimento do
+histórico não esgote permanentemente a paginação; excesso dentro dessa janela
+continua reportado como indisponibilidade. Episódios de workflow desabilitado
+mantêm ID persistente durante a falha e recebem um novo ID após observação de
+reativação, mesmo com reinício do watchdog. A requisição HTTP inteira tem prazo
+de 15 segundos, incluindo DNS/cabeçalhos/corpo: um processo Python transitório
+recebe dados por pipe, e o pai encerra e recolhe o filho ao expirar. Não há
+credencial em argumentos, arquivo temporário ou stderr. Medir o custo desses
+filhos dentro dos limites systemd durante staging; não foram instalados aqui.
 
 Um monitor **fora do host** precisa verificar o último ciclo bem-sucedido do
 watchdog, saúde/progresso do inbox, idade da pendência mais antiga, capacidade
