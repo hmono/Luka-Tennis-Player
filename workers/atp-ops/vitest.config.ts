@@ -12,6 +12,8 @@ export default defineConfig({
     },
   }))],
   test: {
+    // workerd cannot read Vitest's host filesystem module cache.
+    fsModuleCache: false,
     include: ['test/**/*.test.ts'],
     setupFiles: ['./test/setup.ts'],
     maxWorkers: 1,

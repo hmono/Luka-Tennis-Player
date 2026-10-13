@@ -6,7 +6,7 @@ export interface WorkflowRun {
   status: string; conclusion?: string | null;
 }
 export interface Inspection { state: string; runs: WorkflowRun[] }
-export interface ActionsClient { inspect(now: number): Promise<Inspection>; dispatch(): Promise<void> }
+export interface ActionsClient { inspect(now: number): Promise<Inspection>; dispatch(beforeSend?: () => Promise<void>): Promise<void> }
 
 export class GitHubActionsClient implements ActionsClient {
   private readonly base: string;
@@ -19,9 +19,10 @@ export class GitHubActionsClient implements ActionsClient {
     this.base = `https://api.github.com/repos/${repository}/actions/workflows/${workflow}`;
     this.auth = new GitHubAppAuth(credentials, repository, recoveryEnabled ? "write" : "read", fetcher, clock);
   }
-  private async request(url: string, payload?: unknown): Promise<unknown> {
+  private async request(url: string, payload?: unknown, beforeSend?: () => Promise<void>): Promise<unknown> {
     for (let attempt = 0; attempt < 2; attempt++) {
       const token = await this.auth.getToken();
+      await beforeSend?.();
       try { return await githubRequest(this.fetcher, url, token, this.clock(), payload); }
       catch (error) {
         // Only GET may retry. An ambiguous POST always consumes its reservation.
@@ -56,8 +57,8 @@ export class GitHubActionsClient implements ActionsClient {
     }
     throw new GitHubError("run_metadata_truncated");
   }
-  async dispatch(): Promise<void> {
+  async dispatch(beforeSend?: () => Promise<void>): Promise<void> {
     if (!this.recoveryEnabled) throw new GitHubError("recovery_permission_required");
-    await this.request(`${this.base}/dispatches`, { ref: "main", inputs: { mode: "collect-and-deliver" } });
+    await this.request(`${this.base}/dispatches`, { ref: "main", inputs: { mode: "collect-and-deliver" } }, beforeSend);
   }
 }

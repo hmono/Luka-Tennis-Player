@@ -10,6 +10,7 @@ export interface WatchdogConfig {
 }
 export interface WatchdogOptions {
   now?: number; scheduledTime?: number; client?: ActionsClient;
+  clock?: () => number;
   /** Synthetic crash injection; no production handler supplies this hook. */
   afterReservation?: (slot: string, attempt: number) => Promise<void>;
 }
@@ -32,19 +33,25 @@ export function pollSlots(now: number, days = 2): number[] {
   return [...new Set(result)].filter(slot => slot <= now).sort((a, b) => a - b);
 }
 
-export function assessRuns(now: number, runs: WorkflowRun[]): Incident[] {
+function latestProductionRun(now: number, runs: WorkflowRun[]): { slot: number; latest?: WorkflowRun } | null {
   const due = pollSlots(now).filter(slot => slot + GRACE <= now);
-  if (!due.length) return [];
+  if (!due.length) return null;
   const slot = due[due.length - 1];
   const next = pollSlots(slot + 86_400_000).find(candidate => candidate > slot) ?? slot + 86_400_000;
-  const sid = new Date(slot).toISOString();
   const eligible = runs.filter(run => run.head_branch === "main" &&
     (run.event === "schedule" || (run.event === "workflow_dispatch" && run.display_title === "ATP rankings collect-and-deliver")) &&
     Date.parse(run.created_at) >= slot && Date.parse(run.created_at) < next);
+  return { slot, latest: eligible.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id)[0] };
+}
+
+export function assessRuns(now: number, runs: WorkflowRun[]): Incident[] {
+  const observation = latestProductionRun(now, runs);
+  if (!observation) return [];
+  const { slot, latest } = observation;
+  const sid = new Date(slot).toISOString();
   const incident = (code: IncidentCode, message: string, recoverable = false): Incident =>
     ({ code, scope: code, slot: sid, message, recoverable });
-  if (!eligible.length) return [incident("MISSED_RUN", `No production main ranking run observed for ${sid} after 90-minute grace; source status unknown.`, true)];
-  const latest = eligible.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id)[0];
+  if (!latest) return [incident("MISSED_RUN", `No production main ranking run observed for ${sid} after 90-minute grace; source status unknown.`, true)];
   const started = Date.parse(latest.run_started_at || latest.created_at);
   if (!Number.isFinite(started) || (latest.status === "completed" && !Number.isFinite(Date.parse(latest.updated_at ?? ""))))
     throw new GitHubError("run_metadata_invalid");
@@ -112,7 +119,11 @@ async function reconcile(db: D1Database, incidents: Incident[], observable: Set<
 }
 
 export async function runWatchdog(db: D1Database, config: WatchdogConfig, options: WatchdogOptions = {}): Promise<WatchdogReport> {
-  const now = options.now ?? Date.now();
+  const wallStarted = Date.now();
+  const now = options.now ?? options.clock?.() ?? wallStarted;
+  // Production uses the live clock. Explicit synthetic `now` stays deterministic;
+  // fault tests can supply a moving clock or spy Date.now without a fixed now.
+  const clock = options.clock ?? (options.now === undefined ? Date.now : () => now);
   if (!Number.isFinite(now)) throw new Error("clock_invalid");
   const released = config.watchdogEnabled === true && config.deliveryEnabled === true;
   const report: WatchdogReport = { checked_at: new Date(now).toISOString(), workflow_state: "unknown", released,
@@ -120,6 +131,12 @@ export async function runWatchdog(db: D1Database, config: WatchdogConfig, option
   // Before initial release there is no token grant, D1 mutation, dispatch or alert.
   if (!released) return report;
   const owner = JSON.stringify({ id: crypto.randomUUID(), expires: now + LEASE });
+  const assertLease = async (): Promise<void> => {
+    if (clock() >= now + LEASE) throw new GitHubError("cycle_lease_expired");
+    const row = await db.prepare("SELECT value FROM watchdog_state WHERE key='cycle_lease' AND value=?")
+      .bind(owner).first();
+    if (!row || clock() >= now + LEASE) throw new GitHubError("cycle_lease_lost");
+  };
   let acquired = false;
   try {
     const claim = await db.prepare(`INSERT INTO watchdog_state(key,value) VALUES('cycle_lease',?)
@@ -143,6 +160,12 @@ export async function runWatchdog(db: D1Database, config: WatchdogConfig, option
       if (inspection.state === "active") {
         report.incidents = assessRuns(now, inspection.runs);
         observable = new Set(["MISSED_RUN", "RUN_FAILURE", "RUN_DURATION", "SCHEDULER_DELAY", "WORKFLOW_DISABLED", "MONITOR_UNAVAILABLE"]);
+        const latest = latestProductionRun(now, inspection.runs)?.latest;
+        // A queued/running retry (or a missing slot) is not evidence that failure recovered.
+        if (latest?.status !== "completed" || latest.conclusion !== "success") {
+          observable.delete("RUN_FAILURE");
+          observable.delete("RUN_DURATION");
+        }
       } else {
         report.incidents = [{ code: "WORKFLOW_DISABLED", scope: "WORKFLOW_DISABLED", slot: "",
           message: "Ranking workflow is disabled; source status unknown. Initial release is required.", recoverable: false }];
@@ -161,18 +184,24 @@ export async function runWatchdog(db: D1Database, config: WatchdogConfig, option
     await reconcile(db, report.incidents, observable, now, owner);
     for (const item of report.incidents) {
       if (!item.recoverable || config.recoveryEnabled !== true || report.workflow_state !== "active") continue;
-      const attempt = await reserveDispatch(db, item.slot, now, owner);
+      await assertLease();
+      const attempt = await reserveDispatch(db, item.slot, clock(), owner);
       if (attempt === null) continue;
       report.recoveries++;
       await options.afterReservation?.(item.slot, attempt);
       let result = "unknown_or_failed";
       try {
-        await client!.dispatch(); result = "accepted";
+        await assertLease();
+        // Real client checks again after token acquisition, immediately before POST.
+        await client!.dispatch(assertLease); result = "accepted";
       } catch (error) {
         if (error instanceof GitHubError && error.retryAt) await stateWrite(db, "api_retry_at", String(error.retryAt), owner).run();
       }
-      await db.prepare("UPDATE watchdog_dispatches SET result=? WHERE slot=? AND attempt=?").bind(result, item.slot, attempt).run();
+      await db.prepare(`UPDATE watchdog_dispatches SET result=? WHERE slot=? AND attempt=?
+        AND EXISTS(SELECT 1 FROM watchdog_state WHERE key='cycle_lease' AND value=?)
+        AND ?>?`).bind(result, item.slot, attempt, owner, now + LEASE, clock()).run();
     }
+    await assertLease();
     await db.batch([stateWrite(db, "last_check", String(now), owner),
       // Older slots cannot be dispatched after the monotonic watermark advances.
       db.prepare(`DELETE FROM watchdog_dispatches WHERE reserved_at<? AND EXISTS
