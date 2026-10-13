@@ -1,11 +1,12 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { getPlayerProfile } from "@/lib/benchmarks";
-import { formatRank, getCareerHighs, getLatestRankings } from "@/lib/career";
+import { formatRank, getCareerHighs, getLatestRankings, getLatestRankingSnapshot } from "@/lib/career";
 
 const player = getPlayerProfile();
 const careerHighs = getCareerHighs();
 const latestRankings = getLatestRankings();
+const rankingDate = getLatestRankingSnapshot()?.ranking_date;
 
 // Age — computed at build time from ISO birthDate
 const _birth = new Date(player.birthDate);
@@ -118,7 +119,7 @@ export default function HomePage() {
           <div className="ls-dot" style={{ background: "var(--luka-itf)" }} />
           <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>
-            Current · ATP {formatRank(latestRankings?.singles.rank ?? null)}
+            Last observed · ATP {formatRank(latestRankings?.singles.rank ?? null)} · {rankingDate ?? "date unknown"}
           </span>
         </div>
         <span className="ls-arrow">——→</span>

@@ -14,6 +14,7 @@ import {
   phaseWeight,
   getCareerHighs,
   getLatestRankings,
+  getLatestRankingSnapshot,
   getRankingSnapshots,
 } from "@/lib/career";
 import { getPlayerProfile } from "@/lib/benchmarks";
@@ -26,6 +27,7 @@ const surfaceBreakdown = getSurfaceBreakdown();
 const player           = getPlayerProfile();
 const rankingSnapshots = getRankingSnapshots();
 const latestRankings   = getLatestRankings();
+const rankingDate = getLatestRankingSnapshot()?.ranking_date;
 const careerHighs      = getCareerHighs();
 
 // ── bio formatting (C5) ───────────────────────────────────────
@@ -177,7 +179,7 @@ export default function CareerPage() {
         <div className="ls-item active">
           <div className="ls-dot" style={{ background: "var(--luka-itf)" }} />
           <span style={{ color: "var(--luka-itf)" }}>ITF M25/M15</span>
-          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Current · {formatRank(atpSinglesCurrent)}</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "8.5px", marginLeft: "4px" }}>Last observed · {formatRank(atpSinglesCurrent)} · {rankingDate ?? "date unknown"}</span>
         </div>
         <span className="ls-arrow">——→</span>
         <div className="ls-item">

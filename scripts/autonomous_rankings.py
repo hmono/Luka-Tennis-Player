@@ -92,8 +92,10 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
         provider_factory = lambda: CallMeBotProvider.from_env(max_attempts=1)
     try:
         provider = provider_factory()
+        result["provider_configuration"] = "configured"
     except ConfigurationError:
         provider = None
+        result["provider_configuration"] = "unavailable"
         ledger = plan_operational(load_delivery(delivery_path), event_id="provider-configuration",
                                  message=f"ATP provider unavailable; data date: {last_date or 'unknown'}; checked: {stamp}.", now=stamp)
         save_delivery(delivery_path, ledger)
