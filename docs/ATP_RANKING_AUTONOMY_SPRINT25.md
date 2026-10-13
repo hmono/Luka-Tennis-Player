@@ -75,3 +75,21 @@ real, secret alterado, configuração externa modificada ou histórico removido.
 
 Resultados A/B/C, regressões e revisão independente ficam em `docs/evidence/`;
 SHAs e runs remotos são registrados na issue #25 e no PR #18 após a integração.
+
+## Decisão final de código e ativação
+
+Código avaliado: `1f7d8dfa1a64043f94809402670e8990a160cfe0`.
+Revisão independente GPT-6 Astra/max concluída: três P1 reproduzidos,
+corrigidos pelo coordenador e reverificados. Nenhum P0/P1 de código conhecido
+aberto. P2 residual: atribuição temporária dos slots próximos de segunda-feira;
+não foi reproduzido bloqueio permanente. Evidência e limites estão no
+[relatório independente](evidence/sprint25-independent-review.md) e na
+[validação integrada](evidence/sprint25-validation.md).
+
+- **Merge de código com envio desligado: GO técnico**, sem execução de merge.
+- **Ativação: NO-GO**, aguardando autorização/provisionamento inicial externo
+  e verificação do canal com dedup/ack explícito e da supervisão independente.
+
+283 Python, 81 frontend, build e dry-run remoto passaram no SHA de código.
+A operação implementada não requer calendário anual, aprovação por publicação
+ou reconciliação recorrente. A operação de produção ainda não está implantada.
