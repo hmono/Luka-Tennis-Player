@@ -31,7 +31,7 @@ export async function readBoundedBody(body: ReadableStream<Uint8Array> | null, m
       const bytes = new Uint8Array(size);
       let offset = 0;
       for (const part of chunks) { bytes.set(part, offset); offset += part.byteLength; }
-      try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+      try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes); }
       catch { throw new InboxError('invalid_event'); }
     })();
     return await withDeadline(work, deadlineMs, 'timeout', cancel);

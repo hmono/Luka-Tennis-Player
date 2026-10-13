@@ -38,7 +38,8 @@ export async function signAppJwt(credentials: AppCredentials, now: number): Prom
   try {
     const key = await crypto.subtle.importKey("pkcs8", privateKeyDer(credentials.privateKeyPem),
       { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
-    if ((key.algorithm as RsaKeyAlgorithm).modulusLength < 2048) throw new GitHubError("app_key_invalid");
+    const bits = (key.algorithm as { modulusLength?: number }).modulusLength;
+    if (!Number.isSafeInteger(bits) || bits! < 2048) throw new GitHubError("app_key_invalid");
     const instant = Math.floor(now / 1000);
     const input = `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ iat: instant - 60, exp: instant + 540, iss: credentials.appId })}`;
     const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, encoder.encode(input));

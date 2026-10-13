@@ -197,7 +197,7 @@ describe("WebCrypto App authentication and bounded GitHub transport", () => {
   beforeAll(async () => {
     keys = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048,
       publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, true, ["sign", "verify"]) as CryptoKeyPair;
-    const bytes = new Uint8Array(await crypto.subtle.exportKey("pkcs8", keys.privateKey));
+    const bytes = new Uint8Array(await crypto.subtle.exportKey("pkcs8", keys.privateKey) as ArrayBuffer);
     credentials = { ...emptyCredentials, privateKeyPem: `-----BEGIN PRIVATE KEY-----\n${btoa(String.fromCharCode(...bytes))}\n-----END PRIVATE KEY-----` };
   });
   it("signs an actual RS256 JWT with conservative claims and validates the signature", async () => {
@@ -210,7 +210,7 @@ describe("WebCrypto App authentication and bounded GitHub transport", () => {
       Uint8Array.from(decode(signature), c => c.charCodeAt(0)), new TextEncoder().encode(`${header}.${claims}`))).toBe(true);
   });
   it("converts a synthetic PKCS1 RSA private key before WebCrypto signing", async () => {
-    const bytes = new Uint8Array(await crypto.subtle.exportKey("pkcs8", keys.privateKey));
+    const bytes = new Uint8Array(await crypto.subtle.exportKey("pkcs8", keys.privateKey) as ArrayBuffer);
     let offset = 0;
     const tlv = (): { start: number; end: number } => {
       offset++; let size = bytes[offset++];
