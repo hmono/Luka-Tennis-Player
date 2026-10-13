@@ -84,7 +84,12 @@ jobs:
           ATP_RANKING_DELIVERY_ENABLED: ${{ vars.ATP_RANKING_DELIVERY_ENABLED }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
-        run: python scripts/update_rankings.py deliver --provider callmebot --durable-git
+        run: |
+          if [ "${{ steps.collect.outputs.sporting_delivery_allowed }}" = "true" ]; then
+            python scripts/update_rankings.py deliver --provider callmebot --durable-git
+          else
+            python scripts/update_rankings.py deliver --provider callmebot --durable-git --incidents-only
+          fi
 
       - name: Commit delivery receipts
         if: always() && steps.persist.outcome == 'success' && (steps.deliver.outcome == 'success' || steps.deliver.outcome == 'failure') && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'

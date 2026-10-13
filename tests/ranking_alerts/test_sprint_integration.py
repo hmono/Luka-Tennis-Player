@@ -63,9 +63,11 @@ class SprintIntegrationTests(unittest.TestCase):
         self.original_rankings, self.original_state = self.rankings.read_bytes(), self.state.read_bytes()
         self.provider = MockProvider()
 
-    def main(self, command, instant, source=Source(), enabled=False):
+    def main(self, command, instant, source=Source(), enabled=False, incidents_only=False):
         args = [command, "--provider" if command == "deliver" else "--source", "callmebot" if command == "deliver" else "itf",
                 "--rankings-path", str(self.rankings), "--state-path", str(self.state), "--incidents-path", str(self.incidents)]
+        if incidents_only:
+            args.append("--incidents-only")
         output, errors = StringIO(), StringIO()
         with patch.object(update_rankings, "_selected_source", return_value=source), \
              patch.object(update_rankings.CallMeBotProvider, "from_env", return_value=self.provider) as factory, \
@@ -73,6 +75,40 @@ class SprintIntegrationTests(unittest.TestCase):
              redirect_stdout(output), redirect_stderr(errors):
             result = update_rankings.main(args, clock=lambda: datetime.fromisoformat(instant.replace("Z", "+00:00")), checkpoint=lambda: None)
         return result, output.getvalue(), errors.getvalue(), factory.call_count
+
+    def test_failed_collection_delivers_only_incident_and_preserves_sporting_intention(self):
+        self.assertEqual(0, self.main("collect", "2026-10-06T12:00:00Z", Source("2026-10-05"))[0])
+        self.assertEqual(1, self.main("collect", "2026-10-06T12:01:00Z", Source(error="ranking_source_timeout"))[0])
+        before = self.state.read_bytes()
+        code, _, _, _ = self.main("deliver", "2026-10-08T15:01:00Z", enabled=True, incidents_only=True)
+        self.assertEqual(0, code)
+        self.assertEqual(before, self.state.read_bytes())
+        self.assertEqual(1, len(self.provider.messages))
+        self.assertIn("SOURCE_ERROR", self.provider.messages[0][0])
+
+    def test_collection_output_allows_sporting_delivery_only_for_fresh_qualified_edition(self):
+        for source, instant, expected in ((Source("2026-10-05"), "2026-10-06T12:00:00Z", "true"),
+                (Source(), "2026-10-06T12:00:00Z", "false"),
+                (Source(), "2026-10-08T15:00:00Z", "false"),
+                (Source(error="ranking_source_timeout"), "2026-10-06T12:00:00Z", "false"),
+                (Source("2026-10-26"), "2026-10-27T12:00:00Z", "false")):
+            with self.subTest(instant=instant, expected=expected):
+                self.setUp()
+                path = self.state.with_name("actions-output.txt")
+                with patch.dict("os.environ", {"GITHUB_OUTPUT": str(path)}):
+                    self.main("collect", instant, source)
+                self.assertIn(f"sporting_delivery_allowed={expected}", path.read_text())
+
+    def test_quarantined_attempt_is_visible_as_failure_on_next_cli_run(self):
+        from ranking_alerts.providers import DeliveryError
+        self.assertEqual(0, self.main("collect", "2026-10-06T12:00:00Z", Source("2026-10-05"))[0])
+        with patch.object(self.provider, "send", side_effect=DeliveryError("transport_timeout", 1)):
+            self.assertEqual(1, self.main("deliver", "2026-10-08T15:01:00Z", enabled=True)[0])
+        code, output, errors, factories = self.main("deliver", "2026-10-09T12:00:00Z", enabled=True)
+        self.assertEqual(1, code)
+        self.assertIn("delivery_review_required=1", output)
+        self.assertIn("ranking_delivery_review_required", errors)
+        self.assertEqual(0, factories)
 
     def test_stale_dry_run_has_no_persistence_or_provider_construction(self):
         code, output, errors, calls = self.main("dry-run", "2026-10-08T15:00:00Z")

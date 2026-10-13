@@ -65,6 +65,8 @@ class RankingsWorkflowTests(unittest.TestCase):
         delivery = next(step for step in self.steps if "deliver --provider" in step)
         self.assertIn("always()", delivery)
         self.assertIn("steps.persist.outcome == 'success'", delivery)
+        self.assertIn('steps.collect.outputs.sporting_delivery_allowed', delivery)
+        self.assertIn('--incidents-only', delivery)
         self.assertNotIn("continue-on-error", self.text)
         self.assertIn("ref: ${{ github.ref_name }}", self.text)
         self.assertIn("cron: '5 15 * * 4'", self.text)

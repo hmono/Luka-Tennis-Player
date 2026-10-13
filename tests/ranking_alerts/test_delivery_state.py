@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -138,6 +139,17 @@ class DeliveryStateTests(unittest.TestCase):
                                            captured_at="2026-10-06T13:00:00Z")
         with self.assertRaisesRegex(update_rankings.RankingSourceError, "ranking_source_schema_changed"):
             update_rankings.plan_collection(b.rankings, b.state, old, captured_at="2026-10-06T14:00:00Z")
+        save_rankings(self.rankings_path, b.rankings)
+        save_alert_state(self.state_path, b.state, b.rankings)
+        class Source:
+            name = "itf"
+
+            def fetch(self):
+                return old
+        with self.assertRaises(update_rankings.RankingSourceError) as raised:
+            update_rankings.dry_run(source=Source(), rankings_path=self.rankings_path,
+                state_path=self.state_path, clock=lambda: datetime(2026, 10, 6, 14, tzinfo=timezone.utc))
+        self.assertEqual(update_rankings.FreshnessState.SOURCE_ERROR, raised.exception.freshness.state)
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ from ranking_alerts.freshness import (
     load_calendar,
     utc_now,
 )
-from ranking_alerts.telemetry import emit_collection_summary, emit_schedule_summary, schedule_timing
+from ranking_alerts.telemetry import append_summary, emit_collection_summary, emit_schedule_summary, schedule_timing
 from ranking_alerts.providers import (
     CallMeBotProvider,
     ConfigurationError,
@@ -159,12 +159,13 @@ def plan_collection(
     previous = _previous_date_snapshot(rankings.snapshots, candidate.ranking_date)
     history = tuple(item for item in rankings.snapshots if item.ranking_date < candidate.ranking_date)
     delta = compare_snapshots(previous, candidate, history) if previous is not None else None
-    has_changes = delta is not None and delta.has_changes
     dates = _snapshot_date_by_id(rankings)
-    sent_for_date = any(
-        item.status == "sent" and dates.get(item.snapshot_id) == candidate.ranking_date
-        for item in state.outbox
-    )
+    sent_items = [item for item in state.outbox
+                  if item.status == "sent" and dates.get(item.snapshot_id) == candidate.ranking_date]
+    sent_for_date = bool(sent_items)
+    last_sent = max(sent_items, key=lambda item: (item.sent_at, item.created_at, item.id)) if sent_items else None
+    delivered_snapshot = next((item for item in rankings.snapshots if last_sent and item.id == last_sent.snapshot_id), None)
+    changed_since_delivery = delivered_snapshot is not None and not _same_sporting_content(delivered_snapshot, observation)
 
     outbox = list(state.outbox)
     if snapshot_status == "revised" and any(
@@ -179,13 +180,13 @@ def plan_collection(
     # the sporting facts.
     event_type: str | None = None
     if sent_for_date:
-        event_type = "ranking_correction" if has_changes else None
+        event_type = "ranking_correction" if changed_since_delivery else None
     else:
         event_type = "weekly_digest"
 
     if event_type is not None:
         item_id = event_id(candidate.id, event_type)
-        if snapshot_status == "revised" and not sent_for_date:
+        if snapshot_status == "revised":
             outbox = [replace(item, retryable=False, superseded_by=item_id)
                       if item.status == "pending" and item.retryable and dates.get(item.snapshot_id) == candidate.ranking_date
                       else item for item in outbox]
@@ -332,10 +333,12 @@ def dry_run(
         source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
     )
     state = load_alert_state(state_path, rankings)
-    return replace(
-        plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at),
-        freshness=freshness,
-    )
+    try:
+        outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
+    except RankingSourceError as exc:
+        exc.freshness = replace(freshness, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
+        raise
+    return replace(outcome, freshness=freshness)
 
 
 def _freshness_checked_observation(
@@ -478,6 +481,7 @@ def build_parser() -> argparse.ArgumentParser:
     deliver_parser = commands.add_parser("deliver", help="deliver pending outbox items")
     deliver_parser.add_argument("--provider", choices=("callmebot",), required=True)
     deliver_parser.add_argument("--durable-git", action="store_true", help="publish each reservation before sending; required for delivery")
+    deliver_parser.add_argument("--incidents-only", action="store_true", help="block sporting delivery when collection did not confirm a fresh edition")
     _paths(deliver_parser)
 
     checkpoint_parser = commands.add_parser("checkpoint", help="recover and publish the complete ranking state bundle")
@@ -574,14 +578,26 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
         if args.command == "deliver":
             ledger = load_incidents(args.incidents_path)
             sporting_error = None
+            sporting_review = 0
             try:
-                sporting_pending = has_pending_outbox(rankings_path=args.rankings_path, state_path=args.state_path)
+                rankings = load_rankings(args.rankings_path)
+                state = load_alert_state(args.state_path, rankings)
+                sporting_pending = not args.incidents_only and any(_sendable(item) for item in state.outbox)
+                sporting_review = sum(item.status == "pending" and item.superseded_by is None and not _sendable(item) for item in state.outbox)
             except StorageError as exc:
                 sporting_error = exc
                 sporting_pending = False
+            incident_review = sum(item["kind"] in {"provider_in_flight", "provider_failed"}
+                                  and item not in pending_incidents(ledger) for item in ledger.latest().values())
+            needs_review = sporting_review + incident_review
+            if needs_review:
+                print(f"delivery_review_required={needs_review}")
+                append_summary(f"### ATP ranking — delivery blocked\n\n{needs_review} unresolved provider attempts require operator reconciliation; automatic replay is disabled.")
             if not sporting_pending and not pending_incidents(ledger):
                 if sporting_error is not None:
                     raise sporting_error
+                if needs_review:
+                    raise ConfigurationError("ranking_delivery_review_required")
                 # Provider credentials are only required when there is work to send.
                 print("provider=callmebot provider_accepted=0")
                 return 0
@@ -608,6 +624,8 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
             print(f"provider=callmebot provider_accepted={count}")
             if sporting_error is not None:
                 raise sporting_error
+            if needs_review:
+                raise ConfigurationError("ranking_delivery_review_required")
             return 0
         source: RankingSource = (
             _FixtureSource(args.fixture) if args.fixture else _selected_source(args.source)
@@ -676,6 +694,12 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
         if args.command in {"collect", "dry-run"}:
             try:
                 emit_collection_summary(assessment, source_telemetry=getattr(source, "last_telemetry", None), error_code=error_code)
+                if args.command == "collect":
+                    import os
+                    if os.environ.get("GITHUB_OUTPUT"):
+                        allowed = error_code is None and assessment is not None and assessment.state == FreshnessState.FRESH
+                        with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+                            output.write(f"sporting_delivery_allowed={'true' if allowed else 'false'}\n")
             except OSError:
                 print("telemetry=summary_unavailable", file=sys.stderr)
 

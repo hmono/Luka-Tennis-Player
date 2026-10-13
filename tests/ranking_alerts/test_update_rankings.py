@@ -283,7 +283,7 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertEqual("atptour", outcome.snapshot.source)
         self.assertEqual(1, len(outcome.rankings.snapshots))
 
-    def test_sent_date_without_effective_delta_does_not_create_correction(self) -> None:
+    def test_revision_returning_to_previous_week_still_corrects_last_delivered_rank(self) -> None:
         self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
         changed = self.collect(
             observation("2026-09-07", singles_rank=1990),
@@ -304,8 +304,25 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         )
 
         self.assertEqual("revised", outcome.snapshot_status)
-        self.assertEqual("none", outcome.outbox_status)
-        self.assertEqual(state.outbox, outcome.state.outbox)
+        self.assertEqual("created", outcome.outbox_status)
+        self.assertEqual(state.outbox, outcome.state.outbox[:2])
+        self.assertEqual("ranking_correction", outcome.state.outbox[-1].event_type)
+
+    def test_new_revision_supersedes_pending_correction_preserving_accepted_receipt(self) -> None:
+        self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
+        changed = self.collect(observation("2026-09-07", singles_rank=1990), "2026-09-07T12:00:00Z")
+        sent = replace(changed.state.outbox[-1], status="sent", sent_at="2026-09-07T12:05:00Z")
+        state = RankingAlertState(outbox=(changed.state.outbox[0], sent))
+        first = update_rankings.plan_collection(changed.rankings, state,
+            observation("2026-09-07", singles_rank=1980), captured_at="2026-09-07T13:00:00Z")
+        latest = update_rankings.plan_collection(first.rankings, first.state,
+            observation("2026-09-07", singles_rank=1970), captured_at="2026-09-07T14:00:00Z")
+        self.assertEqual(sent, next(item for item in latest.state.outbox if item.id == sent.id))
+        corrections = [item for item in latest.state.outbox if item.event_type == "ranking_correction"]
+        self.assertEqual(2, len(corrections))
+        self.assertEqual(corrections[1].id, corrections[0].superseded_by)
+        self.assertFalse(update_rankings._sendable(corrections[0]))
+        self.assertTrue(update_rankings._sendable(corrections[1]))
 
     def test_sent_date_with_effective_delta_creates_a_correction_message(self) -> None:
         self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
