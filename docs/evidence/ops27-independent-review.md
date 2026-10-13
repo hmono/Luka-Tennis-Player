@@ -8,9 +8,13 @@ behavior below. Reviewer ownership is limited to this report and
 `workers/atp-ops/test/adversarial.test.ts`; production corrections belong to the
 coordinator.
 
-**Initial result: CODE_NO_GO until the two reproduced P1s below are fixed and
-independently rechecked. STAGING_NO_GO and ACTIVATION_NO_GO remain separate.**
-This is an incremental review record, not a claim that remote CI passed.
+**Final result: CODE_GO for the corrected, disabled PoC at
+`0c554813358106ab9730680d8c3fb2dc9e914cdd`, with zero open reproduced P0/P1s.**
+The original review withheld approval for two reproduced P1s. Coordinator fixes
+`e2f1862` and `56b8d9a` were independently read and rechecked; final actual
+workerd/local-D1 CI passed all71 tests, including8 independent regressions.
+**STAGING_NO_GO and ACTIVATION_NO_GO remain separate and closed.** No deployment,
+production resource, enablement, message, ONO installation or merge is authorized.
 
 ## Scope and evidence boundaries
 
@@ -21,22 +25,23 @@ implementation/feasibility reports, relevant Ops26 scheduler behavior and prior
 independent review. Inspected lockfile pins and registry/integrity records.
 Reviewed official D1 transaction/primary-routing and platform-limit contracts.
 
-Synthetic local checks use Node 24.20.0's TypeScript transform and an in-memory
+Synthetic local checks used Node 24.20.0's TypeScript transform and an in-memory
 `node:sqlite` shim implementing the D1 calls used by the actual source. Temporary
 copies only append `.ts` to local import specifiers. This is **SQLite/source
-evidence, not workerd or Cloudflare D1 qualification**. Remote CI must run the
-independent tests with the actual migration, Workers runtime and synthetic local
-D1. No dependency install, build, heavy suite, production resource, dispatch,
+evidence, not workerd or Cloudflare D1 qualification**. Remote CI subsequently ran
+the independent tests with the actual migrations, Workers runtime and synthetic
+local D1. No local dependency install, build, heavy suite, production resource, dispatch,
 message, key read, VM service, FP&A change, push, issue comment or merge was
 performed by this reviewer.
 
 ## Reproduced findings
 
-| ID | Severity / initial status | Reproduction and effect | Required correction |
+| ID | Severity / final status | Reproduction and effect | Correction and verification |
 | --- | --- | --- | --- |
-| IR-01 | P1, open | Failed production run → newer queued/in-progress retry → failed retry. `runWatchdog` makes every run scope observable; `assessRuns` omits `RUN_FAILURE` for the running replacement. Reconciliation closes the active failure and sends `scheduler:RECOVERED:RUN_FAILURE:1`; when the retry fails, it creates `scheduler:RUN_FAILURE:2`. There was no successful run between the two failures. | Preserve the failure episode until positive completed-success evidence. Suppress recovery dispatch while a replacement runs without reporting the failure recovered. Independent tests cover both queued and in-progress replacements, subsequent failure and completed success. |
-| IR-02 | P1, open | Change the durable cycle owner after `reserveDispatch` succeeds, before `client.dispatch`: the superseded isolate still dispatches and writes `result=accepted`. A separate clock advance of ten minutes inside inspection also allows dispatch after the five-minute lease expires with no takeover. Reservation timestamps use invocation-start time, so a four-minute inspection followed by another invocation thirty minutes after the first start permits attempts only twenty-six minutes apart. | Check fresh time/ownership before mutation and immediately before the external POST, including token renewal; consume an ambiguous or abandoned reservation without replay. Fence result writes and use actual reservation time for cooldown/horizon checks. A full cycle deadline must prevent HTTP/D1 latency from outliving its authority. |
-| IR-03 | P2, open | SQLite `EXPLAIN QUERY PLAN` reports `SCAN ops_events` for both claim completion lookup and attempt-audit insertion, each using only `WHERE lease_token=?`. Every claim therefore scans retained identities twice, even though health/admission counters are indexed or constant size. | Index the lease lookup or otherwise avoid retained-history scans. Measure actual D1 rows/query counts before using the feasibility cost assumptions. |
+| IR-01 | P1, closed | Failed production run → newer queued/in-progress retry → failed retry. `runWatchdog` made every run scope observable; `assessRuns` omitted `RUN_FAILURE` for the running replacement. Reconciliation closed the active failure and sent `scheduler:RECOVERED:RUN_FAILURE:1`; when the retry failed, it created `scheduler:RUN_FAILURE:2`. There was no successful run between the two failures. | `e2f1862` preserves failure/duration episodes until eligible completed-success evidence, while preventing recovery dispatch during a queued/running replacement. Independent queued and in-progress sequences pass, including subsequent failure and successful completion. |
+| IR-02 | P1, closed | Change the durable cycle owner after `reserveDispatch` succeeds, before `client.dispatch`: the superseded isolate still dispatched and wrote `result=accepted`. A ten-minute advance inside inspection also allowed dispatch after the five-minute lease expired without takeover. Invocation-start reservation timestamps allowed attempts twenty-six minutes apart when the first inspection consumed four minutes. | `e2f1862` checks fresh time/ownership before reservation and dispatch, rechecks after App token acquisition immediately before POST, fences results and uses current reservation time. `56b8d9a` also checks after inspection, in its error path and before reconciliation. Abandoned reservations stay consumed. All four independent lease/cooldown/token-acquisition regressions pass in workerd/local D1. |
+| IR-03 | P2, closed for source | SQLite `EXPLAIN QUERY PLAN` reported `SCAN ops_events` for claim completion lookup and attempt-audit insertion, each using only `WHERE lease_token=?`. Every claim scanned retained identities twice. | Migration0002 adds `ops_events_lease_token`; both plans now use indexed `SEARCH`. Migrations and forwarding pass actual runtime tests. Account rows/CPU/cost measurement remains external qualification. |
+| IR-04 | P2, closed; discovered by remote CI | Real workerd/local-D1 tests exposed trigger-inclusive `meta.changes`: a committed forward returned false and one retired event returned a count of two. The native SQLite shim had not modeled this metadata difference. | `56b8d9a` uses `UPDATE ... RETURNING event_id` and counts returned events, independently of trigger writes. Full inbox/integration tests pass in the actual test runtime. This finding demonstrates why the initial native smoke was insufficient. |
 
 The coordinator received the reproduced P1s immediately and was asked to fix
 them before technical approval. This review does not classify a hypothetical
@@ -62,7 +67,34 @@ Command: `nice -n 15 node --experimental-transform-types
 exit zero because this diagnostic prints observed behavior rather than asserting
 the desired fixed result. These observations are failures of the contracts,
 not passing regression results. The permanent independent tests assert the
-desired behavior and are expected to fail on the original source.
+desired behavior; they pass only after the corrections described above.
+
+## Independent correction recheck and final remote proof
+
+Read coordinator corrections `e2f1862` and `56b8d9a` before cherry-picking their
+exact changes into this review worktree for verification. The reviewer did not
+author production corrections. Re-ran the native reproductions: failure remains
+active with generation1, superseded dispatch count is0 with reservation retained,
+expired-cycle dispatch/reservation counts are0, and both lease queries use the
+new index. A lightweight native adapter also executed the eight permanent test
+flows and assertions successfully in under one second. That remained synthetic
+Node/SQLite evidence, not a substitute for the real runtime.
+
+Independently retrieved completed GitHub Actions metadata and logs:
+
+| Exact integrated SHA / run | Observed result |
+| --- | --- |
+| `56b8d9a`, [Worker checks](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38469258757) | Typecheck, both migrations with second no-op,4 files/70 tests including7 independent tests, and dry-run bundle passed. |
+| `0c554813358106ab9730680d8c3fb2dc9e914cdd`, [final Worker checks](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38469406758) | Typecheck, both migrations with second no-op,4 files/**71 tests including all8 independent regressions**, and Wrangler dry-run bundle passed. This includes the after-token-acquisition fence test. |
+| Same `0c554813`, [repository regression](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38469406464) | 283 Python tests,81 frontend tests and Next build/static export passed. These are the main-based tests, not the unmerged PR32 suite. |
+
+The final Workers source, tests and migrations in the independent worktree are
+byte-identical to the reviewed integrated SHA (`git diff --exit-code 0c554813
+HEAD -- workers/atp-ops`, exit0). Also read the final CI concurrency-only change.
+The duplicate push run38469396515 was cancelled by shared branch/PR concurrency;
+it is not listed as successful evidence. Source approval relies on the completed
+replacement run38469406758. Review/report-only changes do not retroactively
+claim a new source SHA was tested.
 
 ## Durable state, API and runtime assessment
 
@@ -96,8 +128,11 @@ response caps and redirect rejection. Up to six GETs can each incur401, renewal
 and replay: a successful worst-case inspection can require nineteen HTTP
 operations, before recovery POST and D1 work. Seven requests is the ordinary
 path, not a hard total. Fifteen seconds per operation alone does not prove a
-cycle finishes before its five-minute lease. Root correction/recheck must cover
-that distinction.
+cycle finishes before its five-minute lease. Corrected code revokes remaining
+effects when ownership/expiry checks fail, including after inspection and token
+acquisition; it does not implement a separate global cancellation deadline for
+all inspection reads. Bounded read work can finish before authority loss is
+reported. No claim of a measured240-second cycle budget is made.
 
 Production filtering excludes development and manual dry-run/title-substring
 observations. Scheduled runs rely on coherent remote delivery configuration:
@@ -119,7 +154,7 @@ eventually returns503 even after successful delivery. No indefinite autonomous
 storage claim is justified without a qualified archive/replay protocol.
 
 Backoff and due ordering make progress beyond poison messages; max attempts
-prevent perpetual retry by one item. Retained rows still affect claim cost until
+prevent perpetual retry by one item. The repeated retained-history scan in
 IR-03 is fixed. The proposed forty D1 statements per cycle and one hundred rows
 read are estimates, not measured runtime bounds. Four attempts alone consume
 thirty-six explicit claim/completion statements; watchdog work is additional.
@@ -151,14 +186,15 @@ not prove those dependencies are ready.
 
 ## Gate record
 
-| Gate | Initial independent decision |
+| Gate | Final independent decision |
 | --- | --- |
-| Source/code | CODE_NO_GO pending reproduced P1 corrections and independent recheck. |
+| Source/code | **CODE_GO for the disabled PoC at0c554813**, after independent source recheck and actual workerd/local-D1 tests. Zero open reproduced P0/P1s. |
 | Cloudflare deployment feasibility | Not established; account entitlements/consumption and full operating cost remain NOT_VERIFIED. Conditional PoC continuation is not operational GO. |
 | Sink / external supervision / restore | NO_GO; contracts and proposals do not substitute for a qualified destination, absence alert or restore exercise. |
 | Staging | STAGING_NO_GO. No staging infrastructure provisioned or authorized by this report. |
 | Activation | ACTIVATION_NO_GO. All local gates remain false; no production resource/flag, WhatsApp, VM/FP&A, main or PR32 merge is authorized. |
 
-Remote integrated-SHA validation and subsequent correction recheck will be
-recorded here separately. No source-only or SQLite result clears operational
-gates.
+Actual runtime mocks close the reproduced source findings. Neither those tests
+nor code approval establishes production D1 durability, device delivery,
+account eligibility, external supervision or disaster recovery. All operational
+gates remain closed.
