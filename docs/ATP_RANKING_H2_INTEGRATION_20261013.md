@@ -74,6 +74,23 @@ Testes cobrem timeout, 503, interrupção em voo, recuperação append-only e
 rerun da CLI sem construir provider. Recuperação esportiva não equivale a
 aceite nem a entrega no dispositivo; `provider_accepted` conserva seu alcance.
 
+### H2-REV-01 — retry interno cruzava semana/expiração
+
+O revisor Astra/max reproduziu no candidato `0915682` um retry interno após 429
+que avançava 120 segundos, cruzava 03h UTC e enviava uma edição já não FRESH
+ou fora da validade. O coordenador repetiu ambos os casos com provider real e
+opener/sleep/relógio simulados, sem rede. A CLI agora configura `max_attempts=1`:
+uma tentativa HTTP por intenção por execução, tanto esportiva como operacional.
+429 é rejeição explícita, fica persistido como pending/retryable e aguarda outro
+run; esse run revalida a edição, cria nova reserva e publica antes do request.
+O default de quatro tentativas do helper continua disponível para seus testes,
+mas não é usado pela CLI produtiva. Isso troca retry imediato por revalidação
+durável em cada nova execução. Não existe orçamento global de tentativas 429.
+
+Novos testes usam a classe CallMeBotProvider real com HTTP/sleep mock e cobrem
+virada semanal, expiração, zero requests fora do gate e um retry em nova execução
+da mesma edição com nonce novo, receipt preservado e deduplicação posterior.
+
 ## Risco externo não removido
 
 **H2-QA-02, P1 operacional, permanece pendente:** o workflow ativo de `main`

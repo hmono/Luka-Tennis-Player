@@ -645,7 +645,10 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
                 checkpoint = _git_checkpoint(args)
             elif checkpoint is None:
                 raise ConfigurationError("ranking_checkpoint_required")
-            provider = CallMeBotProvider.from_env()
+            # A retry inside send() can cross a local edition/validity boundary.
+            # Persist a definite 429 rejection, then revalidate and reserve in
+            # a later CLI run instead of issuing another unchecked request.
+            provider = CallMeBotProvider.from_env(max_attempts=1)
             count = 0
             if sporting_pending:
                 try:

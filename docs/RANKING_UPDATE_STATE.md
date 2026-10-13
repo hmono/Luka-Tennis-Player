@@ -58,6 +58,9 @@ simples e duplas exigem datas explícitas iguais. Não há fallback automático.
   ambíguas não confirmam aceite. Falhas permanentes/ambíguas continuam auditáveis
   sem retry automático. Somente rejeição HTTP 429 admite retry limitado;
   timeout, transport, 408 e 5xx ficam bloqueados para revisão.
+  A CLI usa uma tentativa HTTP por intenção em cada execução: 429 permanece
+  retryable para outro run, que revalida edição/calendário e publica nova reserva;
+  não há sleep/retry interno que atravesse a validade sem rechecagem.
 - `sent` legado continua legível; novos receipts registram
   `delivery_status=provider_accepted`, sem afirmar entrega ao dispositivo.
   Reserva não retryable é publicada antes do request e permanece em caso de

@@ -4,7 +4,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -157,6 +157,83 @@ class SprintIntegrationTests(unittest.TestCase):
         self.assertIn("delivery_review_required=1", output)
         self.assertIn("ranking_delivery_review_required", errors)
         self.assertEqual(before, self.incidents.read_bytes())
+
+    def test_h2_operational_429_cannot_retry_across_week_or_calendar_expiry(self):
+        class Reply:
+            status = 429
+            headers = {"Retry-After": "120"}
+            def close(self):
+                pass
+        for edition, instant, error in (
+            ("2026-10-12", "2026-10-19T02:59:59+00:00", "ranking_delivery_edition_not_fresh"),
+            ("2026-10-26", "2026-10-27T02:59:59+00:00", "ranking_calendar_invalid"),
+        ):
+            with self.subTest(edition=edition):
+                self.setUp()
+                self.assertEqual(0, self.main("collect", instant, Source(edition))[0])
+                current = [datetime.fromisoformat(instant)]
+                requests, sleeps = [], []
+                def opener(request, **kwargs):
+                    requests.append(current[0])
+                    return Reply()
+                def factory(**kwargs):
+                    return update_rankings.CallMeBotProvider(phone="+5511999999999", api_key="test-only",
+                        opener=opener, sleep=sleeps.append, now=lambda: current[0], **kwargs)
+                args = ["deliver", "--provider", "callmebot", "--edition-date", edition,
+                        "--rankings-path", str(self.rankings), "--state-path", str(self.state),
+                        "--incidents-path", str(self.incidents)]
+                with patch.object(update_rankings.CallMeBotProvider, "from_env", side_effect=factory) as configured, \
+                     patch.dict("os.environ", {"ATP_RANKING_DELIVERY_ENABLED": "true"}), \
+                     redirect_stdout(StringIO()), redirect_stderr(StringIO()) as errors:
+                    self.assertEqual(1, update_rankings.main(args, clock=lambda: current[0], checkpoint=lambda: None))
+                    self.assertIn("http_429", errors.getvalue())
+                    item = load_alert_state(self.state, load_rankings(self.rankings)).outbox[-1]
+                    self.assertEqual(("pending", 1, True), (item.status, item.attempts, item.retryable))
+                    self.assertIsNotNone(item.attempt_id)
+                    before = self.state.read_bytes()
+                    current[0] += timedelta(seconds=120)
+                    self.assertEqual(1, update_rankings.main(args, clock=lambda: current[0], checkpoint=lambda: None))
+                    self.assertIn(error, errors.getvalue())
+                    self.assertEqual(before, self.state.read_bytes())
+                    configured.assert_called_once_with(max_attempts=1)
+                self.assertEqual(1, len(requests))
+                self.assertEqual([], sleeps)
+
+    def test_h2_429_retry_in_later_current_run_reserves_new_attempt_and_deduplicates(self):
+        self.assertEqual(0, self.main("collect", "2026-10-13T12:00:00Z", Source("2026-10-12"))[0])
+        requests, checkpoints = [], []
+        class Reply:
+            headers = {}
+            def __init__(self, status):
+                self.status = status
+            def close(self):
+                pass
+            def read(self, limit):
+                return b"Message queued."
+        def checkpoint():
+            item = load_alert_state(self.state, load_rankings(self.rankings)).outbox[-1]
+            checkpoints.append((item.attempt_id, item.retryable))
+        def opener(request, **kwargs):
+            item = load_alert_state(self.state, load_rankings(self.rankings)).outbox[-1]
+            self.assertEqual((item.attempt_id, False), checkpoints[-1])
+            requests.append(item.attempt_id)
+            return Reply(429 if len(requests) == 1 else 200)
+        def factory(**kwargs):
+            return update_rankings.CallMeBotProvider(phone="+5511999999999", api_key="test-only",
+                opener=opener, sleep=lambda seconds: self.fail("no internal retry"),
+                now=lambda: datetime.fromisoformat("2026-10-13T12:01:00+00:00"), **kwargs)
+        args = ["deliver", "--provider", "callmebot", "--edition-date", "2026-10-12",
+                "--rankings-path", str(self.rankings), "--state-path", str(self.state),
+                "--incidents-path", str(self.incidents)]
+        with patch.object(update_rankings.CallMeBotProvider, "from_env", side_effect=factory), \
+             patch.dict("os.environ", {"ATP_RANKING_DELIVERY_ENABLED": "true"}), \
+             redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            for expected in (1, 0, 0):
+                self.assertEqual(expected, update_rankings.main(args,
+                    clock=lambda: datetime.fromisoformat("2026-10-13T12:01:00+00:00"), checkpoint=checkpoint))
+        self.assertEqual(2, len(set(requests)))
+        item = load_alert_state(self.state, load_rankings(self.rankings)).outbox[-1]
+        self.assertEqual(("sent", 2, False), (item.status, item.attempts, item.retryable))
 
     def test_failed_collection_delivers_only_incident_and_preserves_sporting_intention(self):
         self.assertEqual(0, self.main("collect", "2026-10-06T12:00:00Z", Source("2026-10-05"))[0])
