@@ -131,6 +131,7 @@ def plan_collection(
     observation: RankingObservation,
     *,
     captured_at: str,
+    autonomous: bool = False,
 ) -> CollectionOutcome:
     same_date = [item for item in rankings.snapshots if item.ranking_date == observation.ranking_date]
     latest_same_date = max(same_date, key=snapshot_sort_key) if same_date else None
@@ -172,7 +173,7 @@ def plan_collection(
     changed_since_delivery = delivered_snapshot is not None and not _same_sporting_content(delivered_snapshot, observation)
 
     outbox = list(state.outbox)
-    if snapshot_status == "revised" and any(
+    if not autonomous and snapshot_status == "revised" and any(
         item.status == "pending" and not _sendable(item) and item.superseded_by is None
         and dates.get(item.snapshot_id) == candidate.ranking_date for item in outbox
     ):
@@ -196,7 +197,9 @@ def plan_collection(
         item_id = event_id(candidate.id, event_type)
         if snapshot_status == "revised":
             outbox = [replace(item, retryable=False, superseded_by=item_id)
-                      if item.status == "pending" and item.retryable and dates.get(item.snapshot_id) == candidate.ranking_date
+                      if item.status == "pending" and item.retryable
+                      and (not autonomous or _sendable(item))
+                      and dates.get(item.snapshot_id) == candidate.ranking_date
                       else item for item in outbox]
         if not any(item.id == item_id for item in outbox):
             outbox.append(
@@ -242,7 +245,8 @@ def collect(
     )
     state = load_alert_state(state_path, rankings)
     try:
-        outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
+        outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at,
+                                  autonomous=calendar is None)
     except RankingSourceError as exc:
         exc.freshness = replace(freshness, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         raise
@@ -358,7 +362,8 @@ def dry_run(
     )
     state = load_alert_state(state_path, rankings)
     try:
-        outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
+        outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at,
+                                  autonomous=calendar is None)
     except RankingSourceError as exc:
         exc.freshness = replace(freshness, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         raise

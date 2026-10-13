@@ -23,7 +23,7 @@ from ranking_alerts.freshness import FreshnessState, assess_observation
 from ranking_alerts.itf_source import (ITF_BASE_URL, PROFILE_PATH, ItfOverviewResponse,
     ItfProfileCapture, ItfRankingSource)
 from ranking_alerts.source import RankingSourceError
-from ranking_alerts.storage import load_rankings, save_alert_state
+from ranking_alerts.storage import load_rankings, save_alert_state, save_rankings
 
 
 def at(value):
@@ -146,6 +146,24 @@ class PublicationDrivenTests(unittest.TestCase):
         self.assertEqual(changed.rankings.snapshots, reverted.rankings.snapshots[:-1])
         repeated = self.collect(capture(), "2026-10-06T15:00:00Z")
         self.assertEqual(reverted.state.outbox, repeated.state.outbox)
+
+    def test_legacy_ambiguous_intent_cannot_block_valid_source_recovery(self):
+        first = self.collect(capture(), "2026-10-06T12:00:00Z")
+        for retryable in (False, True):
+            with self.subTest(retryable=retryable):
+                ambiguous = replace(first.state.outbox[0], attempts=1, retryable=retryable,
+                                    last_error_code="transport_timeout", attempt_id="a" * 32)
+                save_alert_state(self.state, replace(first.state, outbox=(ambiguous,)), first.rankings)
+                # Restore baseline facts between cases, preserving each legacy fixture.
+                save_rankings(self.rankings, first.rankings)
+                revised = self.collect(capture(singles_rank=2240), "2026-10-06T13:00:00Z")
+                self.assertEqual("revised", revised.snapshot_status)
+                self.assertEqual(ambiguous, revised.state.outbox[0])
+                self.assertEqual(first.rankings.snapshots, revised.rankings.snapshots[:-1])
+                self.assertEqual(2, len(revised.state.outbox))
+                repeated = self.collect(capture(singles_rank=2240), "2026-10-06T14:00:00Z")
+                self.assertEqual("unchanged", repeated.snapshot_status)
+                self.assertEqual(ambiguous, repeated.state.outbox[0])
 
 
 class PublicationAssessmentTests(unittest.TestCase):

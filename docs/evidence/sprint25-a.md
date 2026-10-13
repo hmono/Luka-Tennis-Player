@@ -53,6 +53,13 @@ A → B → A → B corrections without permanent manual reconciliation. A pendi
 correction B is superseded if the source returns to previously delivered A, so
 withdrawn B cannot remain eligible to send.
 
+Calendar-free collection also continues validating and appending source
+corrections when legacy outbox records contain ambiguous provider attempts.
+Those legacy records stay unchanged; the autonomous delivery journal fences
+their editions against replay according to its terminal unknown policy. Legacy
+explicit-calendar collection and direct `plan_collection()` calls retain their
+old block unless the caller explicitly passes `autonomous=True`.
+
 ## Evidence
 
 `test_publication_driven.py` exercises 56 consecutive daily checks across eight
@@ -69,6 +76,6 @@ pending corrections, legacy revision loading, and rejection of missing,
 cross-edition, forward, self-referential or obsolete revision parents.
 
 Validation: `python3 -m unittest discover -s tests/ranking_alerts -p 'test_*.py' -q`.
-The final complete regression passed **246 tests** in 44.9 seconds. No external source was
+The final complete regression passed **247 tests** in 87.0 seconds. No external source was
 contacted by these deterministic tests. The integrated sprint performs the real
 read-only dry-run and frontend/build checks separately.
