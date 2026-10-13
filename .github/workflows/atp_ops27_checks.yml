@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ops27-checks-${{ github.ref }}
+  group: ops27-checks-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
