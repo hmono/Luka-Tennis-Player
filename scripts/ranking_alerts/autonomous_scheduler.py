@@ -9,16 +9,15 @@ import argparse
 import base64
 import contextlib
 import fcntl
-import hashlib
 import json
 import os
 import sqlite3
 import stat
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -34,6 +33,7 @@ MAX_DURATION = timedelta(minutes=20)
 RECOVERY_WINDOW = timedelta(hours=6)
 RECOVERY_BACKOFF = timedelta(minutes=30)
 MAX_RECOVERIES = 2
+HTTP_REQUEST_DEADLINE = 15
 
 
 def aware(now: datetime) -> datetime:
@@ -209,28 +209,54 @@ class WatchdogStore:
         self.connection.execute("UPDATE recoveries SET result=? WHERE slot=? AND attempt=?", (result, slot, attempt))
         self.connection.commit()
 
+    def workflow_disabled_event(self, state: str) -> str | None:
+        """Persist an outage identity across restarts; active ends that episode."""
+        if state == "active":
+            self.connection.execute("DELETE FROM health WHERE key='disabled_episode'")
+            self.connection.commit()
+            return None
+        current = self.connection.execute("SELECT value FROM health WHERE key='disabled_episode'").fetchone()
+        if current:
+            return current[0]
+        sequence = self.connection.execute("SELECT value FROM health WHERE key='disabled_generation'").fetchone()
+        previous = self.connection.execute("SELECT value FROM health WHERE key='last_problem'").fetchone()
+        if not sequence and previous and previous[0].startswith("scheduler:WORKFLOW_DISABLED:"):
+            # Preserve an existing legacy outage's idempotency key until recovery.
+            identity = previous[0]
+        else:
+            generation = int(sequence[0]) + 1 if sequence else 1
+            identity = f"scheduler:WORKFLOW_DISABLED:{state}:{generation}"
+            self.connection.execute("INSERT OR REPLACE INTO health VALUES('disabled_generation',?)", (str(generation),))
+        self.connection.execute("INSERT OR REPLACE INTO health VALUES('disabled_episode',?)", (identity,))
+        self.connection.commit()
+        return identity
+
 
 def _request(url: str, *, token: str = "", payload: dict | None = None, event_id: str = ""):
-    headers = {"Accept": "application/vnd.github+json", "User-Agent": "ranking-independent-watchdog", "X-GitHub-Api-Version": "2022-11-28"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    if event_id:
-        headers["Idempotency-Key"] = hashlib.sha256(event_id.encode()).hexdigest()
-    data = None
-    if payload is not None:
-        headers["Content-Type"] = "application/json"
-        data = json.dumps(payload).encode()
-    request = urllib.request.Request(url, data=data, headers=headers)
-    # Bound response bytes; never persist or print URLs, response bodies or tokens.
-    class NoRedirect(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self, *_args, **_kwargs):
-            return None
-    opener = urllib.request.build_opener(NoRedirect)
-    with opener.open(request, timeout=15) as response:
-        body = response.read(2_000_001)
-        if len(body) > 2_000_000:
-            raise ValueError("response_too_large")
-        return json.loads(body) if body else {}
+    """Bound the entire HTTP exchange, even DNS/header/body slow-drip stalls.
+
+    A disposable child permits cancellation from the inbox forwarding thread.
+    Secrets travel only through anonymous pipes, never argv, files or stderr.
+    subprocess.run kills and reaps the child on timeout; no worker survives it.
+    """
+    try:
+        response = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("http_transport.py"))],
+            input=json.dumps({"url": url, "token": token, "payload": payload,
+                              "event_id": event_id, "timeout": HTTP_REQUEST_DEADLINE},
+                             ensure_ascii=False).encode("utf-8"),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=HTTP_REQUEST_DEADLINE, check=False)
+    except subprocess.TimeoutExpired:
+        raise TimeoutError("http_deadline_exceeded") from None
+    if response.returncode:
+        raise ValueError("http_worker_unavailable")
+    result = json.loads(response.stdout)
+    if result.get("ok") is True:
+        return result["result"]
+    if result.get("error") == "http_status":
+        raise urllib.error.HTTPError("", result["status"], "http_status", result["headers"], None)
+    raise ValueError("http_transport_unavailable")
 
 
 def valid_destination(destination: str) -> bool:
@@ -362,11 +388,20 @@ class GitHubActionsClient:
         if metadata["state"] != "active":
             return metadata["state"], []
         runs = []
-        # Paginate: a burst of manual dry-runs cannot hide the main scheduled run.
+        # Retained history must not permanently exhaust the pagination budget.
+        # Two days cover every latest due slot (including the Monday extra poll),
+        # with overlap for the assessment/metadata clock boundary. Overflow of
+        # this bounded recent window still fails closed instead of inventing success.
+        observed = datetime.now(UTC)
+        created = f"{iso(observed - timedelta(days=2))}..{iso(observed)}"
         for page in range(1, 6):
-            batch = self._api_request(f"{self.base}/runs?branch=main&per_page=100&page={page}")["workflow_runs"]
+            query = urllib.parse.urlencode({"branch": "main", "per_page": 100,
+                                            "page": page, "created": created})
+            response = self._api_request(f"{self.base}/runs?{query}")
+            batch = response["workflow_runs"]
             runs.extend(batch)
-            if len(batch) < 100:
+            total = response.get("total_count")
+            if len(batch) < 100 or (type(total) is int and total <= len(runs)):
                 break
         else:
             raise ValueError("run_metadata_truncated")
@@ -389,8 +424,9 @@ def _watchdog_cycle(*, now: datetime, client, store: WatchdogStore, sender: Call
             if retry and now < parse(retry[0]):
                 raise GitHubBackoff(parse(retry[0]))
         state, runs = client.inspect()
+        disabled_identity = store.workflow_disabled_event(state) if released else None
         if state != "active":
-            incidents = [SchedulerIncident(f"scheduler:WORKFLOW_DISABLED:{state}", "WORKFLOW_DISABLED", "", "Ranking workflow is disabled; source status unknown. Initial release is required.")]
+            incidents = [SchedulerIncident(disabled_identity or f"scheduler:WORKFLOW_DISABLED:{state}", "WORKFLOW_DISABLED", "", "Ranking workflow is disabled; source status unknown. Initial release is required.")]
         else:
             incidents = assess_runs(now, runs)
     except Exception as error:
