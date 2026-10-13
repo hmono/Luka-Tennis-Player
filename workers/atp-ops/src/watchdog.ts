@@ -156,6 +156,7 @@ export async function runWatchdog(db: D1Database, config: WatchdogConfig, option
       if (backoff && now < Number(backoff.value)) throw new GitHubError("github_backoff", 0, Number(backoff.value));
       client ??= new GitHubActionsClient(config.repository, config.workflow, config.credentials, config.recoveryEnabled === true);
       const inspection = await client.inspect(now);
+      await assertLease();
       report.workflow_state = inspection.state;
       if (inspection.state === "active") {
         report.incidents = assessRuns(now, inspection.runs);
@@ -173,6 +174,7 @@ export async function runWatchdog(db: D1Database, config: WatchdogConfig, option
       }
       await db.batch([stateWrite(db, "api_retry_at", "0", owner), stateWrite(db, "last_observed", String(now), owner)]);
     } catch (error) {
+      await assertLease();
       report.workflow_state = "unknown";
       report.incidents = [monitorIncident()];
       const retryAt = error instanceof GitHubError && error.retryAt ? error.retryAt : now + 10 * MINUTE;
@@ -181,6 +183,7 @@ export async function runWatchdog(db: D1Database, config: WatchdogConfig, option
     observable.add("SCHEDULER_DELAY:cron");
     if (cronDelayed) report.incidents.push({ code: "SCHEDULER_DELAY", scope: "SCHEDULER_DELAY:cron", slot: "",
       message: "Watchdog cron heartbeat is missing or delayed; independent supervision must assess its own availability.", recoverable: false });
+    await assertLease();
     await reconcile(db, report.incidents, observable, now, owner);
     for (const item of report.incidents) {
       if (!item.recoverable || config.recoveryEnabled !== true || report.workflow_state !== "active") continue;

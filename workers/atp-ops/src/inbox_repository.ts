@@ -143,13 +143,15 @@ export class InboxRepository {
         SELECT event_id,?,?,attempts,? FROM ops_events WHERE event_id=? AND state='leased'
         AND lease_token=? AND lease_until>?`).bind(now, state, error, lease.event_id, lease.token, now),
       this.db.prepare(`UPDATE ops_events SET state=?,due_at=?,lease_token=NULL,lease_until=NULL,
-        forwarded_at=?,last_error=? WHERE event_id=? AND state='leased' AND lease_token=? AND lease_until>?`)
+        forwarded_at=?,last_error=? WHERE event_id=? AND state='leased' AND lease_token=? AND lease_until>?
+        RETURNING event_id`)
         .bind(state, now + Math.max(backoff, retryAfter), accepted ? now : null,
           error, lease.event_id, lease.token, now),
       this.db.prepare('UPDATE ops_forward_slots SET lease_token=NULL,lease_until=0 WHERE lease_token=?').bind(lease.token),
     ]);
     if (result.some((item) => !item.success)) throw new InboxError('storage_unavailable');
-    return result[1].meta.changes === 1;
+    // D1 meta.changes includes trigger writes; RETURNING counts only fenced events.
+    return result[1].results.length === 1;
   }
   async status(now = Date.now()): Promise<InboxStatus> {
     const result = await this.db.batch<Record<string, number | null>>([
@@ -177,10 +179,10 @@ export class InboxRepository {
         SELECT event_id,?,'tombstone',attempts FROM ops_events
         WHERE state='forwarded' AND forwarded_at<? AND tombstone=0`).bind(now, before),
       this.db.prepare(`UPDATE ops_events SET tombstone=1 WHERE state='forwarded'
-        AND forwarded_at<? AND tombstone=0`).bind(before),
+        AND forwarded_at<? AND tombstone=0 RETURNING event_id`).bind(before),
     ]);
     if (result.some((item) => !item.success)) throw new InboxError('storage_unavailable');
-    return result[1].meta.changes;
+    return result[1].results.length;
   }
 }
 function sanitizeError(code?: string): string {
