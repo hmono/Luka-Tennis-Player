@@ -4,6 +4,8 @@ The versioned calendar describes expected publication dates, not observed
 editions. Only a verified source response may create a sporting snapshot.
 Official no-edition or moved-edition notices are explicit, referenced overrides.
 The calendar expires instead of silently assuming next year's rules.
+The cutoff is an internal monitoring SLA in America/Sao_Paulo; it is not an
+ATP publication-time guarantee. Validity applies to the local assessment date.
 """
 
 from __future__ import annotations
