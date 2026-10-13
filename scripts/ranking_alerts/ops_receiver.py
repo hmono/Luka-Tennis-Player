@@ -1,8 +1,8 @@
 """Reference independent durable operations inbox with idempotent event IDs.
 
 Run outside GitHub behind HTTPS. Durable acceptance is not device delivery.
-Optional outbound webhook forwarding retries from disk, with possible duplicate
-forwarding on ambiguous HTTP; inbox deduplication is exact by event_id.
+Outbound forwarding requires an explicit durable acknowledgment and receiver
+deduplication by event_id. Transient storage/HTTP failures retry from disk.
 """
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ class OpsInbox:
     def __init__(self, directory: Path):
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.path = directory / 'ops-inbox.sqlite3'
+        self.forwarding_failures = 0
         with self.connect() as database:
             database.execute('CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY, message TEXT NOT NULL, forwarded INTEGER NOT NULL DEFAULT 0, attempts INTEGER NOT NULL DEFAULT 0)')
 
@@ -52,7 +53,7 @@ class OpsInbox:
                 accepted = sender(event_id, message)
             except Exception:
                 accepted = False
-            if accepted:
+            if accepted is True:
                 with self.connect() as database:
                     database.execute('UPDATE events SET forwarded=1 WHERE id=?', (event_id,))
                 count += 1
@@ -61,7 +62,32 @@ class OpsInbox:
     def status(self):
         with self.connect() as database:
             count, pending = database.execute('SELECT count(*),coalesce(sum(forwarded=0),0) FROM events').fetchone()
-        return {'persisted_events': count, 'pending_forwarding': pending}
+        return {'persisted_events': count, 'pending_forwarding': pending,
+                'forwarding_failures': self.forwarding_failures}
+
+
+def forward_sender(event_id: str, message: str) -> bool:
+    """The configured independent sink must persist/deduplicate before ack."""
+    destination = os.environ.get('ATP_OPS_FORWARD_URL', '')
+    if urllib.parse.urlparse(destination).scheme != 'https':
+        return False
+    response = _request(destination, token=os.environ.get('ATP_OPS_FORWARD_TOKEN', ''),
+                        payload={'event_id': event_id, 'message': message}, event_id=event_id)
+    return isinstance(response, dict) and response.get('accepted') is True
+
+
+def forward_loop(inbox: OpsInbox, sender, *, stop: threading.Event | None = None,
+                 interval: float = 60) -> None:
+    """Recover automatically even if SQLite fails before/after a send."""
+    stop = stop or threading.Event()
+    while not stop.is_set():
+        try:
+            inbox.forward(sender)
+        except Exception:
+            # Do not expose exception text or let a transient database error kill
+            # the daemon while the HTTP server continues to report health.
+            inbox.forwarding_failures += 1
+        stop.wait(interval)
 
 
 def handler_for(inbox: OpsInbox, token: str):
@@ -117,15 +143,7 @@ def main(argv=None):
     if destination:
         if urllib.parse.urlparse(destination).scheme != 'https':
             raise SystemExit('https_forward_url_required')
-        def sender(event_id, message):
-            _request(destination, token=os.environ.get('ATP_OPS_FORWARD_TOKEN', ''), payload={'event_id': event_id, 'message': message}, event_id=event_id)
-            return True
-        def forward_loop():
-            wait = threading.Event()
-            while True:
-                inbox.forward(sender)
-                wait.wait(60)
-        threading.Thread(target=forward_loop, daemon=True).start()
+        threading.Thread(target=forward_loop, args=(inbox, forward_sender), daemon=True).start()
     server = ThreadingHTTPServer(('127.0.0.1', args.port), handler_for(inbox, token))
     server.serve_forever()
 

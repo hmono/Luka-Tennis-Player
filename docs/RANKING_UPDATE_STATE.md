@@ -1,5 +1,11 @@
 # Estado — atualização semanal de rankings
 
+> **Registro histórico H2, substituído pela Sprint #25.** O runtime vigente do
+> PR usa [operação publication-driven](ATP_RANKING_AUTONOMY_SPRINT25.md), sem
+> calendário obrigatório, aprovação por edição ou reconciliação humana recorrente.
+> Os gates descritos abaixo documentam a decisão anterior; não devem ser
+> reinstalados na operação autônoma. Ativação inicial continua não autorizada.
+
 Atualizado: 13/10/2026 UTC, sprint H2 / epic #19, PR #18 draft,
 `fix/atp-ranking-freshness-202610`. Integração em
 [`ATP_RANKING_H2_INTEGRATION_20261013.md`](ATP_RANKING_H2_INTEGRATION_20261013.md)

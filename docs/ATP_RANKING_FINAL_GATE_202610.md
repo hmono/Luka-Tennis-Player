@@ -1,5 +1,11 @@
 # ATP Ranking — gate final H2 / issue #24
 
+> **Gate histórico, substituído pela Sprint #25.** Consulte a
+> [arquitetura autônoma](ATP_RANKING_AUTONOMY_SPRINT25.md) e a
+> [evidência de integração](evidence/sprint25-validation.md). Calendário manual,
+> conferência humana por edição e reconciliação rotineira não são requisitos
+> do novo runtime. Esta substituição não autoriza merge ou ativação.
+
 13/10/2026 UTC · [Epic #19](https://github.com/hmono/Luka-Tennis-Player/issues/19)
 · [PR draft #18](https://github.com/hmono/Luka-Tennis-Player/pull/18).
 
