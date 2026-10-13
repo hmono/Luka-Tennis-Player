@@ -30,6 +30,19 @@ const count = async (table: string) =>
   (await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>())!.n;
 
 describe('integrated durable boundaries, entirely synthetic', () => {
+  it('deduplicates concurrent HTTP requests and rejects one conflicting writer', async () => {
+    const same = await Promise.all([worker.fetch(post('http-race'), localEnv()), worker.fetch(post('http-race'), localEnv())]);
+    expect(same.map(response => response.status)).toEqual([200, 200]);
+    const acknowledgments = await Promise.all(same.map(response => response.json())) as { duplicate: boolean }[];
+    expect(acknowledgments.filter(ack => !ack.duplicate)).toHaveLength(1);
+    const conflicting = await Promise.all([
+      worker.fetch(post('http-conflict', 'first synthetic payload'), localEnv()),
+      worker.fetch(post('http-conflict', 'second synthetic payload'), localEnv()),
+    ]);
+    expect(conflicting.map(response => response.status).sort()).toEqual([200, 409]);
+    expect(await count('ops_events')).toBe(2);
+  });
+
   it('commits ingress before acknowledgment, survives lost acknowledgment and rejects changed content', async () => {
     const first = await worker.fetch(post('ingress-1'), localEnv());
     expect(first.status).toBe(200);
