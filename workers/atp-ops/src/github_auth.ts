@@ -61,6 +61,7 @@ export async function githubRequest(fetcher: GitHubFetch, url: string, token: st
         Authorization: `Bearer ${token}`, "User-Agent": "atp-ops27-watchdog", "Content-Type": "application/json" },
       ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
     });
+    if (abort.signal.aborted) { await response.body?.cancel(); throw new GitHubError("github_deadline"); }
     if (!response.ok) {
       let retryAt = 0;
       if (response.status === 403 || response.status === 429) {
@@ -76,6 +77,9 @@ export async function githubRequest(fetcher: GitHubFetch, url: string, token: st
     if (response.status === 204) { await response.body?.cancel(); return null; }
     if (!response.body) throw new GitHubError("github_body_invalid");
     const reader = response.body.getReader();
+    // Cancel the stream too: a mocked/adapter fetch may ignore its signal.
+    const cancelReader = (): void => { void reader.cancel().catch(() => undefined); };
+    abort.signal.addEventListener("abort", cancelReader, { once: true });
     const chunks: Uint8Array[] = [];
     let size = 0;
     try {
@@ -86,7 +90,7 @@ export async function githubRequest(fetcher: GitHubFetch, url: string, token: st
         if (size > 2_000_000) throw new GitHubError("github_body_limit");
         chunks.push(result.value);
       }
-    } finally { await reader.cancel().catch(() => undefined); }
+    } finally { abort.signal.removeEventListener("abort", cancelReader); await reader.cancel().catch(() => undefined); }
     const bytes = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
