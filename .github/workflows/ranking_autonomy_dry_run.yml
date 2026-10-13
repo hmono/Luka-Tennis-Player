@@ -1,0 +1,30 @@
+name: ATP Autonomy Dry Run
+
+# A separate validation workflow leaves the disabled legacy workflow untouched.
+on:
+  push:
+    branches: ['fix/atp-ranking-freshness-*']
+    paths:
+      - 'scripts/**'
+      - 'tests/ranking_alerts/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-automation.txt
+      - run: playwright install chromium --with-deps
+      - name: Live source validation with no writes or provider requests
+        run: |
+          python scripts/autonomous_rankings.py run --dry-run
+          test -z "$(git status --porcelain -- data automation)"

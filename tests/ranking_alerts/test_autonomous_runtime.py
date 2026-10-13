@@ -1,0 +1,281 @@
+from __future__ import annotations
+
+import shutil
+import subprocess
+import json
+import sys
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
+sys.path.insert(0, str(SCRIPTS)) if str(SCRIPTS) not in sys.path else None
+import autonomous_rankings
+from ranking_alerts.domain import RankingsData
+from ranking_alerts.providers import DeliveryError, DeliveryReceipt
+from ranking_alerts.source import RawRankingObservation, RawDisciplineRanking, RankingSourceError
+from ranking_alerts.storage import save_rankings, load_rankings
+
+
+class Source:
+    name = "itf"
+    edition = "2026-10-05"
+    ranks = (2250, 1417)
+    error = None
+
+    def fetch(self):
+        if self.error:
+            raise RankingSourceError(self.error)
+        return RawRankingObservation(atp_id="B0UF", name="Luka Bojicic Ono", source="itf",
+            ranking_date=self.edition,
+            singles=RawDisciplineRanking(status="ranked", rank=self.ranks[0], points=None),
+            doubles=RawDisciplineRanking(status="ranked", rank=self.ranks[1], points=None))
+
+
+class Provider:
+    name = "callmebot"
+    last_attempt_count = 1
+
+    def __init__(self, clock):
+        self.messages, self.clock, self.error = [], clock, None
+
+    def send(self, *, message, event_id):
+        self.messages.append((message, event_id))
+        if self.error:
+            raise self.error
+        return DeliveryReceipt(provider=self.name, accepted_at=self.clock().isoformat().replace("+00:00", "Z"), http_status=200)
+
+
+class AutonomousRuntimeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        (self.root / "data").mkdir()
+        (self.root / "automation/state").mkdir(parents=True)
+        save_rankings(self.root / "data/rankings.json", RankingsData(snapshots=()))
+        shutil.copyfile(SCRIPTS.parent / "data/ranking_career_high_baseline.json",
+                        self.root / "data/ranking_career_high_baseline.json")
+        self.instant = datetime(2026, 10, 13, 12, 17, tzinfo=timezone.utc)
+        self.source = Source()
+        self.provider = Provider(lambda: self.instant)
+        self.checkpoints, self.alerts = [], []
+
+    def run_cycle(self, dry=False, checkpoint=None):
+        return autonomous_rankings.run_cycle(source=self.source, root=self.root,
+            now=lambda: self.instant, dry=dry,
+            checkpoint=checkpoint or (lambda: self.checkpoints.append(self.instant)),
+            provider_factory=lambda: self.provider,
+            ops_alert=lambda event, text: self.alerts.append((event, text)) or True)
+
+    def test_eight_weeks_without_calendar_one_status_per_period(self):
+        self.run_cycle()
+        for day in range(1, 57):
+            self.instant = datetime(2026, 10, 13, 12, 17, tzinfo=timezone.utc) + timedelta(days=day)
+            report = self.run_cycle()
+            self.assertEqual("NO_NEW_EDITION_OBSERVED", report["collection"])
+            self.run_cycle()
+        messages = self.provider.messages
+        weekly = [event for _, event in messages if "weekly" in event or "status" in event]
+        self.assertEqual(9, len(weekly))  # initial catch-up period plus eight boundaries
+        self.assertEqual(len(messages), len({event for _, event in messages}))
+        snapshots = load_rankings(self.root / "data/rankings.json").snapshots
+        self.assertEqual(1, len(snapshots))
+        self.assertIsNone(snapshots[0].singles.points)
+        self.assertIsNone(snapshots[0].doubles.points)
+        self.assertFalse((self.root / "config").exists())
+
+    def test_delayed_editions_identical_and_changed_ranks(self):
+        self.run_cycle()
+        self.instant += timedelta(days=12)
+        self.assertEqual("NO_NEW_EDITION_OBSERVED", self.run_cycle()["collection"])
+        self.source.edition = "2026-10-12"
+        self.assertEqual("FRESH", self.run_cycle()["collection"])
+        self.run_cycle()
+        self.source.edition = "2026-10-19"
+        self.source.ranks = (1800, 1300)
+        self.assertEqual("FRESH", self.run_cycle()["collection"])
+        snapshots = load_rankings(self.root / "data/rankings.json").snapshots
+        self.assertEqual(3, len(snapshots))
+        self.assertTrue(any("career high" in text.lower() for text, _ in self.provider.messages))
+
+    def test_source_error_recovers_without_sporting_mutation(self):
+        self.run_cycle()
+        before = (self.root / "data/rankings.json").read_bytes()
+        self.source.error = "ranking_source_identity_mismatch"
+        for _ in range(4):
+            self.instant += timedelta(days=1)
+            self.assertEqual("SOURCE_ERROR", self.run_cycle()["collection"])
+        self.assertEqual(before, (self.root / "data/rankings.json").read_bytes())
+        self.source.error = None
+        self.instant += timedelta(days=1)
+        self.assertEqual("NO_NEW_EDITION_OBSERVED", self.run_cycle()["collection"])
+        self.assertEqual(before, (self.root / "data/rankings.json").read_bytes())
+        ops = [text for _, text in self.alerts if "SOURCE_ERROR" in text]
+        self.assertEqual(1, len(ops))
+
+    def test_dry_run_has_no_state_writes_or_requests(self):
+        before = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+        self.assertFalse(self.run_cycle(dry=True)["writes"])
+        after = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+        self.assertEqual([], self.provider.messages)
+        self.assertEqual([], self.checkpoints)
+
+    def test_interrupted_checkpoint_replans_without_duplicate_digest(self):
+        def interrupted():
+            raise RuntimeError("mock checkpoint interruption")
+        with self.assertRaises(RuntimeError):
+            self.run_cycle(checkpoint=interrupted)
+        self.assertEqual([], self.provider.messages)
+        self.run_cycle()
+        self.run_cycle()
+        self.assertEqual(len(self.provider.messages), len({event for _, event in self.provider.messages}))
+        self.assertEqual(1, len(load_rankings(self.root / "data/rankings.json").snapshots))
+
+    def test_ambiguous_send_never_replays_and_next_edition_proceeds(self):
+        self.provider.error = DeliveryError("transport_timeout", 1)
+        self.run_cycle()
+        attempts = len(self.provider.messages)
+        self.provider.error = None
+        self.instant += timedelta(days=1)
+        self.run_cycle()
+        self.assertEqual(attempts, len(self.provider.messages))
+        self.assertTrue(self.alerts)
+        self.source.edition = "2026-10-12"
+        self.run_cycle()
+        self.assertGreater(len(self.provider.messages), attempts)
+
+    def test_provider_configuration_failure_still_alerts_independently(self):
+        from ranking_alerts.providers import ConfigurationError
+        def factory():
+            raise ConfigurationError("invalid_configuration")
+        result = autonomous_rankings.run_cycle(source=self.source, root=self.root,
+            now=lambda: self.instant, checkpoint=lambda: None, provider_factory=factory,
+            ops_alert=lambda event, text: self.alerts.append((event, text)) or True)
+        self.assertEqual("unavailable", result["provider_configuration"])
+        self.assertEqual([], self.provider.messages)
+        self.assertTrue(any("PROVIDER_CONFIGURATION_UNAVAILABLE" in text for _, text in self.alerts))
+
+    def test_configuration_alerts_repeat_per_episode_and_report_recovery(self):
+        from ranking_alerts.providers import ConfigurationError
+        from ranking_alerts.autonomous_delivery import load_delivery
+        configured = [True]
+        def factory():
+            if not configured[0]:
+                raise ConfigurationError("invalid_configuration")
+            return self.provider
+        for value in (True, False, False, True, True, False, False):
+            configured[0] = value
+            self.instant += timedelta(minutes=2)
+            autonomous_rankings.run_cycle(source=self.source, root=self.root,
+                now=lambda: self.instant, checkpoint=lambda: None, provider_factory=factory,
+                ops_alert=lambda event, text: self.alerts.append((event, text)) or True)
+        self.assertEqual(2, sum("PROVIDER_CONFIGURATION_UNAVAILABLE" in text for _, text in self.alerts))
+        self.assertEqual(1, sum("PROVIDER_CONFIGURED;" in text for _, text in self.alerts))
+        self.assertEqual(len(self.alerts), len({event for event, _ in self.alerts}))
+
+    def test_source_error_holds_pending_edition_but_weekly_status_continues(self):
+        self.provider.error = DeliveryError("http_429", 1, retryable=True)
+        self.run_cycle()
+        self.provider.messages.clear()
+        self.provider.error = None
+        self.instant += timedelta(days=1)
+        self.source.error = "ranking_source_identity_mismatch"
+        self.run_cycle()
+        self.assertFalse(any(event.startswith("edition:") for _, event in self.provider.messages))
+        self.source.error = None
+        self.instant += timedelta(days=1)
+        self.run_cycle()
+        self.assertTrue(any(event.startswith("edition:") for _, event in self.provider.messages))
+
+    def test_operations_outage_backlog_does_not_starve_sporting_delivery(self):
+        from ranking_alerts.autonomous_delivery import DeliveryLedger, plan_operational, save_delivery
+        ledger = DeliveryLedger()
+        for index in range(12):
+            ledger = plan_operational(ledger, event_id=f"outage-{index}",
+                                      message="Independent operations channel unavailable", now="2026-10-13T12:00:00Z")
+        save_delivery(self.root / autonomous_rankings.DEFAULT_DELIVERY_PATH, ledger)
+        result = autonomous_rankings.run_cycle(source=self.source, root=self.root,
+            now=lambda: self.instant, checkpoint=lambda: None, provider_factory=lambda: self.provider,
+            ops_alert=lambda event, text: False)
+        self.assertGreater(result["notification"]["ops_pending"], 0)
+        self.assertEqual(2, len(self.provider.messages))
+
+    def test_backward_clock_rejection_preserves_runtime_and_recovers(self):
+        from ranking_alerts.runtime_state import append_cycle, DEFAULT_RUNTIME_PATH
+        from ranking_alerts.storage import StorageError
+        self.run_cycle()
+        path = self.root / DEFAULT_RUNTIME_PATH
+        before = path.read_bytes()
+        with self.assertRaises(StorageError):
+            append_cycle(path, at="2026-10-13T12:16:00Z", state="SOURCE_ERROR",
+                         last_valid_date="2026-10-05", error_code="ranking_source_timeout", provenance={})
+        self.assertEqual(before, path.read_bytes())
+        self.instant += timedelta(minutes=1)
+        self.assertEqual("NO_NEW_EDITION_OBSERVED", self.run_cycle()["collection"])
+
+    def test_two_real_git_executors_send_only_winning_remote_claim(self):
+        from ranking_alerts.durability import GitCheckpoint
+        def git(root, *args):
+            return subprocess.run(["git", *args], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+        remote = self.root / "remote.git"
+        git(self.root, "init", "--bare", str(remote))
+        seed = self.root / "seed"
+        seed.mkdir()
+        git(seed, "init", "-b", "main")
+        git(seed, "config", "user.name", "test")
+        git(seed, "config", "user.email", "test@example.invalid")
+        shutil.copytree(self.root / "data", seed / "data")
+        git(seed, "add", "data")
+        git(seed, "commit", "-m", "seed")
+        git(seed, "remote", "add", "origin", str(remote))
+        git(seed, "push", "origin", "main")
+        git(remote, "symbolic-ref", "HEAD", "refs/heads/main")
+        clones = [self.root / "executor-a", self.root / "executor-b"]
+        for clone in clones:
+            git(self.root, "clone", str(remote), str(clone))
+            git(clone, "config", "user.name", "test")
+            git(clone, "config", "user.email", "test@example.invalid")
+        marker = self.root / "provider-requests.txt"
+        # No shared local lock between clones: the remote push is the deciding fence.
+        worker = '''import sys
+from pathlib import Path
+from datetime import datetime, timezone
+sys.path.insert(0, sys.argv[1])
+import autonomous_rankings
+from ranking_alerts.durability import GitCheckpoint, state_lock
+from ranking_alerts.providers import DeliveryReceipt
+from ranking_alerts.source import RawRankingObservation, RawDisciplineRanking
+from ranking_alerts.storage import StorageError
+class Source:
+    name='itf'
+    def fetch(self):
+        return RawRankingObservation(atp_id='B0UF', name='Luka Bojicic Ono', source='itf', ranking_date='2026-10-05', singles=RawDisciplineRanking(status='ranked',rank=2250,points=None), doubles=RawDisciplineRanking(status='ranked',rank=1417,points=None))
+class Provider:
+    name='callmebot'
+    last_attempt_count=1
+    def send(self, *, message, event_id):
+        with Path(sys.argv[3]).open('a') as f: f.write(event_id+'\\n')
+        return DeliveryReceipt(provider='callmebot',accepted_at='2026-10-13T12:17:00Z',http_status=200)
+root=Path(sys.argv[2])
+try:
+    with state_lock(root/'automation/state/ranking_alerts.json'):
+        autonomous_rankings.run_cycle(source=Source(),root=root,now=lambda:datetime(2026,10,13,12,17,tzinfo=timezone.utc), checkpoint=GitCheckpoint(root),provider_factory=Provider,ops_alert=lambda a,b:True)
+    print('completed')
+except StorageError as e: print(e.code)
+'''
+        children = [subprocess.Popen([sys.executable, "-c", worker, str(SCRIPTS), str(clone), str(marker)],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for clone in clones]
+        results = [child.communicate(timeout=45) for child in children]
+        self.assertTrue(all(child.returncode == 0 for child in children), results)
+        self.assertEqual(1, sum("completed" in out for out, _ in results), results)
+        self.assertEqual(1, sum("ranking_checkpoint_failed" in out for out, _ in results), results)
+        requests = marker.read_text().splitlines()
+        self.assertEqual(2, len(requests))  # winning edition + weekly status
+        self.assertEqual(len(requests), len(set(requests)))
+
+
+if __name__ == "__main__":
+    unittest.main()

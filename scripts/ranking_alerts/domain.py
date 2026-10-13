@@ -180,14 +180,21 @@ class RankingsData:
         ordered = tuple(sorted(self.snapshots, key=snapshot_sort_key))
         if ordered != self.snapshots or len({item.id for item in self.snapshots}) != len(self.snapshots):
             raise DomainValidationError("invalid_snapshot_order")
+        prior_by_id: dict[str, RankingSnapshot] = {}
+        latest_by_date: dict[str, RankingSnapshot] = {}
         for snapshot in self.snapshots:
             expected = snapshot_id(observation_from_snapshot(snapshot))
-            if snapshot.id != expected:
+            chained = revision_snapshot_id(observation_from_snapshot(snapshot), snapshot.source_revision_of) if snapshot.source_revision_of else None
+            if snapshot.id not in {expected, chained}:
                 raise DomainValidationError("invalid_snapshot_id")
-            if snapshot.source_revision_of is not None and snapshot.source_revision_of not in {
-                previous.id for previous in self.snapshots if previous.ranking_date == snapshot.ranking_date
-            }:
-                raise DomainValidationError("invalid_revision_reference")
+            if snapshot.source_revision_of is not None:
+                parent = prior_by_id.get(snapshot.source_revision_of)
+                if parent is None or parent.ranking_date != snapshot.ranking_date:
+                    raise DomainValidationError("invalid_revision_reference")
+                if snapshot.id == chained and latest_by_date.get(snapshot.ranking_date) != parent:
+                    raise DomainValidationError("invalid_revision_reference")
+            prior_by_id[snapshot.id] = snapshot
+            latest_by_date[snapshot.ranking_date] = snapshot
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -201,6 +208,11 @@ class OutboxItem:
     sent_at: str | None = None
     provider: str = "callmebot"
     last_error_code: str | None = None
+    # Optional additions preserve existing historical receipts byte-for-byte.
+    retryable: bool = True
+    delivery_status: str | None = None
+    attempt_id: str | None = None
+    superseded_by: str | None = None
 
     def __post_init__(self) -> None:
         if not _SHA256_RE.fullmatch(self.id) or not _SHA256_RE.fullmatch(self.snapshot_id):
@@ -222,6 +234,17 @@ class OutboxItem:
             raise DomainValidationError("invalid_provider")
         if self.last_error_code is not None and not re.fullmatch(r"[a-z0-9_]+", self.last_error_code):
             raise DomainValidationError("invalid_error_code")
+        if not isinstance(self.retryable, bool):
+            raise DomainValidationError("invalid_retryable")
+        if self.delivery_status not in {None, "provider_accepted", "delivered_to_device"}:
+            raise DomainValidationError("invalid_delivery_status")
+        if self.delivery_status is not None and self.status != "sent":
+            raise DomainValidationError("invalid_delivery_status")
+        if self.attempt_id is not None and (not isinstance(self.attempt_id, str) or not re.fullmatch(r"[0-9a-f]{32}", self.attempt_id)):
+            raise DomainValidationError("invalid_attempt_id")
+        if self.superseded_by is not None:
+            if not isinstance(self.superseded_by, str) or not _SHA256_RE.fullmatch(self.superseded_by) or self.superseded_by == self.id or self.status != "pending" or self.retryable:
+                raise DomainValidationError("invalid_superseded_reference")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -234,6 +257,15 @@ class RankingAlertState:
             raise DomainValidationError("unsupported_schema_version")
         if len({item.id for item in self.outbox}) != len(self.outbox):
             raise DomainValidationError("duplicate_outbox_id")
+        items = {item.id: item for item in self.outbox}
+        for item in self.outbox:
+            seen = {item.id}
+            target = item.superseded_by
+            while target is not None:
+                if target not in items or target in seen:
+                    raise DomainValidationError("invalid_superseded_reference")
+                seen.add(target)
+                target = items[target].superseded_by
 
 
 def _discipline_dict(value: DisciplineRanking) -> dict[str, Any]:
@@ -264,6 +296,12 @@ def snapshot_id(observation: RankingObservation) -> str:
     return _stable_hash(_canonical_observation(observation))
 
 
+def revision_snapshot_id(observation: RankingObservation, source_revision_of: str) -> str:
+    """Bind revised facts to their immutable predecessor, allowing A→B→A."""
+    return _stable_hash({"observation": _canonical_observation(observation),
+                         "source_revision_of": source_revision_of})
+
+
 def event_id(snapshot_id_value: str, event_type: str) -> str:
     return _stable_hash({"event_type": event_type, "snapshot_id": snapshot_id_value})
 
@@ -272,9 +310,11 @@ def build_snapshot(
     observation: RankingObservation,
     captured_at: str,
     source_revision_of: str | None = None,
+    *,
+    chain_revision: bool = False,
 ) -> RankingSnapshot:
     return RankingSnapshot(
-        id=snapshot_id(observation),
+        id=revision_snapshot_id(observation, source_revision_of) if chain_revision and source_revision_of else snapshot_id(observation),
         ranking_date=observation.ranking_date,
         captured_at=captured_at,
         source=observation.source,
@@ -299,13 +339,26 @@ def snapshot_sort_key(snapshot: RankingSnapshot) -> tuple[str, str, str]:
     return snapshot.ranking_date, snapshot.captured_at, snapshot.id
 
 
+def effective_snapshots(history: Iterable[RankingSnapshot]) -> tuple[RankingSnapshot, ...]:
+    """Select current facts per edition without changing immutable audit history."""
+
+    latest = {item.ranking_date: item for item in sorted(history, key=snapshot_sort_key)}
+    return tuple(latest.values())
+
+
 def _known_high(history: Iterable[RankingSnapshot], discipline: str) -> int | None:
     values: list[int] = []
-    for snapshot in history:
+    active = effective_snapshots(history)
+    first_date = active[0].ranking_date if active else None
+    for snapshot in active:
         ranking = getattr(snapshot, discipline)
         if ranking.rank is not None:
             values.append(ranking.rank)
-        if ranking.career_high_rank is not None:
+        # Highs within our observed window must be supported by current facts.
+        # A stored derived high can echo a withdrawn rank across later editions.
+        if ranking.career_high_rank is not None and (
+            ranking.career_high_date is None or ranking.career_high_date < first_date
+        ):
             values.append(ranking.career_high_rank)
     return min(values) if values else None
 
@@ -474,7 +527,7 @@ def rankings_from_dict(value: Any) -> RankingsData:
 
 
 def outbox_to_dict(item: OutboxItem) -> dict[str, Any]:
-    return {
+    result = {
         "id": item.id,
         "snapshot_id": item.snapshot_id,
         "event_type": item.event_type,
@@ -485,6 +538,15 @@ def outbox_to_dict(item: OutboxItem) -> dict[str, Any]:
         "provider": item.provider,
         "last_error_code": item.last_error_code,
     }
+    if not item.retryable:
+        result["retryable"] = False
+    if item.delivery_status is not None:
+        result["delivery_status"] = item.delivery_status
+    if item.attempt_id is not None:
+        result["attempt_id"] = item.attempt_id
+    if item.superseded_by is not None:
+        result["superseded_by"] = item.superseded_by
+    return result
 
 
 def outbox_from_dict(value: Any) -> OutboxItem:
@@ -492,9 +554,10 @@ def outbox_from_dict(value: Any) -> OutboxItem:
         "id", "snapshot_id", "event_type", "status", "attempts", "created_at",
         "sent_at", "provider", "last_error_code",
     }
-    if not isinstance(value, Mapping) or set(value) != required:
+    optional = {"retryable", "delivery_status", "attempt_id", "superseded_by"}
+    if not isinstance(value, Mapping) or not required.issubset(value) or set(value) - required - optional:
         raise DomainValidationError("invalid_outbox_item")
-    return OutboxItem(**{key: value[key] for key in required})
+    return OutboxItem(**dict(value))
 
 
 def state_to_dict(state: RankingAlertState) -> dict[str, Any]:

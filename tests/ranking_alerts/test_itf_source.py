@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import json
+from dataclasses import replace
 
 from scripts.ranking_alerts.itf_source import (
     ItfOverviewResponse,
@@ -8,6 +10,9 @@ from scripts.ranking_alerts.itf_source import (
     ItfRankingSource,
     overview_path,
     parse_capture,
+    capture_telemetry,
+    ITF_BASE_URL,
+    PROFILE_PATH,
 )
 from scripts.ranking_alerts.source import RankingSourceError
 
@@ -50,6 +55,65 @@ def capture(
 
 
 class ItfParserTests(unittest.TestCase):
+    def test_navigation_and_challenge_failures_are_not_identity_mismatches(self) -> None:
+        cases = (
+            (replace(capture(), navigation_status=403), "ranking_source_blocked"),
+            (replace(capture(), navigation_error="ranking_source_navigation"), "ranking_source_navigation"),
+            (replace(capture(), final_url="https://example.com/?token=secret"), "ranking_source_redirect"),
+            (capture(title="Just a moment..."), "ranking_source_blocked"),
+            (capture(title="Unknown", singles=None), "ranking_source_schema_changed"),
+            (replace(capture(), dom_identity="Another athlete"), "ranking_source_identity_mismatch"),
+            (capture(title="Someone else mentions Luka Bojicic Ono"), "ranking_source_identity_mismatch"),
+        )
+        for value, code in cases:
+            with self.subTest(code=code), self.assertRaises(RankingSourceError) as raised:
+                parse_capture(value)
+            self.assertEqual(code, raised.exception.code)
+
+    def test_correct_dom_identity_and_verified_profile_url_are_accepted(self) -> None:
+        value = replace(capture(), final_url=ITF_BASE_URL + PROFILE_PATH + "?ignored=true", dom_identity="Luka Bojicic Ono Men's Singles Overview")
+        self.assertEqual("B0UF", parse_capture(value).atp_id)
+
+    def test_live_capture_requires_dom_identity_and_rejects_name_prefixes(self) -> None:
+        for name, code in ((None, "ranking_source_incomplete"), ("", "ranking_source_incomplete"), ("Luka Bojicic Ono Junior", "ranking_source_identity_mismatch")):
+            value = replace(capture(), final_url=ITF_BASE_URL + PROFILE_PATH, dom_identity=name)
+            with self.subTest(name=name), self.assertRaises(RankingSourceError) as raised:
+                parse_capture(value)
+            self.assertEqual(code, raised.exception.code)
+
+    def test_title_prefix_and_different_itf_id_fail_closed(self) -> None:
+        for value, code in (
+            (capture(title="Luka Bojicic Ono Junior Tennis Player Profile | ITF"), "ranking_source_identity_mismatch"),
+            (replace(capture(), final_url=(ITF_BASE_URL + PROFILE_PATH).replace("800625103", "800625104"),
+                     dom_identity="Luka Bojicic Ono"), "ranking_source_redirect"),
+        ):
+            with self.subTest(code=code), self.assertRaises(RankingSourceError) as error:
+                parse_capture(value)
+            self.assertEqual(code, error.exception.code)
+
+    def test_telemetry_redacts_arbitrary_text_urls_and_nonallowlisted_headers(self) -> None:
+        value = replace(
+            capture(title="secret-title"),
+            final_url="https://user:secret@example.com/path?token=secret#secret",
+            dom_identity="secret DOM contents",
+            cache_headers={"Set-Cookie": "secret-cookie", "Authorization": "secret-token", "Date": "Mon, 12 Oct 2026 20:43:30 GMT", "Age": "42", "ETag": "bad\nsecret"},
+            singles=ItfOverviewResponse(status=200, payload=SINGLES_PAYLOAD, cache_headers={"set-cookie": "secret", "cache-control": "no-cache"}),
+        )
+        telemetry = capture_telemetry(value)
+        encoded = json.dumps(telemetry)
+        self.assertNotIn("secret", encoded)
+        self.assertEqual({"Date": "Mon, 12 Oct 2026 20:43:30 GMT", "Age": "42"}, telemetry["cache_headers"])
+        self.assertEqual("2026-09-21", telemetry["singles"]["ranking_date"])
+        self.assertEqual({"Cache-Control": "no-cache"}, telemetry["singles"]["cache_headers"])
+
+    def test_telemetry_records_mismatched_edition_dates_without_accepting_them(self) -> None:
+        value = capture(doubles={"rankings": [{"name": "ATP Doubles Ranking", "rank": 1460, "date": "14 September 2026"}]})
+        telemetry = capture_telemetry(value)
+        self.assertEqual("2026-09-21", telemetry["singles"]["ranking_date"])
+        self.assertEqual("2026-09-14", telemetry["doubles"]["ranking_date"])
+        with self.assertRaises(RankingSourceError):
+            parse_capture(value)
+
     def test_valid_capture_normalizes_both_disciplines_without_points(self) -> None:
         observation = parse_capture(capture())
 
@@ -75,9 +139,16 @@ class ItfParserTests(unittest.TestCase):
                 parse_capture(capture(singles=None, singles_status=status))
             self.assertEqual(code, raised.exception.code)
 
-    def test_missing_atp_entry_in_well_formed_reply_is_unranked(self) -> None:
-        observation = parse_capture(capture(doubles={"rankings": [], "careerHighRankings": []}))
+    def test_missing_either_atp_entry_fails_closed_without_borrowing_date(self) -> None:
+        for discipline in ("singles", "doubles"):
+            value = capture(**{discipline: {"rankings": [], "careerHighRankings": []}})
+            with self.subTest(discipline=discipline), self.assertRaises(RankingSourceError) as raised:
+                parse_capture(value)
+            self.assertEqual("ranking_source_incomplete", raised.exception.code)
 
+    def test_explicit_dated_null_rank_is_unranked_in_same_publication(self) -> None:
+        value = capture(doubles={"rankings": [{"name": "ATP Doubles Ranking", "rank": None, "date": "21 September 2026"}]})
+        observation = parse_capture(value)
         self.assertEqual("unranked", observation.doubles.status)
         self.assertIsNone(observation.doubles.rank)
         self.assertEqual("2026-09-21", observation.ranking_date)
@@ -95,6 +166,7 @@ class ItfParserTests(unittest.TestCase):
             {"name": "ATP Doubles Ranking", "rank": True, "date": "21 September 2026"},
             {"name": "ATP Doubles Ranking", "rank": 1460, "date": "2026-09-21"},
             {"name": "ATP Doubles Ranking", "rank": 1460, "date": None},
+            {"name": "ATP Doubles Ranking", "date": "21 September 2026"},
         ):
             with self.subTest(entry=entry), self.assertRaises(RankingSourceError) as raised:
                 parse_capture(capture(doubles={"rankings": [entry]}))
@@ -120,6 +192,16 @@ class ItfParserTests(unittest.TestCase):
 
 
 class ItfSourceTests(unittest.TestCase):
+    def test_telemetry_is_available_after_success_and_failed_validation(self) -> None:
+        source = ItfRankingSource(capture=lambda timeout: capture())
+        source.fetch()
+        self.assertEqual("2026-09-21", source.last_telemetry["source_ranking_date"])
+        source = ItfRankingSource(capture=lambda timeout: capture(title="Access denied"))
+        with self.assertRaises(RankingSourceError):
+            source.fetch()
+        self.assertEqual("ranking_source_blocked", source.last_telemetry["error_code"])
+        self.assertEqual(200, source.last_telemetry["singles"]["http_status"])
+
     def test_source_name_matches_observation_provenance(self) -> None:
         source = ItfRankingSource(capture=lambda timeout: capture())
 

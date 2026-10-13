@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "calendar_version": "2026-10-13",
+  "valid_from": "2026-09-28",
+  "valid_until": "2026-10-26",
+  "publication_weekday": 0,
+  "reference": "https://www.atptour.com/-/media/files/rulebook/2026/2026-rulebook-chapter-9_pif-atp-rankings_31mar26.pdf",
+  "review": {
+    "reviewed_on": "2026-10-13",
+    "extension_status": "blocked_missing_official_edition_schedule",
+    "requested_valid_until": "2026-12-31",
+    "evidence_document": "docs/evidence/atp-publication-calendar-2026-h2.md",
+    "previous_evidence_document": "docs/evidence/atp-publication-calendar-2026-10-13.md",
+    "edition_2026_10_12_status": "inconclusive",
+    "edition_evidence_document": "docs/evidence/atp-2026-10-12-publication.md",
+    "horizon_status": "inherited_not_recertified"
+  },
+  "cutoff": {
+    "timezone": "America/Sao_Paulo",
+    "days_after_edition": 3,
+    "time": "12:00"
+  },
+  "exceptions": []
+}

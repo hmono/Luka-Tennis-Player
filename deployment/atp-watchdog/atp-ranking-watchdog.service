@@ -1,0 +1,22 @@
+[Unit]
+Description=Independent ATP ranking Actions watchdog
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=atp-watchdog
+Group=atp-watchdog
+WorkingDirectory=/opt/luka-tennis
+EnvironmentFile=/etc/atp-ranking-watchdog.env
+ExecStart=/usr/bin/python3 -m scripts.ranking_alerts.autonomous_scheduler
+StateDirectory=atp-ranking-watchdog
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+# Alert status failures are observable in journal, but timer keeps recurring.
+SuccessExitStatus=1
+TimeoutStartSec=300

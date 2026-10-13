@@ -1,0 +1,76 @@
+H2-01 / issue #20 — consultas HTTPS comuns, somente leitura
+Data de acesso: 13/10/2026 UTC. Base local: 147b1e4.
+Método: Python urllib.request.urlopen, sem credenciais, sem cookies persistidos,
+sem técnicas para contornar proteção. Horários abaixo são início da requisição.
+Somente metadados e resposta JSON vazia do índice público foram retidos.
+Corpos de HTML/bloqueio, cookies e headers privados não foram preservados.
+
+2026-10-13T12:48:57.402199Z
+URL: https://www.atptour.com/en/rankings/singles?rankDate=2026-10-12&rankRange=0-5000
+HTTP: 403
+Content-Type: text/html; charset=UTF-8
+Resultado: HTTPError; lista não lida.
+
+2026-10-13T12:48:57.403959Z
+URL: https://www.atptour.com/en/rankings/doubles?rankDate=2026-10-12&rankRange=0-5000
+HTTP: 403
+Content-Type: text/html; charset=UTF-8
+Resultado: HTTPError; lista não lida.
+
+2026-10-13T12:48:57.404670Z
+URL: https://www.atptour.com/en/players/luka-bojicic-ono/b0uf/rankings-history
+HTTP: 403
+Content-Type: text/html; charset=UTF-8
+Resultado: HTTPError; história não lida por HTTP direto.
+
+2026-10-13T12:48:57.405487Z
+URL: https://www.atptour.com/en/rankings/singles
+HTTP: 403
+Content-Type: text/html; charset=UTF-8
+Resultado: HTTPError; seletor de datas não lido.
+
+2026-10-13T12:48:57.615725Z
+URL: https://www.atptour.com/en/rankings/doubles
+HTTP: 403
+Content-Type: text/html; charset=UTF-8
+Resultado: HTTPError; seletor de datas não lido.
+
+2026-10-13T12:48:57.618289Z
+URL: https://www.itftennis.com/tennis/api/PlayerApi/GetPlayerOverview?circuitCode=MT&matchTypeCode=S&playerId=800625103
+HTTP: 200
+Content-Type: text/html
+Tamanho: 212 bytes
+Resultado: não era JSON de ranking; nenhum rank/data extraído.
+
+2026-10-13T12:48:57.680782Z
+URL: https://www.itftennis.com/tennis/api/PlayerApi/GetPlayerOverview?circuitCode=MT&matchTypeCode=D&playerId=800625103
+HTTP: 200
+Content-Type: text/html
+Tamanho: 212 bytes
+Resultado: não era JSON de ranking; nenhum rank/data extraído.
+
+2026-10-13T12:49:39.670468Z
+URL: https://web.archive.org/cdx/search/cdx?url=www.atptour.com/en/rankings/singles*&from=20261012&to=20261013&output=json&filter=statuscode:200&filter=mimetype:text/html&collapse=urlkey
+HTTP: 200
+Content-Type: application/json
+Tamanho: 3 bytes
+JSON: []
+Limite: índice consultado por caminho/datas/status/MIME; não prova ausência ATP.
+
+2026-10-13T12:49:39.672756Z
+URL: https://web.archive.org/cdx/search/cdx?url=www.atptour.com/en/rankings/doubles*&from=20261012&to=20261013&output=json&filter=statuscode:200&filter=mimetype:text/html&collapse=urlkey
+HTTP: 503
+Resultado: HTTPError; índice de duplas não lido.
+
+2026-10-13T12:49:39.673461Z
+URL: https://www.atptour.com/en/rankings/singles?rankDate=2026-09-28&rankRange=0-5000
+HTTP: 403
+Resultado: HTTPError; nenhuma lista ATP de 28/09 verificada.
+
+2026-10-13T12:49:39.675489Z
+URL: https://www.atptour.com/en/rankings/doubles?rankDate=2026-09-28&rankRange=0-5000
+HTTP: 403
+Resultado: HTTPError; nenhuma lista ATP de 28/09 verificada.
+
+Conclusão: INCONCLUSIVA para publicação ATP oficial de 12/10, em simples/duplas.
+Não inferir não publicação a partir de acesso bloqueado/índice vazio/ITF antiga.

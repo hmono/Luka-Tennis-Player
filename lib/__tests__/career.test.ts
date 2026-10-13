@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+// Bootstrap behavior uses an explicit fixture, independent of weekly data commits.
+vi.mock('@/data/rankings.json', () => ({ default: {
+  schema_version: 1,
+  player: { atp_id: 'B0UF', name: 'Luka Bojicic Ono' },
+  snapshots: [],
+} }));
 import {
   cleanTournamentTitle,
   extractOpponent,

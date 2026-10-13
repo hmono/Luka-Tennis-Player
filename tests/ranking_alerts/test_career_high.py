@@ -155,6 +155,42 @@ class CareerHighBaselineTests(unittest.TestCase):
 
 
 class CareerHighEnrichmentTests(unittest.TestCase):
+    def test_revision_withdraws_own_high_in_both_disciplines(self) -> None:
+        baseline = parse_baseline(document())
+        initial = build_snapshot(enrich_career_high(
+            observation(ranking_date="2026-02-02", singles_rank=1800, doubles_rank=1700),
+            baseline=baseline), captured_at="2026-02-02T12:00:00Z")
+        for singles, doubles in ((2100, 2000), (None, None)):
+            with self.subTest(singles=singles, doubles=doubles):
+                revised = enrich_career_high(
+                    observation(ranking_date="2026-02-02", singles_rank=singles, doubles_rank=doubles),
+                    baseline=baseline, history=(initial,))
+                self.assertEqual((2000, "2025-12-01"),
+                    (revised.singles.career_high_rank, revised.singles.career_high_date))
+                self.assertEqual((1900, "2025-11-24"),
+                    (revised.doubles.career_high_rank, revised.doubles.career_high_date))
+
+    def test_future_edition_uses_latest_facts_and_ignores_legacy_derived_echo(self) -> None:
+        baseline = parse_baseline(document())
+        initial = build_snapshot(enrich_career_high(
+            observation(ranking_date="2026-01-05", singles_rank=1800, doubles_rank=1700),
+            baseline=baseline), captured_at="2026-01-05T12:00:00Z")
+        # A persisted revision produced by the old bug still has derived CHs.
+        from dataclasses import replace
+        legacy = build_snapshot(RankingObservation(
+            atp_id="B0UF", name="Luka Bojicic Ono", ranking_date="2026-01-05",
+            singles=replace(initial.singles, rank=2100),
+            doubles=replace(initial.doubles, rank=None)),
+            captured_at="2026-01-05T13:00:00Z", source_revision_of=initial.id)
+        current = observation(ranking_date="2026-02-02", singles_rank=1950, doubles_rank=1850)
+        enriched = enrich_career_high(current, baseline=baseline, history=(legacy, initial))
+        self.assertEqual((1950, "2026-02-02"),
+            (enriched.singles.career_high_rank, enriched.singles.career_high_date))
+        self.assertEqual((1850, "2026-02-02"),
+            (enriched.doubles.career_high_rank, enriched.doubles.career_high_date))
+        self.assertEqual(1800, initial.singles.rank)
+        self.assertEqual(1800, legacy.singles.career_high_rank)
+
     def test_new_high_uses_current_ranking_date(self) -> None:
         baseline = parse_baseline(document())
         value = observation(ranking_date="2026-02-02", singles_rank=1999, doubles_rank=1899)

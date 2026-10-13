@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import html
 import random
 import re
 import socket
@@ -26,9 +27,10 @@ class ConfigurationError(ValueError):
 
 
 class DeliveryError(RuntimeError):
-    def __init__(self, code: str, attempts: int):
+    def __init__(self, code: str, attempts: int, *, retryable: bool = False):
         self.code = code
         self.attempts = attempts
+        self.retryable = retryable
         super().__init__(code)
 
 
@@ -37,6 +39,51 @@ class DeliveryReceipt:
     provider: str
     accepted_at: str
     http_status: int | None
+    delivery_status: str = "provider_accepted"
+    delivered_to_device: bool = False
+
+
+def _response_code(body: bytes, *, message: str) -> str | None:
+    """Only explicit queue acknowledgement establishes provider acceptance.
+
+    Contract: CallMeBot's linked Postman docs, WhatsApp Send Message example:
+    https://documenter.getpostman.com/view/20714522/UyrEiFgK
+    The HTML response echoes the submitted text before its bold status. Remove
+    that echo first so an alert containing a status cannot impersonate a reply.
+    Raw replies (which can echo credentials) are never returned or persisted.
+    """
+    if len(body) > 16384:
+        return "provider_response_ambiguous"
+    try:
+        text = body.decode("utf-8", errors="strict")
+    except UnicodeDecodeError:
+        return "provider_response_ambiguous"
+    # The provider can normalize line breaks while echoing alert text. Remove
+    # both literal and escaped forms with flexible whitespace, before locating
+    # the authoritative footer. Never interpret copied markers in the echo.
+    removed_echo = False
+    for echo in {message, html.escape(message), html.escape(message, quote=False)}:
+        parts = re.split(r"(\s+)", echo)
+        pattern = "".join(r"\s+" if part.isspace() else re.escape(part) for part in parts)
+        text, count = re.subn(pattern, "", text)
+        removed_echo = removed_echo or count > 0
+    if re.search(r"\b(error|invalid|failed|failure|unauthorized|forbidden)\b|not\s+(?:queued|sent)|unable\s+to", text, re.I):
+        return "provider_application_error"
+    if text.strip() in {"Message queued.", "Message queued. You will receive it in a few seconds."}:
+        return None
+    footer = re.search(
+        r"(?:\s|<p>|<br\s*/?>)*<(b|strong)>\s*Message queued\.\s*</\1>\s*"
+        r"(?:You will receive it in a few seconds\.)?\s*(?:</(?:p|body|html)>\s*)*$",
+        text,
+    )
+    if footer is not None:
+        echoed = re.search(r"Text to send:\s*", text, re.I)
+        # Unsupported changes to the echo are ambiguous, even if a status
+        # marker appears inside it. This is intentionally fail-closed.
+        if echoed is not None and (not removed_echo or text[echoed.end():footer.start()].strip()):
+            return "provider_response_ambiguous"
+        return None
+    return "provider_response_ambiguous"
 
 
 class NotificationProvider(Protocol):
@@ -60,7 +107,7 @@ def _utc_now() -> datetime:
 def _timestamp(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _retry_after_seconds(value: str | None, now: datetime) -> float | None:
@@ -142,27 +189,40 @@ class CallMeBotProvider:
                 if raw_status is None:
                     raw_status = response.getcode()
                 status = int(raw_status)
-                close = getattr(response, "close", None)
-                if callable(close):
-                    close()
+                try:
+                    headers = getattr(response, "headers", None)
+                    retry_after = headers.get("Retry-After") if headers is not None else None
+                    body = response.read(16385) if 200 <= status < 300 and status != 204 else b""
+                finally:
+                    close = getattr(response, "close", None)
+                    if callable(close):
+                        close()
                 if 200 <= status < 300:
+                    response_code = _response_code(body, message=message)
+                    if response_code is not None:
+                        raise DeliveryError(response_code, attempt, retryable=False)
                     return DeliveryReceipt(
                         provider=self.name,
                         accepted_at=_timestamp(self._now()),
                         http_status=status,
                     )
-                retryable = status in {408, 429} or 500 <= status <= 599
+                # Only explicit rate limiting establishes rejection safely.
+                # 408/5xx and transport failures may follow queue acceptance;
+                # CallMeBot has no event-id idempotency contract for replay.
+                retryable = status == 429
                 code = f"http_{status}"
+            except DeliveryError:
+                raise
             except urllib.error.HTTPError as exc:
                 status = int(exc.code)
                 retry_after = exc.headers.get("Retry-After") if exc.headers is not None else None
-                retryable = status in {408, 429} or 500 <= status <= 599
+                retryable = status == 429
                 code = f"http_{status}"
             except (TimeoutError, socket.timeout):
-                retryable = True
+                retryable = False
                 code = "transport_timeout"
             except (urllib.error.URLError, ConnectionError, OSError):
-                retryable = True
+                retryable = False
                 code = "transport_error"
             except Exception:
                 # Unknown adapter failures are deliberately redacted and not
@@ -170,7 +230,7 @@ class CallMeBotProvider:
                 raise DeliveryError("provider_error", attempt) from None
 
             if not retryable or attempt == self._max_attempts:
-                raise DeliveryError(code, attempt) from None
+                raise DeliveryError(code, attempt, retryable=retryable) from None
             self._sleep(self._delay(retry_after=retry_after, attempt=attempt))
 
         raise DeliveryError("provider_error", self.last_attempt_count)
@@ -186,4 +246,4 @@ class DryRunProvider:
 
     def send(self, *, message: str, event_id: str) -> DeliveryReceipt:
         self.messages.append((event_id, message))
-        return DeliveryReceipt(provider=self.name, accepted_at=_timestamp(self._now()), http_status=None)
+        return DeliveryReceipt(provider=self.name, accepted_at=_timestamp(self._now()), http_status=None, delivery_status="dry_run")
