@@ -127,7 +127,7 @@ workflow enable or ranking-delivery invocation.
 Initial [CI at c05c0e6](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38468203824)
 failed typechecking before tests due to SDK namespace/decoder/crypto/URL typing
 differences. `ab6db0a` corrected those integration issues. Final CI, independent
-findings and regression results are recorded below when available; no initial
+findings and regression results are recorded below; no initial
 failure is represented as a passing runtime test.
 
 The next run passed typechecking and applied the migration twice, but Vitest5's
@@ -177,6 +177,22 @@ and Vitest discovery. Existing Pages deployment workflow, routes, DNS, TLS,
 frontend application code, Python runtime, ATP data/snapshots/receipts and
 `update_rankings.yml` are unchanged against the base. GitHub API read confirmed
 the ATP workflow remains `disabled_manually`. New validation CI does not enable it.
+
+### Supplemental HTTP concurrency regression
+
+At `4961abb15a6741adf11a0c165a3e107c27b41efe`, an additional test exercises two
+concurrent authenticated `POST /events` calls through the complete Worker
+handler. Identical content returns two accepted responses with exactly one new
+event; conflicting content with the same ID produces one200 and one409. This is a
+test-only addition after the independently reviewed runtime.
+
+[Worker CI38469737593](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38469737593)
+passed **72 tests**, including the eight independent regressions, plus strict
+typechecking, both migrations followed by a no-op repeat, and the43.48KiB bundle
+dry-run. [Repository checks38469737599](https://github.com/hmono/Luka-Tennis-Player/actions/runs/38469737599)
+also passed at that SHA. The duplicate push run38469731733 stalled without step
+logs and was cancelled; it is not counted as successful evidence. The equivalent
+PR run above completed successfully. Subsequent commits only record evidence.
 
 ## Gates and next authorization
 
