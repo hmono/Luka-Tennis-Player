@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import stat
 import subprocess
 import time
 import urllib.error
@@ -137,7 +138,8 @@ class WatchdogStore:
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.directory = directory
         self.path = directory / "watchdog.sqlite3"
-        self.connection = sqlite3.connect(self.path, timeout=30)
+        self.connection = sqlite3.connect(self.path, timeout=5)
+        self.connection.execute("PRAGMA busy_timeout=5000")
         self.connection.execute("PRAGMA journal_mode=WAL")
         self.connection.execute("PRAGMA synchronous=FULL")
         self.connection.executescript("""
@@ -153,7 +155,15 @@ class WatchdogStore:
     @contextlib.contextmanager
     def locked(self):
         with (self.directory / "watchdog.lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            deadline = time.monotonic() + 5
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("watchdog_lock_unavailable") from None
+                    time.sleep(0.05)
             try:
                 yield
             finally:
@@ -177,7 +187,7 @@ class WatchdogStore:
                 accepted = sender(event_id, message)
             except Exception:
                 accepted = False
-            if accepted:
+            if accepted is True:
                 self.connection.execute("UPDATE alerts SET status='accepted' WHERE id=?", (event_id,))
                 self.connection.commit()
                 sent += 1
@@ -223,13 +233,28 @@ def _request(url: str, *, token: str = "", payload: dict | None = None, event_id
         return json.loads(body) if body else {}
 
 
+def valid_destination(destination: str) -> bool:
+    """Both operational hops require an explicit HTTPS endpoint without userinfo."""
+    try:
+        if any(character.isspace() or ord(character) < 32 for character in destination):
+            return False
+        parsed = urllib.parse.urlparse(destination)
+        return (parsed.scheme == 'https' and bool(parsed.hostname) and
+                parsed.username is None and parsed.password is None and
+                not parsed.fragment and parsed.port != 0)
+    except ValueError:
+        return False
+
+
 def webhook_sender(event_id: str, message: str) -> bool:
     url = os.environ.get("ATP_OPS_WEBHOOK_URL", "")
-    if not url or urllib.parse.urlparse(url).scheme != "https":
+    token = os.environ.get("ATP_OPS_WEBHOOK_TOKEN", "")
+    if not valid_destination(url) or not token:
         return False
     try:
-        result = _request(url, token=os.environ.get("ATP_OPS_WEBHOOK_TOKEN", ""), payload={"event_id": event_id, "message": message, "kind": "ranking_operational"}, event_id=event_id)
-        return isinstance(result, dict) and result.get("accepted") is True
+        result = _request(url, token=token, payload={"event_id": event_id, "message": message, "kind": "ranking_operational"}, event_id=event_id)
+        return (isinstance(result, dict) and result.get("accepted") is True and
+                result.get("event_id") == event_id)
     except Exception:
         return False
 
@@ -253,11 +278,21 @@ def send_operational_alert(event_id: str, message: str) -> bool:
         store.close()
 
 
+class GitHubBackoff(Exception):
+    """Only a deadline crosses the API boundary; never the response body."""
+    def __init__(self, retry_at: datetime):
+        super().__init__("github_backoff")
+        self.retry_at = retry_at
+
+
 class GitHubActionsClient:
-    def __init__(self, repo: str, token: str):
+    def __init__(self, repo: str, token: str, *, recovery_enabled: bool = False, allow_token_mint: bool = True):
         if len(repo.split("/")) != 2 or any(not part or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_." for c in part) for part in repo.split("/")):
             raise ValueError("invalid_repository")
         self.base = f"https://api.github.com/repos/{repo}/actions/workflows/update_rankings.yml"
+        self.repository_name = repo.split("/")[1]
+        self.actions_permission = "write" if recovery_enabled else "read"
+        self.allow_token_mint = allow_token_mint
         self.token = token
         self.token_expires = None
 
@@ -269,29 +304,67 @@ class GitHubActionsClient:
             return self.token
         if not (app_id.isdigit() and installation_id.isdigit() and private_key):
             raise ValueError("app_credentials_incomplete")
+        if not self.allow_token_mint:
+            if not self.token:
+                raise ValueError("app_token_mint_disabled")
+            return self.token
         now = datetime.now(UTC)
         if self.token_expires and now + timedelta(minutes=1) < self.token_expires:
             return self.token
         def encode(value):
             return base64.urlsafe_b64encode(value).rstrip(b"=").decode()
-        instant = int(time.time())
+        key_path = Path(private_key)
+        key_stat = key_path.lstat()
+        if not key_path.is_absolute() or not stat.S_ISREG(key_stat.st_mode) or key_stat.st_mode & 0o037:
+            raise ValueError("app_key_not_protected")
+        instant = int(now.timestamp())
         header = encode(json.dumps({"alg": "RS256", "typ": "JWT"}, separators=(",", ":")).encode())
         claims = encode(json.dumps({"iat": instant - 60, "exp": instant + 540, "iss": app_id}, separators=(",", ":")).encode())
         signing_input = f"{header}.{claims}"
-        signed = subprocess.run(["openssl", "dgst", "-sha256", "-sign", private_key], input=signing_input.encode(), capture_output=True, check=True, timeout=10)
+        signed = subprocess.run(["openssl", "dgst", "-sha256", "-sign", private_key, "-sigopt", "rsa_padding_mode:pkcs1"], input=signing_input.encode(), capture_output=True, check=True, timeout=10)
         jwt = signing_input + "." + encode(signed.stdout)
-        grant = _request(f"https://api.github.com/app/installations/{installation_id}/access_tokens", token=jwt, payload={})
-        self.token, self.token_expires = grant["token"], parse(grant["expires_at"])
+        grant = _request(f"https://api.github.com/app/installations/{installation_id}/access_tokens", token=jwt, payload={"repositories": [self.repository_name], "permissions": {"actions": self.actions_permission}})
+        token, expires = grant.get("token"), parse(grant["expires_at"])
+        if not isinstance(token, str) or not token or expires <= now + timedelta(minutes=1):
+            raise ValueError("app_installation_token_invalid")
+        # Commit both cache fields only after validating the entire grant.
+        self.token, self.token_expires = token, expires
         return self.token
 
+    def _api_request(self, url: str, *, payload: dict | None = None):
+        for attempt in range(2):
+            token_ready = False
+            try:
+                token = self.authentication_token()
+                token_ready = True
+                return _request(url, token=token, payload=payload)
+            except urllib.error.HTTPError as error:
+                if error.code in {403, 429}:
+                    now = datetime.now(UTC)
+                    # Keep timer retries outside the server cooldown, with a bounded default.
+                    delay = 600
+                    try:
+                        delay = max(delay, int(error.headers.get("Retry-After", "0")))
+                        if error.headers.get("X-RateLimit-Remaining") == "0":
+                            delay = max(delay, int(error.headers.get("X-RateLimit-Reset", "0")) - int(now.timestamp()))
+                    except (TypeError, ValueError, AttributeError):
+                        pass
+                    raise GitHubBackoff(now + timedelta(seconds=delay)) from None
+                # Reads may retry once with a renewed App token. Never replay a POST:
+                # uncertain dispatches consume the durable recovery reservation.
+                if error.code != 401 or not token_ready or payload is not None or attempt or not os.environ.get("ATP_WATCHDOG_APP_ID"):
+                    raise
+                self.token, self.token_expires = "", None
+        raise ValueError("github_authentication_unavailable")
+
     def inspect(self) -> tuple[str, list[Mapping]]:
-        metadata = _request(self.base, token=self.authentication_token())
+        metadata = self._api_request(self.base)
         if metadata["state"] != "active":
             return metadata["state"], []
         runs = []
         # Paginate: a burst of manual dry-runs cannot hide the main scheduled run.
         for page in range(1, 6):
-            batch = _request(f"{self.base}/runs?branch=main&per_page=100&page={page}", token=self.authentication_token())["workflow_runs"]
+            batch = self._api_request(f"{self.base}/runs?branch=main&per_page=100&page={page}")["workflow_runs"]
             runs.extend(batch)
             if len(batch) < 100:
                 break
@@ -300,52 +373,80 @@ class GitHubActionsClient:
         return metadata["state"], runs
 
     def dispatch(self):
-        _request(self.base + "/dispatches", token=self.authentication_token(), payload={"ref": "main", "inputs": {"mode": "collect-and-deliver"}})
+        if self.actions_permission != "write":
+            raise ValueError("recovery_permission_required")
+        self._api_request(self.base + "/dispatches", payload={"ref": "main", "inputs": {"mode": "collect-and-deliver"}})
 
 
-def watchdog_cycle(*, now: datetime, client, store: WatchdogStore, sender: Callable[[str, str], bool], released: bool, recovery_enabled: bool) -> dict:
+def _watchdog_cycle(*, now: datetime, client, store: WatchdogStore, sender: Callable[[str, str], bool], released: bool, recovery_enabled: bool) -> dict:
     """Read-only unless released; never enables disabled workflows."""
     now = aware(now)
     incidents = []
     state = "unknown"
     try:
+        if released:
+            retry = store.connection.execute("SELECT value FROM health WHERE key='api_retry_at'").fetchone()
+            if retry and now < parse(retry[0]):
+                raise GitHubBackoff(parse(retry[0]))
         state, runs = client.inspect()
         if state != "active":
             incidents = [SchedulerIncident(f"scheduler:WORKFLOW_DISABLED:{state}", "WORKFLOW_DISABLED", "", "Ranking workflow is disabled; source status unknown. Initial release is required.")]
         else:
             incidents = assess_runs(now, runs)
-    except Exception:
+    except Exception as error:
+        if released and isinstance(error, GitHubBackoff):
+            store.connection.execute("INSERT OR REPLACE INTO health VALUES('api_retry_at',?)", (iso(error.retry_at),))
+            store.connection.commit()
         # One alert per six-hour outage epoch, independent of sports provider.
         epoch = now.replace(hour=(now.hour // 6) * 6, minute=0, second=0, microsecond=0)
         incidents = [SchedulerIncident(f"scheduler:MONITOR_UNAVAILABLE:{iso(epoch)}", "MONITOR_UNAVAILABLE", "", "GitHub run metadata is unavailable; scheduler/source status unknown.")]
     report = {"checked_at": iso(now), "workflow_state": state, "released": released, "incidents": [asdict(item) for item in incidents], "recoveries": 0, "alerts_accepted": 0}
     if not released:
         return report
-    with store.locked():
-        problem_codes = {"MISSED_RUN", "RUN_FAILURE", "RUN_DURATION", "MONITOR_UNAVAILABLE", "WORKFLOW_DISABLED"}
-        problems = [item for item in incidents if item.code in problem_codes]
-        previous = store.connection.execute("SELECT value FROM health WHERE key='last_problem'").fetchone()
-        if previous and previous[0] and not problems:
-            store.enqueue("scheduler:RECOVERED:" + previous[0], "Ranking scheduler is responding again; source and message delivery are assessed separately.")
-        current_problem = problems[-1].event_id if problems else ""
-        store.connection.execute("INSERT OR REPLACE INTO health VALUES('last_problem',?)", (current_problem,))
-        store.connection.commit()
-        for item in incidents:
-            store.enqueue(item.event_id, item.message)
-            if item.recoverable and recovery_enabled and state == "active":
-                attempt = store.reserve_recovery(item.slot, now)
-                if attempt:
-                    try:
-                        client.dispatch()
-                        result = "accepted"
-                    except Exception:
-                        result = "unknown_or_failed"
-                    store.recovery_result(item.slot, attempt, result)
-                    report["recoveries"] += 1
-        report["alerts_accepted"] = store.flush(sender, now)
-        store.connection.execute("INSERT OR REPLACE INTO health VALUES('last_check',?)", (iso(now),))
-        store.connection.commit()
+    problem_codes = {"MISSED_RUN", "RUN_FAILURE", "RUN_DURATION", "MONITOR_UNAVAILABLE", "WORKFLOW_DISABLED"}
+    problems = [item for item in incidents if item.code in problem_codes]
+    previous = store.connection.execute("SELECT value FROM health WHERE key='last_problem'").fetchone()
+    if previous and previous[0] and not problems:
+        store.enqueue("scheduler:RECOVERED:" + previous[0], "Ranking scheduler is responding again; source and message delivery are assessed separately.")
+    current_problem = problems[-1].event_id if problems else ""
+    store.connection.execute("INSERT OR REPLACE INTO health VALUES('last_problem',?)", (current_problem,))
+    store.connection.commit()
+    for item in incidents:
+        store.enqueue(item.event_id, item.message)
+        if item.recoverable and recovery_enabled and state == "active":
+            attempt = store.reserve_recovery(item.slot, now)
+            if attempt:
+                try:
+                    client.dispatch()
+                    result = "accepted"
+                except Exception as error:
+                    if isinstance(error, GitHubBackoff):
+                        store.connection.execute("INSERT OR REPLACE INTO health VALUES('api_retry_at',?)", (iso(error.retry_at),))
+                        store.connection.commit()
+                    result = "unknown_or_failed"
+                store.recovery_result(item.slot, attempt, result)
+                report["recoveries"] += 1
+    report["alerts_accepted"] = store.flush(sender, now)
+    store.connection.execute("INSERT OR REPLACE INTO health VALUES('last_check',?)", (iso(now),))
+    store.connection.commit()
     return report
+
+
+def _state_unavailable_report(now: datetime, released: bool) -> dict:
+    epoch = aware(now).replace(hour=(now.hour // 6) * 6, minute=0, second=0, microsecond=0)
+    incident = SchedulerIncident(f"scheduler:MONITOR_UNAVAILABLE:{iso(epoch)}", "MONITOR_UNAVAILABLE", "", "Watchdog durable state is unavailable; scheduler/source status unknown.")
+    return {"checked_at": iso(now), "workflow_state": "unknown", "released": released, "incidents": [asdict(incident)], "recoveries": 0, "recovery_state": "unknown", "alerts_accepted": 0}
+
+
+def watchdog_cycle(*, now: datetime, client, store: WatchdogStore, sender: Callable[[str, str], bool], released: bool, recovery_enabled: bool) -> dict:
+    if not released:
+        return _watchdog_cycle(now=now, client=client, store=store, sender=sender, released=False, recovery_enabled=False)
+    try:
+        # Serialize the observation and reservation across processes as one cycle.
+        with store.locked():
+            return _watchdog_cycle(now=now, client=client, store=store, sender=sender, released=True, recovery_enabled=recovery_enabled)
+    except (sqlite3.Error, OSError, TimeoutError):
+        return _state_unavailable_report(now, released)
 
 
 def main(argv=None) -> int:
@@ -354,17 +455,22 @@ def main(argv=None) -> int:
     parser.add_argument("--state-dir", type=Path, default=Path(os.environ.get("ATP_WATCHDOG_STATE_DIR", "/var/lib/atp-ranking-watchdog")))
     parser.add_argument("--dry-run", action="store_true", help="Read metadata only; no local state writes, dispatch or alert")
     args = parser.parse_args(argv)
-    client = GitHubActionsClient(args.repo, os.environ.get("ATP_WATCHDOG_GITHUB_TOKEN", ""))
     released = os.environ.get("ATP_RANKING_DELIVERY_ENABLED") == "true" and os.environ.get("ATP_WATCHDOG_ENABLED") == "true" and not args.dry_run
+    recovery_enabled = released and os.environ.get("ATP_WATCHDOG_RECOVERY_ENABLED") == "true"
+    client = GitHubActionsClient(args.repo, os.environ.get("ATP_WATCHDOG_GITHUB_TOKEN", ""), recovery_enabled=recovery_enabled, allow_token_mint=released)
     if not released:
         # No SQLite/database directories in dry-run or before initial activation.
         report = watchdog_cycle(now=datetime.now(UTC), client=client, store=None, sender=webhook_sender, released=False, recovery_enabled=False)
     else:
-        store = WatchdogStore(args.state_dir)
+        store = None
         try:
-            report = watchdog_cycle(now=datetime.now(UTC), client=client, store=store, sender=webhook_sender, released=True, recovery_enabled=os.environ.get("ATP_WATCHDOG_RECOVERY_ENABLED") == "true")
+            store = WatchdogStore(args.state_dir)
+            report = watchdog_cycle(now=datetime.now(UTC), client=client, store=store, sender=webhook_sender, released=True, recovery_enabled=recovery_enabled)
+        except (sqlite3.Error, OSError):
+            report = _state_unavailable_report(datetime.now(UTC), True)
         finally:
-            store.close()
+            if store is not None:
+                store.close()
     print(json.dumps(report, sort_keys=True))
     return 1 if report["incidents"] else 0
 

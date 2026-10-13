@@ -2,7 +2,8 @@
 ATP_OPS_RECEIVER_ENABLED=false
 ATP_OPS_RECEIVER_TOKEN=
 # Provision separate destination for operational notifications.
-# Destination must deduplicate event_id and return {"accepted":true} only after
+# Destination must deduplicate event_id and return
+# {"accepted":true,"event_id":"<same request ID>"} only after
 # durable acceptance. Generic HTTP 2xx or {"accepted":false} is not success.
 ATP_OPS_FORWARD_URL=
 ATP_OPS_FORWARD_TOKEN=

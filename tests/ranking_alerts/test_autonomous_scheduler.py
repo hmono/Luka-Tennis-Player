@@ -189,11 +189,25 @@ class AutonomousSchedulerTests(unittest.TestCase):
             self.assertEqual(2, request.call_count)
 
     def test_ops_sink_requires_durable_ack_contract_not_only_http_acceptance(self):
-        with patch.dict(os.environ, {'ATP_OPS_WEBHOOK_URL': 'https://ops.example.test/events'}, clear=True), patch('scripts.ranking_alerts.autonomous_scheduler._request') as request:
-            request.return_value = {}
-            self.assertFalse(webhook_sender('event', 'status unknown'))
-            request.return_value = {'accepted': True}
+        with patch.dict(os.environ, {'ATP_OPS_WEBHOOK_URL': 'https://ops.example.test/events', 'ATP_OPS_WEBHOOK_TOKEN': 'synthetic-token'}, clear=True), patch('scripts.ranking_alerts.autonomous_scheduler._request') as request:
+            for response in ({}, {'accepted': True}, {'accepted': True, 'event_id': 'other'},
+                             {'accepted': 1, 'event_id': 'event'}):
+                request.return_value = response
+                self.assertFalse(webhook_sender('event', 'status unknown'))
+            request.return_value = {'accepted': True, 'event_id': 'event'}
             self.assertTrue(webhook_sender('event', 'status unknown'))
+
+    def test_ops_webhook_requires_authenticated_valid_https_before_request(self):
+        with patch.dict(os.environ, {}, clear=True), patch('scripts.ranking_alerts.autonomous_scheduler._request') as request:
+            for url, token in [('http://ops.example.test/events', 'fixture'),
+                               ('https://ops.example.test/events', ''),
+                               ('https://user:pass@ops.example.test/events', 'fixture'),
+                               ('https://ops.example.test/events#fragment', 'fixture'),
+                               ('https://', 'fixture')]:
+                os.environ['ATP_OPS_WEBHOOK_URL'] = url
+                os.environ['ATP_OPS_WEBHOOK_TOKEN'] = token
+                self.assertFalse(webhook_sender('event', 'status unknown'))
+            request.assert_not_called()
 
     def test_app_grants_are_repository_scoped_and_read_only_until_recovery(self):
         for recovery, permission in ((False, 'read'), (True, 'write')):
