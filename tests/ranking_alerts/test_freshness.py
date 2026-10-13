@@ -25,6 +25,38 @@ class FreshnessTests(unittest.TestCase):
     def assess(self, publication: str | None, instant: str):
         return assess_publication(publication, now=at(instant), calendar=self.calendar)
 
+    def test_h2_inconclusive_october_12_keeps_expectation_and_exact_cutoff(self):
+        config = json.loads(DEFAULT_CALENDAR_PATH.read_text())
+        self.assertEqual("inconclusive", config["review"]["edition_2026_10_12_status"])
+        self.assertEqual([], config["exceptions"])
+        self.assertEqual("inherited_not_recertified", config["review"]["horizon_status"])
+        before = self.assess("2026-10-05", "2026-10-15T11:59:59-03:00")
+        after = self.assess("2026-10-05", "2026-10-15T12:00:00-03:00")
+        self.assertEqual(FreshnessState.PENDING_PUBLICATION, before.state)
+        self.assertEqual(FreshnessState.STALE, after.state)
+        self.assertEqual("2026-10-12", after.expected_date)
+        self.assertEqual("2026-10-15T15:00:00Z", after.cutoff)
+
+    def test_h2_synthetic_exception_changes_cutoff_without_manufacturing_observation(self):
+        # Synthetic mechanics only: no official exception is asserted for 12/10.
+        for kind in ("no_edition", "moved"):
+            with self.subTest(kind=kind):
+                config = json.loads(DEFAULT_CALENDAR_PATH.read_text())
+                exception = {"edition_date": "2026-10-12", "kind": kind,
+                             "reference": "https://example.invalid/synthetic-notice"}
+                if kind == "moved":
+                    exception["publication_date"] = "2026-10-13"
+                config["exceptions"] = [exception]
+                calendar = calendar_from_dict(config)
+                report = assess_publication("2026-10-05", now=at("2026-10-16T14:59:59Z"), calendar=calendar)
+                self.assertEqual("2026-10-05", report.actual_date)
+                self.assertEqual(FreshnessState.FRESH if kind == "no_edition" else FreshnessState.PENDING_PUBLICATION, report.state)
+                if kind == "moved":
+                    report = assess_publication("2026-10-05", now=at("2026-10-16T15:00:00Z"), calendar=calendar)
+                    self.assertEqual(FreshnessState.STALE, report.state)
+                    self.assertEqual("2026-10-13", report.expected_date)
+                    self.assertEqual("2026-10-16T15:00:00Z", report.cutoff)
+
     def test_old_publication_is_stale_after_thursday_noon_brazil(self):
         result = self.assess("2026-09-28", "2026-10-08T15:00:00Z")
         self.assertEqual(FreshnessState.STALE, result.state)

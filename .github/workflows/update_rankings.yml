@@ -84,9 +84,10 @@ jobs:
           ATP_RANKING_DELIVERY_ENABLED: ${{ vars.ATP_RANKING_DELIVERY_ENABLED }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
+          ATP_CONFIRMED_EDITION: ${{ steps.collect.outputs.sporting_edition_date }}
         run: |
           if [ "${{ steps.collect.outputs.sporting_delivery_allowed }}" = "true" ]; then
-            python scripts/update_rankings.py deliver --provider callmebot --durable-git
+            python scripts/update_rankings.py deliver --provider callmebot --durable-git --edition-date "${ATP_CONFIRMED_EDITION}"
           else
             python scripts/update_rankings.py deliver --provider callmebot --durable-git --incidents-only
           fi

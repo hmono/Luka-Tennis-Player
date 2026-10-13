@@ -67,6 +67,8 @@ class RankingsWorkflowTests(unittest.TestCase):
         self.assertIn("steps.persist.outcome == 'success'", delivery)
         self.assertIn('steps.collect.outputs.sporting_delivery_allowed', delivery)
         self.assertIn('--incidents-only', delivery)
+        self.assertIn('ATP_CONFIRMED_EDITION: ${{ steps.collect.outputs.sporting_edition_date }}', delivery)
+        self.assertIn('--edition-date "${ATP_CONFIRMED_EDITION}"', delivery)
         self.assertNotIn("continue-on-error", self.text)
         self.assertIn("ref: ${{ github.ref_name }}", self.text)
         self.assertIn("cron: '5 15 * * 4'", self.text)

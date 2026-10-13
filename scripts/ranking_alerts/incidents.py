@@ -221,6 +221,23 @@ def pending_incidents(ledger: IncidentLedger) -> tuple[dict[str, Any], ...]:
                  and item["error_code"] in {None, "http_429"})
 
 
+def unresolved_deliveries(ledger: IncidentLedger) -> tuple[dict[str, Any], ...]:
+    """Source recovery is not reconciliation of an uncertain provider attempt.
+
+    Read the last delivery transition independently from the source lifecycle.
+    This also preserves quarantine for legacy retryable timeout/5xx records.
+    A recovered, definitely rejected 429 does not need delivery reconciliation.
+    """
+    latest = {}
+    for event in ledger.events:
+        if event["kind"].startswith("provider_"):
+            latest[event["incident_id"]] = event
+    return tuple(event for event in latest.values()
+                 if event["kind"] == "provider_in_flight"
+                 or (event["kind"] == "provider_failed"
+                     and not (event["retryable"] and event["error_code"] == "http_429")))
+
+
 def format_stale(item: dict[str, Any]) -> str:
     return ("RANKING_STALE — Luka Bojicic Ono (B0UF)\n"
             f"Edição esperada: {item['expected_date']}\n"

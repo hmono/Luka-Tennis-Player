@@ -477,10 +477,11 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertIn("Doubles: #1.460 (sem alteração) | CH #1.407 (2026-06-22)", message)
         self.assertNotIn("pts", message)
 
-    def test_delivery_failure_is_persisted_and_stops_fifo(self) -> None:
+    def test_delivery_failure_is_persisted_for_current_edition_preserving_backlog(self) -> None:
         self.collect(observation("2026-08-31"), "2026-08-31T12:00:00Z")
         self.collect(observation("2026-09-07", singles_rank=1990), "2026-09-07T12:00:00Z")
         self.collect(observation("2026-09-14", singles_rank=1980), "2026-09-14T12:00:00Z")
+        older = load_alert_state(self.state_path, load_rankings(self.rankings_path)).outbox[:-1]
         provider = FailingProvider()
 
         with self.assertRaises(DeliveryError):
@@ -493,9 +494,11 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         rankings = load_rankings(self.rankings_path)
         state = load_alert_state(self.state_path, rankings)
         self.assertEqual(1, len(provider.messages))
-        self.assertEqual(4, state.outbox[0].attempts)
-        self.assertEqual("http_500", state.outbox[0].last_error_code)
-        self.assertEqual("pending", state.outbox[1].status)
+        self.assertEqual(older, state.outbox[:-1])
+        self.assertEqual(4, state.outbox[-1].attempts)
+        self.assertEqual("http_500", state.outbox[-1].last_error_code)
+        self.assertFalse(state.outbox[-1].retryable)
+        self.assertEqual("pending", state.outbox[-1].status)
 
 
 if __name__ == "__main__":

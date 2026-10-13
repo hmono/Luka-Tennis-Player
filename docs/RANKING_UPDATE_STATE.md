@@ -1,9 +1,17 @@
 # Estado — atualização semanal de rankings
 
-Atualizado: 13/10/2026 UTC, sprint #17, PR #18 draft,
-`fix/atp-ranking-freshness-202610`. Homologação e gates finais em
-[`ATP_RANKING_HOMOLOGATION_20261013.md`](ATP_RANKING_HOMOLOGATION_20261013.md).
-Merge e ativação não liberados.
+Atualizado: 13/10/2026 UTC, sprint H2 / epic #19, PR #18 draft,
+`fix/atp-ranking-freshness-202610`. Integração em
+[`ATP_RANKING_H2_INTEGRATION_20261013.md`](ATP_RANKING_H2_INTEGRATION_20261013.md)
+e decisões separadas em [`ATP_RANKING_FINAL_GATE_202610.md`](ATP_RANKING_FINAL_GATE_202610.md).
+Merge e ativação não liberados. A [homologação #17](ATP_RANKING_HOMOLOGATION_20261013.md)
+permanece como registro histórico.
+
+12/10 é INCONCLUSIVA em simples/duplas; nenhuma extensão de calendário foi
+comprovada. O limite herdado 26/10 não foi recertificado. Duas novas publicações
+consecutivas continuam pendentes. O workflow legado ativo em `main` não consulta
+a flag de entrega: as proteções abaixo descrevem a branch do PR e só seriam
+implantadas após merge autorizado. A ausência da flag não desativa o legado.
 
 ## Decisão
 
@@ -30,6 +38,10 @@ simples e duplas exigem datas explícitas iguais. Não há fallback automático.
   `ATP_RANKING_DELIVERY_ENABLED` não for explicitamente `true`. A mesma variável
   no ambiente é exigida pelo CLI deliver antes de construir o provider.
   Nenhuma variável do repositório foi alterada nesta sessão.
+- A coleta FRESH fornece a edição explícita para `deliver --edition-date`.
+  A CLI revalida calendário/edição antes do envio e após o checkpoint; backlog
+  de outras edições fica intacto para reconciliação, com falha operacional
+  visível. Recuperação da fonte não encerra revisão de entrega incerta.
 - Freshness: FRESH/PENDING_PUBLICATION/STALE/SOURCE_ERROR, cutoff quinta 12h BRT,
   clock injetável e calendário `config/atp_publication_calendar.json` com
   exceções referenciadas. Validade termina pelo relógio em 26/10: revisar e

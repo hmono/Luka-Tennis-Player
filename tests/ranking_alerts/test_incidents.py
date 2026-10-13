@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from scripts.ranking_alerts.incidents import (
     IncidentLedger, classify_source_error, deliver_incidents, format_stale, format_incident, load_incidents,
-    pending_incidents, plan_recovery, plan_source_error, plan_stale, save_incidents,
+    pending_incidents, plan_recovery, plan_source_error, plan_stale, save_incidents, unresolved_deliveries,
 )
 from scripts.ranking_alerts.providers import DeliveryError, DeliveryReceipt
 from scripts.ranking_alerts.storage import StorageError
@@ -40,6 +40,34 @@ class IncidentTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / "ledger.json"
+
+    def test_h2_recovery_does_not_reconcile_provider_failure_or_inflight(self):
+        for error in (DeliveryError("transport_timeout", 1), DeliveryError("http_503", 1), KeyboardInterrupt()):
+            with self.subTest(error=type(error).__name__ + str(error)):
+                path = self.path.with_name("isolated-" + type(error).__name__ + str(error) + ".json")
+                save_incidents(path, stale())
+                provider = Provider(error=error)
+                with self.assertRaises(type(error)):
+                    deliver_incidents(provider=provider, path=path, now="2026-10-08T15:01:00Z")
+                before = load_incidents(path)
+                recovered = plan_recovery(before, ranking_date="2026-10-05", now="2026-10-09T12:00:00Z")
+                self.assertEqual(1, len(unresolved_deliveries(recovered)))
+                self.assertEqual(before.events, recovered.events[:-1])
+                self.assertEqual((), pending_incidents(recovered))
+
+    def test_h2_recovered_accepted_rejected_or_unsent_incidents_need_no_reconciliation(self):
+        for mode in ("accepted", "429", "unsent"):
+            with self.subTest(mode=mode):
+                path = self.path.with_name(mode + ".json")
+                save_incidents(path, stale())
+                if mode != "unsent":
+                    provider = Provider(error=DeliveryError("http_429", 1, retryable=True) if mode == "429" else None)
+                    try:
+                        deliver_incidents(provider=provider, path=path, now="2026-10-08T15:01:00Z")
+                    except DeliveryError:
+                        self.assertEqual("429", mode)
+                recovered = plan_recovery(load_incidents(path), ranking_date="2026-10-05", now="2026-10-09T12:00:00Z")
+                self.assertEqual((), unresolved_deliveries(recovered))
 
     def test_one_intention_per_expected_edition_even_after_recovery(self):
         original = stale()

@@ -9,7 +9,11 @@
     "reviewed_on": "2026-10-13",
     "extension_status": "blocked_missing_official_edition_schedule",
     "requested_valid_until": "2026-12-31",
-    "evidence_document": "docs/evidence/atp-publication-calendar-2026-10-13.md"
+    "evidence_document": "docs/evidence/atp-publication-calendar-2026-h2.md",
+    "previous_evidence_document": "docs/evidence/atp-publication-calendar-2026-10-13.md",
+    "edition_2026_10_12_status": "inconclusive",
+    "edition_evidence_document": "docs/evidence/atp-2026-10-12-publication.md",
+    "horizon_status": "inherited_not_recertified"
   },
   "cutoff": {
     "timezone": "America/Sao_Paulo",

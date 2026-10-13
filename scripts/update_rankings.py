@@ -63,6 +63,7 @@ from ranking_alerts.storage import (
 from ranking_alerts.incidents import (
     DEFAULT_INCIDENTS_PATH, deliver_incidents, load_incidents, pending_incidents,
     plan_recovery, plan_stale, plan_source_error, save_incidents, format_incident,
+    unresolved_deliveries,
 )
 from ranking_alerts.collection_transaction import recover_collection, save_collection
 from ranking_alerts.durability import GitCheckpoint, STATE_PATHS, state_lock
@@ -262,11 +263,17 @@ def deliver(
     state_path: Path = DEFAULT_STATE_PATH,
     now: Callable[[], str] = _utc_now,
     checkpoint: Callable[[], None] | None = None,
+    edition_date: str | None = None,
+    validate_edition: Callable[[], None] | None = None,
 ) -> int:
     if provider.name != "callmebot":
         raise ConfigurationError("invalid_delivery_provider")
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
+    latest_date = max((snapshot.ranking_date for snapshot in rankings.snapshots), default=None)
+    selected_date = edition_date or latest_date
+    if selected_date != latest_date:
+        raise ConfigurationError("ranking_delivery_edition_mismatch")
     sent_count = 0
     for item in state.outbox:
         if not _sendable(item):
@@ -274,6 +281,11 @@ def deliver(
         snapshot = next((value for value in rankings.snapshots if value.id == item.snapshot_id), None)
         if snapshot is None:
             raise StorageError("invalid_snapshot_reference")
+        if snapshot.ranking_date != selected_date:
+            # Keep older intentions and their receipts intact for reconciliation.
+            continue
+        if validate_edition is not None:
+            validate_edition()
         # Reserve locally and remotely before the irreversible provider call.
         # A crash leaves an uncertain, non-retryable record with a unique nonce.
         reserved = replace(item, attempts=item.attempts + 1, retryable=False,
@@ -282,6 +294,10 @@ def deliver(
         save_alert_state(state_path, state, rankings)
         if checkpoint is not None:
             checkpoint()
+        if validate_edition is not None:
+            # A slow durable push can cross the calendar's local-day boundary.
+            # If it does, retain the claim without making a provider request.
+            validate_edition()
         try:
             receipt = provider.send(
                 message=_message_for_snapshot(rankings, snapshot, item.event_type), event_id=item.id
@@ -349,7 +365,10 @@ def _freshness_checked_observation(
     now: datetime,
     calendar: EditionCalendar,
 ) -> tuple[RankingObservation, FreshnessAssessment]:
-    """Only validated current publications may reach sporting persistence.
+    """Only validated, non-stale publications may reach sporting persistence.
+
+    PENDING may catch up an observed prior edition within the current grace
+    period; it never confirms the expected edition or authorizes its delivery.
 
     Errors carry a structured assessment for operational incident handling.
     An incident can be persisted separately without making a stale snapshot.
@@ -482,6 +501,7 @@ def build_parser() -> argparse.ArgumentParser:
     deliver_parser.add_argument("--provider", choices=("callmebot",), required=True)
     deliver_parser.add_argument("--durable-git", action="store_true", help="publish each reservation before sending; required for delivery")
     deliver_parser.add_argument("--incidents-only", action="store_true", help="block sporting delivery when collection did not confirm a fresh edition")
+    deliver_parser.add_argument("--edition-date", help="edition confirmed by the successful FRESH collection; required for sporting delivery")
     _paths(deliver_parser)
 
     checkpoint_parser = commands.add_parser("checkpoint", help="recover and publish the complete ranking state bundle")
@@ -580,20 +600,36 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
             ledger = load_incidents(args.incidents_path)
             sporting_error = None
             sporting_review = 0
+            validate_edition = None
             try:
                 rankings = load_rankings(args.rankings_path)
                 state = load_alert_state(args.state_path, rankings)
-                sporting_pending = not args.incidents_only and any(_sendable(item) for item in state.outbox)
+                dates = _snapshot_date_by_id(rankings)
+                sporting_pending = False
                 sporting_review = sum(item.status == "pending" and item.superseded_by is None and not _sendable(item) for item in state.outbox)
-            except StorageError as exc:
+                if not args.incidents_only and any(_sendable(item) for item in state.outbox):
+                    if not args.edition_date:
+                        raise ConfigurationError("ranking_delivery_edition_required")
+                    calendar = load_calendar()
+                    latest_date = max(dates.values(), default=None)
+                    def validate_edition():
+                        report = assess_publication(args.edition_date, now=clock(), calendar=calendar)
+                        if report.state != FreshnessState.FRESH or args.edition_date != latest_date:
+                            raise ConfigurationError("ranking_delivery_edition_not_fresh")
+                    validate_edition()
+                    sporting_pending = any(_sendable(item) and dates[item.snapshot_id] == args.edition_date for item in state.outbox)
+                    held = sum(_sendable(item) and dates[item.snapshot_id] != args.edition_date for item in state.outbox)
+                    sporting_review += held
+                    if held:
+                        print(f"sporting_edition_held={held}")
+            except (StorageError, CalendarError, ConfigurationError) as exc:
                 sporting_error = exc
                 sporting_pending = False
-            incident_review = sum(item["kind"] in {"provider_in_flight", "provider_failed"}
-                                  and item not in pending_incidents(ledger) for item in ledger.latest().values())
+            incident_review = len(unresolved_deliveries(ledger))
             needs_review = sporting_review + incident_review
             if needs_review:
                 print(f"delivery_review_required={needs_review}")
-                append_summary(f"### ATP ranking — delivery blocked\n\n{needs_review} unresolved provider attempts require operator reconciliation; automatic replay is disabled.")
+                append_summary(f"### ATP ranking — delivery review\n\n{needs_review} unresolved provider attempts or older sporting intentions require operator reconciliation; automatic replay is disabled for these records.")
             if not sporting_pending and not pending_incidents(ledger):
                 if sporting_error is not None:
                     raise sporting_error
@@ -614,7 +650,8 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
             if sporting_pending:
                 try:
                     count = deliver(provider=provider, rankings_path=args.rankings_path, state_path=args.state_path,
-                                    checkpoint=checkpoint)
+                                    checkpoint=checkpoint, edition_date=args.edition_date,
+                                    validate_edition=validate_edition)
                 except DeliveryError as exc:
                     sporting_error = exc
             # Operational incidents use their own ledger and remain actionable
@@ -701,6 +738,7 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
                         allowed = error_code is None and assessment is not None and assessment.state == FreshnessState.FRESH
                         with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
                             output.write(f"sporting_delivery_allowed={'true' if allowed else 'false'}\n")
+                            output.write(f"sporting_edition_date={assessment.actual_date if allowed else ''}\n")
             except OSError:
                 print("telemetry=summary_unavailable", file=sys.stderr)
 

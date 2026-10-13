@@ -63,18 +63,100 @@ class SprintIntegrationTests(unittest.TestCase):
         self.original_rankings, self.original_state = self.rankings.read_bytes(), self.state.read_bytes()
         self.provider = MockProvider()
 
-    def main(self, command, instant, source=Source(), enabled=False, incidents_only=False):
+    def main(self, command, instant, source=Source(), enabled=False, incidents_only=False,
+             edition_date="2026-10-05", clock=None, checkpoint=None):
         args = [command, "--provider" if command == "deliver" else "--source", "callmebot" if command == "deliver" else "itf",
                 "--rankings-path", str(self.rankings), "--state-path", str(self.state), "--incidents-path", str(self.incidents)]
         if incidents_only:
             args.append("--incidents-only")
+        if command == "deliver" and edition_date is not None:
+            args.extend(("--edition-date", edition_date))
         output, errors = StringIO(), StringIO()
         with patch.object(update_rankings, "_selected_source", return_value=source), \
              patch.object(update_rankings.CallMeBotProvider, "from_env", return_value=self.provider) as factory, \
              patch.dict("os.environ", {"ATP_RANKING_DELIVERY_ENABLED": "true" if enabled else "false"}), \
              redirect_stdout(output), redirect_stderr(errors):
-            result = update_rankings.main(args, clock=lambda: datetime.fromisoformat(instant.replace("Z", "+00:00")), checkpoint=lambda: None)
+            result = update_rankings.main(args, clock=clock or (lambda: datetime.fromisoformat(instant.replace("Z", "+00:00"))),
+                                          checkpoint=checkpoint or (lambda: None))
         return result, output.getvalue(), errors.getvalue(), factory.call_count
+
+    def test_h2_fresh_edition_does_not_release_older_pending_digest(self):
+        # Synthetic observations test delivery selection, not actual ATP publication.
+        code, output, _, calls = self.main("collect", "2026-10-13T12:00:00Z", Source("2026-10-05"))
+        self.assertEqual(0, code)
+        self.assertIn("PENDING_PUBLICATION", output)
+        self.assertEqual(0, calls)
+        older = load_alert_state(self.state, load_rankings(self.rankings)).outbox[0]
+        self.assertIsNone(load_rankings(self.rankings).snapshots[-1].singles.points)
+        self.assertIsNone(load_rankings(self.rankings).snapshots[-1].doubles.points)
+        self.assertEqual("2026-10-05", load_rankings(self.rankings).snapshots[-1].ranking_date)
+        self.assertEqual(0, self.main("collect", "2026-10-13T12:01:00Z", Source("2026-10-12"))[0])
+        self.provider.accepted_at = "2026-10-13T12:02:00Z"
+        code, output, errors, _ = self.main("deliver", "2026-10-13T12:02:00Z", enabled=True, edition_date="2026-10-12")
+        self.assertEqual(1, code)  # Held older intention remains visible for review.
+        self.assertIn("sporting_edition_held=1", output)
+        self.assertIn("ranking_delivery_review_required", errors)
+        self.assertEqual(1, len(self.provider.messages))
+        self.assertIn("ATP Ranking — 2026-10-12", self.provider.messages[0][0])
+        self.assertEqual(older, load_alert_state(self.state, load_rankings(self.rankings)).outbox[0])
+        before = (self.rankings.read_bytes(), self.state.read_bytes())
+        code, _, _, calls = self.main("deliver", "2026-10-13T12:03:00Z", enabled=True, edition_date="2026-10-12")
+        self.assertEqual((1, 0, 1), (code, calls, len(self.provider.messages)))
+        self.assertEqual(before, (self.rankings.read_bytes(), self.state.read_bytes()))
+
+    def test_h2_sporting_delivery_requires_confirmed_current_edition(self):
+        self.assertEqual(0, self.main("collect", "2026-10-06T12:00:00Z", Source("2026-10-05"))[0])
+        before = (self.rankings.read_bytes(), self.state.read_bytes())
+        for edition, instant, error in (
+            (None, "2026-10-06T12:01:00Z", "ranking_delivery_edition_required"),
+            ("2026-10-05", "2026-10-13T12:01:00Z", "ranking_delivery_edition_not_fresh"),
+            ("2026-10-12", "2026-10-13T12:01:00Z", "ranking_delivery_edition_not_fresh"),
+            ("not-a-date", "2026-10-06T12:01:00Z", "ranking_delivery_edition_not_fresh"),
+        ):
+            with self.subTest(edition=edition, instant=instant):
+                code, _, errors, calls = self.main("deliver", instant, enabled=True, edition_date=edition)
+                self.assertEqual((1, 0), (code, calls))
+                self.assertIn(error, errors)
+                self.assertEqual(before, (self.rankings.read_bytes(), self.state.read_bytes()))
+        self.assertEqual([], self.provider.messages)
+
+    def test_h2_expired_calendar_blocks_delivery_of_last_configured_edition(self):
+        self.assertEqual(0, self.main("collect", "2026-10-26T12:00:00Z", Source("2026-10-26"))[0])
+        before = self.state.read_bytes()
+        code, _, errors, calls = self.main("deliver", "2026-10-27T03:00:00Z", enabled=True, edition_date="2026-10-26")
+        self.assertEqual((1, 0), (code, calls))
+        self.assertIn("ranking_calendar_invalid", errors)
+        self.assertEqual(before, self.state.read_bytes())
+
+    def test_h2_slow_checkpoint_crossing_local_monday_never_calls_provider(self):
+        self.assertEqual(0, self.main("collect", "2026-10-18T12:00:00Z", Source("2026-10-12"))[0])
+        current = [datetime.fromisoformat("2026-10-19T02:59:59+00:00")]
+        def checkpoint():
+            current[0] = datetime.fromisoformat("2026-10-19T03:00:00+00:00")
+        code, _, errors, _ = self.main("deliver", "2026-10-19T02:59:59Z", enabled=True,
+            edition_date="2026-10-12", clock=lambda: current[0], checkpoint=checkpoint)
+        self.assertEqual(1, code)
+        self.assertIn("ranking_delivery_edition_not_fresh", errors)
+        self.assertEqual([], self.provider.messages)
+        item = load_alert_state(self.state, load_rankings(self.rankings)).outbox[-1]
+        self.assertFalse(item.retryable)
+        self.assertIsNotNone(item.attempt_id)
+
+    def test_h2_source_recovery_keeps_uncertain_incident_delivery_visible(self):
+        self.assertEqual(1, self.main("collect", "2026-10-06T12:00:00Z", Source(error="ranking_source_timeout"))[0])
+        with patch.object(self.provider, "send", side_effect=DeliveryError("transport_timeout", 1)):
+            self.assertEqual(1, self.main("deliver", "2026-10-06T12:01:00Z", enabled=True, incidents_only=True)[0])
+        uncertain = load_incidents(self.incidents)
+        self.assertEqual(0, self.main("collect", "2026-10-09T12:00:00Z", Source("2026-10-05"))[0])
+        recovered = load_incidents(self.incidents)
+        self.assertEqual(uncertain.events, recovered.events[:-1])
+        self.assertEqual("recovered", recovered.events[-1]["kind"])
+        before = self.incidents.read_bytes()
+        code, output, errors, calls = self.main("deliver", "2026-10-09T12:01:00Z", enabled=True, incidents_only=True)
+        self.assertEqual((1, 0), (code, calls))
+        self.assertIn("delivery_review_required=1", output)
+        self.assertIn("ranking_delivery_review_required", errors)
+        self.assertEqual(before, self.incidents.read_bytes())
 
     def test_failed_collection_delivers_only_incident_and_preserves_sporting_intention(self):
         self.assertEqual(0, self.main("collect", "2026-10-06T12:00:00Z", Source("2026-10-05"))[0])
@@ -98,6 +180,7 @@ class SprintIntegrationTests(unittest.TestCase):
                 with patch.dict("os.environ", {"GITHUB_OUTPUT": str(path)}):
                     self.main("collect", instant, source)
                 self.assertIn(f"sporting_delivery_allowed={expected}", path.read_text())
+                self.assertIn(f"sporting_edition_date={'2026-10-05' if expected == 'true' else ''}\n", path.read_text())
 
     def test_quarantined_attempt_is_visible_as_failure_on_next_cli_run(self):
         from ranking_alerts.providers import DeliveryError
