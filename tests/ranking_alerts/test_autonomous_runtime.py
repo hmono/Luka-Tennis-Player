@@ -185,6 +185,19 @@ class AutonomousRuntimeTests(unittest.TestCase):
         self.assertGreater(result["notification"]["ops_pending"], 0)
         self.assertEqual(2, len(self.provider.messages))
 
+    def test_backward_clock_rejection_preserves_runtime_and_recovers(self):
+        from ranking_alerts.runtime_state import append_cycle, DEFAULT_RUNTIME_PATH
+        from ranking_alerts.storage import StorageError
+        self.run_cycle()
+        path = self.root / DEFAULT_RUNTIME_PATH
+        before = path.read_bytes()
+        with self.assertRaises(StorageError):
+            append_cycle(path, at="2026-10-13T12:16:00Z", state="SOURCE_ERROR",
+                         last_valid_date="2026-10-05", error_code="ranking_source_timeout", provenance={})
+        self.assertEqual(before, path.read_bytes())
+        self.instant += timedelta(minutes=1)
+        self.assertEqual("NO_NEW_EDITION_OBSERVED", self.run_cycle()["collection"])
+
     def test_two_real_git_executors_send_only_winning_remote_claim(self):
         from ranking_alerts.durability import GitCheckpoint
         def git(root, *args):

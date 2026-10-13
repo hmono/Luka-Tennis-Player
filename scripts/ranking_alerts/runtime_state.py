@@ -12,6 +12,10 @@ DEFAULT_RUNTIME_PATH = Path("automation/state/ranking_runtime.json")
 
 def load_runtime(path: Path) -> dict[str, Any]:
     value = _load_json(path) if path.exists() else {"schema_version": 1, "events": []}
+    return validate_runtime(value)
+
+
+def validate_runtime(value: Any) -> dict[str, Any]:
     try:
         if set(value) != {"schema_version", "events"} or type(value["schema_version"]) is not int or value["schema_version"] != 1 or not isinstance(value["events"], list):
             raise ValueError()
@@ -54,6 +58,8 @@ def append_cycle(path: Path, *, at: str, state: str, last_valid_date: str | None
         episode = f"source-recovered:{start}"
     value["events"].append({"at": at, "state": state, "last_valid_date": last_valid_date,
                             "error_code": error_code, "provenance": provenance})
+    # A backward clock or invalid event must never poison the durable ledger.
+    validate_runtime(value)
     write_json_atomic(path, value)
     load_runtime(path)
     return value, episode
