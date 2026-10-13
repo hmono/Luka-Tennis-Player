@@ -107,7 +107,7 @@ def _utc_now() -> datetime:
 def _timestamp(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _retry_after_seconds(value: str | None, now: datetime) -> float | None:
@@ -206,20 +206,23 @@ class CallMeBotProvider:
                         accepted_at=_timestamp(self._now()),
                         http_status=status,
                     )
-                retryable = status in {408, 429} or 500 <= status <= 599
+                # Only explicit rate limiting establishes rejection safely.
+                # 408/5xx and transport failures may follow queue acceptance;
+                # CallMeBot has no event-id idempotency contract for replay.
+                retryable = status == 429
                 code = f"http_{status}"
             except DeliveryError:
                 raise
             except urllib.error.HTTPError as exc:
                 status = int(exc.code)
                 retry_after = exc.headers.get("Retry-After") if exc.headers is not None else None
-                retryable = status in {408, 429} or 500 <= status <= 599
+                retryable = status == 429
                 code = f"http_{status}"
             except (TimeoutError, socket.timeout):
-                retryable = True
+                retryable = False
                 code = "transport_timeout"
             except (urllib.error.URLError, ConnectionError, OSError):
-                retryable = True
+                retryable = False
                 code = "transport_error"
             except Exception:
                 # Unknown adapter failures are deliberately redacted and not

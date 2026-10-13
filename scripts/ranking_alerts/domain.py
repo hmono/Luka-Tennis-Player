@@ -204,6 +204,8 @@ class OutboxItem:
     # Optional additions preserve existing historical receipts byte-for-byte.
     retryable: bool = True
     delivery_status: str | None = None
+    attempt_id: str | None = None
+    superseded_by: str | None = None
 
     def __post_init__(self) -> None:
         if not _SHA256_RE.fullmatch(self.id) or not _SHA256_RE.fullmatch(self.snapshot_id):
@@ -231,6 +233,11 @@ class OutboxItem:
             raise DomainValidationError("invalid_delivery_status")
         if self.delivery_status is not None and self.status != "sent":
             raise DomainValidationError("invalid_delivery_status")
+        if self.attempt_id is not None and (not isinstance(self.attempt_id, str) or not re.fullmatch(r"[0-9a-f]{32}", self.attempt_id)):
+            raise DomainValidationError("invalid_attempt_id")
+        if self.superseded_by is not None:
+            if not isinstance(self.superseded_by, str) or not _SHA256_RE.fullmatch(self.superseded_by) or self.superseded_by == self.id or self.status != "pending" or self.retryable:
+                raise DomainValidationError("invalid_superseded_reference")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -243,6 +250,15 @@ class RankingAlertState:
             raise DomainValidationError("unsupported_schema_version")
         if len({item.id for item in self.outbox}) != len(self.outbox):
             raise DomainValidationError("duplicate_outbox_id")
+        items = {item.id: item for item in self.outbox}
+        for item in self.outbox:
+            seen = {item.id}
+            target = item.superseded_by
+            while target is not None:
+                if target not in items or target in seen:
+                    raise DomainValidationError("invalid_superseded_reference")
+                seen.add(target)
+                target = items[target].superseded_by
 
 
 def _discipline_dict(value: DisciplineRanking) -> dict[str, Any]:
@@ -498,6 +514,10 @@ def outbox_to_dict(item: OutboxItem) -> dict[str, Any]:
         result["retryable"] = False
     if item.delivery_status is not None:
         result["delivery_status"] = item.delivery_status
+    if item.attempt_id is not None:
+        result["attempt_id"] = item.attempt_id
+    if item.superseded_by is not None:
+        result["superseded_by"] = item.superseded_by
     return result
 
 
@@ -506,7 +526,7 @@ def outbox_from_dict(value: Any) -> OutboxItem:
         "id", "snapshot_id", "event_type", "status", "attempts", "created_at",
         "sent_at", "provider", "last_error_code",
     }
-    optional = {"retryable", "delivery_status"}
+    optional = {"retryable", "delivery_status", "attempt_id", "superseded_by"}
     if not isinstance(value, Mapping) or not required.issubset(value) or set(value) - required - optional:
         raise DomainValidationError("invalid_outbox_item")
     return OutboxItem(**dict(value))

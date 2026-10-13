@@ -1,10 +1,11 @@
 name: Update ATP Rankings
 
-# Recheck Tuesday–Friday at 09:00 BRT. GitHub cron can start late; timing is
-# recorded separately from the Thursday 12:00 BRT publication deadline.
+# Tuesday–Friday 09:00 BRT, plus Thursday 12:05 BRT after the publication cutoff.
+# GitHub cron is best-effort; actual scheduling delay is recorded separately.
 on:
   schedule:
     - cron: '0 12 * * 2-5'
+    - cron: '5 15 * * 4'
   workflow_dispatch:
     inputs:
       mode:
@@ -28,7 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # A queued writer must see receipts pushed by the preceding run.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v5
         with:
@@ -42,9 +46,9 @@ jobs:
           python scripts/update_rankings.py telemetry --event-name "${GITHUB_EVENT_NAME}" --run-metadata "${RUNNER_TEMP}/atp-run-timing.json"
 
       - name: Require explicit release for collect-and-deliver
-        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'collect-and-deliver' && vars.ATP_RANKING_DELIVERY_ENABLED != 'true'
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'collect-and-deliver' && (vars.ATP_RANKING_DELIVERY_ENABLED != 'true' || github.ref != 'refs/heads/main')
         run: |
-          echo 'ATP collection and delivery remain disabled. Set ATP_RANKING_DELIVERY_ENABLED=true only after release approval.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Collection and delivery require main and explicit release approval via ATP_RANKING_DELIVERY_ENABLED=true.' >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: Install automation dependencies
@@ -61,47 +65,27 @@ jobs:
         run: python scripts/update_rankings.py dry-run --source itf
 
       - name: Collect ranking snapshot
-        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
+        id: collect
+        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
         run: python scripts/update_rankings.py collect --source itf
 
       - name: Commit snapshot and pending alert intentions
-        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
+        id: persist
+        if: always() && (steps.collect.outcome == 'success' || steps.collect.outcome == 'failure') && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/rankings.json automation/state/ranking_alerts.json
-          if [ -f automation/state/ranking_incidents.json ]; then
-            git add automation/state/ranking_incidents.json
-          fi
-          if ! git diff --staged --quiet; then
-            git commit -m "data: update rankings.json [automated]"
-            if ! git push; then
-              git pull --rebase origin "${GITHUB_REF_NAME}"
-              git push
-            fi
-          fi
+          python scripts/update_rankings.py checkpoint
 
       - name: Deliver pending alerts
-        if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
+        id: deliver
+        if: always() && steps.persist.outcome == 'success' && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
         env:
           ATP_RANKING_DELIVERY_ENABLED: ${{ vars.ATP_RANKING_DELIVERY_ENABLED }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
-        run: python scripts/update_rankings.py deliver --provider callmebot
+        run: python scripts/update_rankings.py deliver --provider callmebot --durable-git
 
       - name: Commit delivery receipts
-        if: always() && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add automation/state/ranking_alerts.json
-          if [ -f automation/state/ranking_incidents.json ]; then
-            git add automation/state/ranking_incidents.json
-          fi
-          if ! git diff --staged --quiet; then
-            git commit -m "data: record ranking alert delivery [automated]"
-            if ! git push; then
-              git pull --rebase origin "${GITHUB_REF_NAME}"
-              git push
-            fi
-          fi
+        if: always() && steps.persist.outcome == 'success' && (steps.deliver.outcome == 'success' || steps.deliver.outcome == 'failure') && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
+        run: python scripts/update_rankings.py checkpoint

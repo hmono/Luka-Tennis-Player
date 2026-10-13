@@ -3,3 +3,5 @@ __pycache__/
 node_modules/
 .next/
 out/
+.ranking-state.lock
+.*.collection-pending.json

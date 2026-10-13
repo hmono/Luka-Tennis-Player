@@ -24,7 +24,8 @@ class RankingsWorkflowTests(unittest.TestCase):
         self.assertIn("update_rankings.py collect --source itf", self.text)
         self.assertIn("update_rankings.py deliver --provider callmebot", self.text)
         self.assertLess(self.text.index("collect --source itf"), self.text.index("deliver --provider"))
-        self.assertLess(self.text.index("git push"), self.text.index("deliver --provider"))
+        self.assertLess(self.text.index("update_rankings.py checkpoint"), self.text.index("deliver --provider"))
+        self.assertIn("--provider callmebot --durable-git", self.text)
         self.assertIn("contents: write", self.text)
         self.assertIn("group: repository-data-writer-main", self.text)
 
@@ -41,21 +42,32 @@ class RankingsWorkflowTests(unittest.TestCase):
         self.assertNotIn("API_TENNIS_API_KEY", self.text)
 
     def test_incident_ledger_is_pushed_before_provider_and_after_receipts(self) -> None:
-        commits = [step for step in self.steps if "git push" in step]
+        commits = [step for step in self.steps if "update_rankings.py checkpoint" in step]
         self.assertEqual(2, len(commits))
         for step in commits:
-            self.assertIn("if [ -f automation/state/ranking_incidents.json ]", step)
-            self.assertLess(step.index("git add automation/state/ranking_incidents.json"), step.index("git push"))
+            self.assertIn("always()", step)
+        self.assertIn("steps.collect.outcome == 'failure'", commits[0])
+        self.assertIn("steps.persist.outcome == 'success'", commits[1])
+        self.assertNotIn("git pull --rebase", self.text)
 
     def test_dispatch_defaults_to_dry_run_and_release_gates_all_writers(self) -> None:
         self.assertIn("default: dry-run", self.text)
-        writers = [step for step in self.steps if any(token in step for token in ("collect --source", "git add", "deliver --provider"))]
+        writers = [step for step in self.steps if any(token in step for token in ("collect --source", "update_rankings.py checkpoint", "deliver --provider"))]
         self.assertEqual(4, len(writers))
         for step in writers:
             self.assertIn("vars.ATP_RANKING_DELIVERY_ENABLED == 'true'", step)
             self.assertIn("inputs.mode != 'dry-run'", step)
+            self.assertIn("github.ref == 'refs/heads/main'", step)
         self.assertIn("github.event_name == 'schedule' && vars.ATP_RANKING_DELIVERY_ENABLED != 'true'", self.text)
         self.assertIn("Require explicit release for collect-and-deliver", self.text)
+
+    def test_failed_collection_can_deliver_persisted_incidents_without_hiding_failure(self) -> None:
+        delivery = next(step for step in self.steps if "deliver --provider" in step)
+        self.assertIn("always()", delivery)
+        self.assertIn("steps.persist.outcome == 'success'", delivery)
+        self.assertNotIn("continue-on-error", self.text)
+        self.assertIn("ref: ${{ github.ref_name }}", self.text)
+        self.assertIn("cron: '5 15 * * 4'", self.text)
 
     def test_scheduler_timing_uses_run_metadata_before_collection(self) -> None:
         self.assertIn("actions: read", self.text)

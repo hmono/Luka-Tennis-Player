@@ -197,7 +197,7 @@ class CallMeBotProviderTests(unittest.TestCase):
         self.assertEqual([120.0], sleeps)
         self.assertEqual(2, client.last_attempt_count)
 
-    def test_5xx_retries_with_backoff_and_stops_after_four_attempts(self) -> None:
+    def test_5xx_requires_review_without_automatic_replay(self) -> None:
         sleeps: list[float] = []
         opener = SequenceOpener(*(http_error(500) for _ in range(4)))
         client = provider(opener, sleep=sleeps.append)
@@ -206,10 +206,10 @@ class CallMeBotProviderTests(unittest.TestCase):
             client.send(message="ranking changed", event_id="sha256:" + "c" * 64)
 
         self.assertEqual("http_500", raised.exception.code)
-        self.assertEqual(4, raised.exception.attempts)
-        self.assertTrue(raised.exception.retryable)
-        self.assertEqual(4, client.last_attempt_count)
-        self.assertEqual(3, len(sleeps))
+        self.assertEqual(1, raised.exception.attempts)
+        self.assertFalse(raised.exception.retryable)
+        self.assertEqual(1, client.last_attempt_count)
+        self.assertEqual([], sleeps)
 
     def test_permanent_401_does_not_retry(self) -> None:
         opener = SequenceOpener(http_error(401))
@@ -223,7 +223,7 @@ class CallMeBotProviderTests(unittest.TestCase):
         self.assertFalse(raised.exception.retryable)
         self.assertEqual(1, len(opener.requests))
 
-    def test_timeout_is_retryable_and_redacted(self) -> None:
+    def test_timeout_is_not_replayed_and_is_redacted(self) -> None:
         opener = SequenceOpener(*(TimeoutError("timed out after signed URL") for _ in range(4)))
         client = provider(opener)
 
@@ -232,11 +232,31 @@ class CallMeBotProviderTests(unittest.TestCase):
 
         error = raised.exception
         self.assertEqual("transport_timeout", error.code)
-        self.assertEqual(4, error.attempts)
-        self.assertTrue(error.retryable)
+        self.assertEqual(1, error.attempts)
+        self.assertFalse(error.retryable)
         self.assertNotIn(PHONE, str(error))
         self.assertNotIn(API_KEY, str(error))
         self.assertNotIn("signed URL", str(error))
+
+    def test_timeout_after_server_acceptance_does_not_submit_twice(self) -> None:
+        class LostResponse(FakeResponse):
+            def read(self, *args, **kwargs):
+                raise TimeoutError("response lost after queue accepted")
+
+        opener = SequenceOpener(LostResponse(), FakeResponse())
+        with self.assertRaises(DeliveryError) as raised:
+            provider(opener).send(message="ranking changed", event_id="event")
+        self.assertFalse(raised.exception.retryable)
+        self.assertEqual(1, len(opener.requests))
+
+    def test_transport_failure_and_408_do_not_replay(self) -> None:
+        for failure in (ConnectionError("secret"), http_error(408)):
+            with self.subTest(failure=type(failure).__name__):
+                opener = SequenceOpener(failure, FakeResponse())
+                with self.assertRaises(DeliveryError) as raised:
+                    provider(opener).send(message="ranking changed", event_id="event")
+                self.assertFalse(raised.exception.retryable)
+                self.assertEqual(1, len(opener.requests))
 
     def test_http_error_body_and_signed_url_are_not_exposed(self) -> None:
         secret_error = HTTPError(

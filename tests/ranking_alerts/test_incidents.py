@@ -82,7 +82,7 @@ class IncidentTests(unittest.TestCase):
             with self.subTest(retryable=retryable):
                 path = self.path.with_name(f"ledger-{retryable}.json")
                 save_incidents(path, stale())
-                provider = Provider(DeliveryError("http_500" if retryable else "http_401", 1, retryable=retryable))
+                provider = Provider(DeliveryError("http_429" if retryable else "http_401", 1, retryable=retryable))
                 with self.assertRaises(DeliveryError):
                     deliver_incidents(provider=provider, path=path, now="2026-10-08T15:01:00Z")
                 failed = load_incidents(path)
@@ -246,7 +246,7 @@ class IncidentTests(unittest.TestCase):
 
     def test_retry_claim_uses_new_nonce_and_keeps_first_attempt_audit(self):
         save_incidents(self.path, stale())
-        provider = Provider(DeliveryError("http_503", 1, retryable=True))
+        provider = Provider(DeliveryError("http_429", 1, retryable=True))
         with self.assertRaises(DeliveryError):
             deliver_incidents(provider=provider, path=self.path, now="2026-10-08T15:01:00Z")
         first = load_incidents(self.path)

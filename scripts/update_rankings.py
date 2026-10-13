@@ -10,6 +10,8 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Sequence
+from contextlib import nullcontext
+from uuid import uuid4
 
 from ranking_alerts.atp_source import AtpSourceError, load_fixture
 from ranking_alerts.career_high import (
@@ -62,6 +64,8 @@ from ranking_alerts.incidents import (
     DEFAULT_INCIDENTS_PATH, deliver_incidents, load_incidents, pending_incidents,
     plan_recovery, plan_stale, plan_source_error, save_incidents, format_incident,
 )
+from ranking_alerts.collection_transaction import recover_collection, save_collection
+from ranking_alerts.durability import GitCheckpoint, STATE_PATHS, state_lock
 
 DEFAULT_RANKINGS_PATH = Path("data/rankings.json")
 DEFAULT_STATE_PATH = Path("automation/state/ranking_alerts.json")
@@ -145,14 +149,9 @@ def plan_collection(
 
     existing = next((item for item in rankings.snapshots if item.id == candidate.id), None)
     if existing is not None:
-        return CollectionOutcome(
-            snapshot_status="unchanged",
-            outbox_status="none",
-            rankings=rankings,
-            state=state,
-            snapshot=existing,
-            delta=None,
-        )
+        # A -> B -> A cannot select the old immutable snapshot as current.
+        # Block for explicit reconciliation instead of falsely reporting B fresh.
+        raise RankingSourceError("ranking_source_schema_changed")
 
     snapshot_status = "revised" if latest_same_date is not None else "created"
     snapshots = tuple(sorted(rankings.snapshots + (candidate,), key=snapshot_sort_key))
@@ -168,13 +167,12 @@ def plan_collection(
     )
 
     outbox = list(state.outbox)
-    if snapshot_status == "revised" and not sent_for_date:
-        # Supersede unsent intent for this ATP date. Historical snapshots remain.
-        outbox = [
-            item
-            for item in outbox
-            if not (item.status == "pending" and dates.get(item.snapshot_id) == candidate.ranking_date)
-        ]
+    if snapshot_status == "revised" and any(
+        item.status == "pending" and not _sendable(item) and item.superseded_by is None
+        and dates.get(item.snapshot_id) == candidate.ranking_date for item in outbox
+    ):
+        # A new event must not bypass an unresolved delivery of this edition.
+        raise RankingSourceError("ranking_source_schema_changed")
 
     # Every new publication produces one digest, changed or not; a revision of
     # an already-delivered publication is only worth a message when it changes
@@ -187,6 +185,10 @@ def plan_collection(
 
     if event_type is not None:
         item_id = event_id(candidate.id, event_type)
+        if snapshot_status == "revised" and not sent_for_date:
+            outbox = [replace(item, retryable=False, superseded_by=item_id)
+                      if item.status == "pending" and item.retryable and dates.get(item.snapshot_id) == candidate.ranking_date
+                      else item for item in outbox]
         if not any(item.id == item_id for item in outbox):
             outbox.append(
                 OutboxItem(
@@ -222,17 +224,26 @@ def collect(
     captured_at: str | None = None,
     clock: Callable[[], datetime] = utc_now,
     calendar: EditionCalendar | None = None,
+    incidents_path: Path | None = None,
 ) -> CollectionOutcome:
+    recover_collection(rankings_path, state_path, incidents_path)
     rankings = load_rankings(rankings_path)
     observation, freshness = _freshness_checked_observation(
         source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
     )
     state = load_alert_state(state_path, rankings)
-    outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
+    try:
+        outcome = plan_collection(rankings, state, observation, captured_at=captured_at or freshness.checked_at)
+    except RankingSourceError as exc:
+        exc.freshness = replace(freshness, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
+        raise
     outcome = replace(outcome, freshness=freshness)
-    if outcome.snapshot_status != "unchanged":
-        save_rankings(rankings_path, outcome.rankings)
-        save_alert_state(state_path, outcome.state, outcome.rankings)
+    ledger = load_incidents(incidents_path) if incidents_path is not None else None
+    recovered = plan_recovery(ledger, ranking_date=outcome.snapshot.ranking_date, now=freshness.checked_at) if ledger is not None else None
+    if outcome.snapshot_status != "unchanged" or recovered != ledger:
+        save_collection(rankings_path, state_path, rankings=outcome.rankings, state=outcome.state,
+                        incidents_path=incidents_path if recovered != ledger else None,
+                        incidents=recovered)
     return outcome
 
 
@@ -249,6 +260,7 @@ def deliver(
     rankings_path: Path = DEFAULT_RANKINGS_PATH,
     state_path: Path = DEFAULT_STATE_PATH,
     now: Callable[[], str] = _utc_now,
+    checkpoint: Callable[[], None] | None = None,
 ) -> int:
     if provider.name != "callmebot":
         raise ConfigurationError("invalid_delivery_provider")
@@ -256,11 +268,19 @@ def deliver(
     state = load_alert_state(state_path, rankings)
     sent_count = 0
     for item in state.outbox:
-        if item.status != "pending" or not item.retryable:
+        if not _sendable(item):
             continue
         snapshot = next((value for value in rankings.snapshots if value.id == item.snapshot_id), None)
         if snapshot is None:
             raise StorageError("invalid_snapshot_reference")
+        # Reserve locally and remotely before the irreversible provider call.
+        # A crash leaves an uncertain, non-retryable record with a unique nonce.
+        reserved = replace(item, attempts=item.attempts + 1, retryable=False,
+                           last_error_code="provider_outcome_unknown", attempt_id=uuid4().hex)
+        state = replace(state, outbox=tuple(reserved if value.id == item.id else value for value in state.outbox))
+        save_alert_state(state_path, state, rankings)
+        if checkpoint is not None:
+            checkpoint()
         try:
             receipt = provider.send(
                 message=_message_for_snapshot(rankings, snapshot, item.event_type), event_id=item.id
@@ -269,17 +289,19 @@ def deliver(
                 raise DeliveryError("provider_response_ambiguous", max(1, getattr(provider, "last_attempt_count", 1)))
         except DeliveryError as exc:
             failed = replace(
-                item,
-                attempts=item.attempts + exc.attempts,
+                reserved,
+                attempts=item.attempts + max(1, exc.attempts),
                 last_error_code=exc.code,
-                retryable=exc.retryable,
+                retryable=exc.retryable and exc.code == "http_429",
             )
             state = replace(state, outbox=tuple(failed if value.id == item.id else value for value in state.outbox))
             save_alert_state(state_path, state, rankings)
+            if checkpoint is not None:
+                checkpoint()
             raise
         attempt_count = max(1, int(getattr(provider, "last_attempt_count", 1)))
         delivered = replace(
-            item,
+            reserved,
             status="sent",
             attempts=item.attempts + attempt_count,
             sent_at=receipt.accepted_at or now(),
@@ -289,6 +311,8 @@ def deliver(
         )
         state = replace(state, outbox=tuple(delivered if value.id == item.id else value for value in state.outbox))
         save_alert_state(state_path, state, rankings)
+        if checkpoint is not None:
+            checkpoint()
         sent_count += 1
     return sent_count
 
@@ -429,10 +453,15 @@ def _selected_source(name: str) -> RankingSource:
     raise DomainValidationError("invalid_source")
 
 
+def _sendable(item: OutboxItem) -> bool:
+    # Legacy retryable timeouts/5xx did not prove non-acceptance either.
+    return item.status == "pending" and item.retryable and item.last_error_code in {None, "http_429"}
+
+
 def has_pending_outbox(*, rankings_path: Path, state_path: Path) -> bool:
     rankings = load_rankings(rankings_path)
     state = load_alert_state(state_path, rankings)
-    return any(item.status == "pending" and item.retryable for item in state.outbox)
+    return any(_sendable(item) for item in state.outbox)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -448,7 +477,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     deliver_parser = commands.add_parser("deliver", help="deliver pending outbox items")
     deliver_parser.add_argument("--provider", choices=("callmebot",), required=True)
+    deliver_parser.add_argument("--durable-git", action="store_true", help="publish each reservation before sending; required for delivery")
     _paths(deliver_parser)
+
+    checkpoint_parser = commands.add_parser("checkpoint", help="recover and publish the complete ranking state bundle")
+    _paths(checkpoint_parser)
 
     dry_parser = commands.add_parser("dry-run", help="collect and render without side effects")
     _source_argument(dry_parser, allow_fixture=True)
@@ -474,12 +507,36 @@ def _print_outcome(outcome: CollectionOutcome, *, show_message: bool) -> None:
         print("message=none (no new publication)")
 
 
-def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = utc_now) -> int:
+def _git_checkpoint(args: argparse.Namespace) -> GitCheckpoint:
+    root = Path.cwd().resolve()
+    requested = (args.rankings_path, args.state_path, args.incidents_path)
+    if tuple(path.resolve() for path in requested) != tuple(root / path for path in STATE_PATHS):
+        raise ConfigurationError("checkpoint_requires_canonical_paths")
+    return GitCheckpoint(root)
+
+
+def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = utc_now,
+         checkpoint: Callable[[], None] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    try:
+        with state_lock(args.state_path) if args.command in {"collect", "deliver", "checkpoint"} else nullcontext():
+            if args.command in {"collect", "deliver", "checkpoint"}:
+                recover_collection(args.rankings_path, args.state_path, args.incidents_path)
+            return _main(args, clock=clock, checkpoint=checkpoint)
+    except StorageError as exc:
+        print(f"error={exc.code}", file=sys.stderr)
+        return 1
+
+
+def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint: Callable[[], None] | None) -> int:
     source = None
     assessment = None
     error_code = None
     try:
+        if args.command == "checkpoint":
+            _git_checkpoint(args)()
+            print("ranking_state=checkpointed")
+            return 0
         if args.command == "telemetry":
             metadata = json.loads(args.run_metadata.read_text(encoding="utf-8"))
             report = schedule_timing(
@@ -507,11 +564,10 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
                 state_path=args.state_path,
                 calendar=load_calendar(args.calendar_path),
                 clock=clock,
+                incidents_path=args.incidents_path,
             )
             assessment = outcome.freshness
-            recovered = plan_recovery(ledger, ranking_date=outcome.snapshot.ranking_date, now=assessment.checked_at)
-            if recovered != ledger:
-                save_incidents(args.incidents_path, recovered)
+            recovered = load_incidents(args.incidents_path)
             print(f"incident_recovery={len(recovered.events) - len(ledger.events)}")
             _print_outcome(outcome, show_message=False)
             return 0
@@ -532,17 +588,23 @@ def main(argv: Sequence[str] | None = None, *, clock: Callable[[], datetime] = u
             import os
             if os.environ.get("ATP_RANKING_DELIVERY_ENABLED") != "true":
                 raise ConfigurationError("ranking_delivery_disabled")
+            if args.durable_git:
+                checkpoint = _git_checkpoint(args)
+            elif checkpoint is None:
+                raise ConfigurationError("ranking_checkpoint_required")
             provider = CallMeBotProvider.from_env()
             count = 0
             if sporting_pending:
                 try:
-                    count = deliver(provider=provider, rankings_path=args.rankings_path, state_path=args.state_path)
-                except (DeliveryError, StorageError) as exc:
+                    count = deliver(provider=provider, rankings_path=args.rankings_path, state_path=args.state_path,
+                                    checkpoint=checkpoint)
+                except DeliveryError as exc:
                     sporting_error = exc
             # Operational incidents use their own ledger and remain actionable
             # when sporting persistence or the sporting provider attempt fails.
             count += deliver_incidents(provider=provider, path=args.incidents_path,
-                                       now=clock().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"))
+                                       now=clock().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+                                       checkpoint=checkpoint)
             print(f"provider=callmebot provider_accepted={count}")
             if sporting_error is not None:
                 raise sporting_error

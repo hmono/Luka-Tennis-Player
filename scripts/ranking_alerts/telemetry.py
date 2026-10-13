@@ -26,7 +26,7 @@ def _iso(instant: datetime) -> str:
 
 
 def schedule_timing(*, event: str, created_at: datetime, started_at: datetime) -> ScheduleTiming:
-    """Infer the nominal Tue–Fri noon slot from run creation, not job steps.
+    """Infer Tue–Fri 12:00 UTC / Thu 15:05 UTC slots from run creation.
 
     GitHub's schedule payload has a cron string, but no nominal occurrence
     timestamp. The last eligible slot at run creation is the stated estimate;
@@ -43,6 +43,9 @@ def schedule_timing(*, event: str, created_at: datetime, started_at: datetime) -
         nominal = day.replace(hour=12, minute=0, second=0, microsecond=0)
         if day.weekday() in {1, 2, 3, 4} and nominal <= created:
             candidates.append(nominal)
+        after_cutoff = day.replace(hour=15, minute=5, second=0, microsecond=0)
+        if day.weekday() == 3 and after_cutoff <= created:
+            candidates.append(after_cutoff)
     expected = max(candidates)
     delay = (started - expected).total_seconds() / 60
     return ScheduleTiming(event, _iso(expected), _iso(started), round(delay, 2), delay > 60)

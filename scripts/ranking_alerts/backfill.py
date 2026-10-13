@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from .domain import (
 )
 from .source import RawRankingObservation, RankingSource, RankingSourceError
 from .storage import load_alert_state, load_rankings, save_rankings
+from .durability import state_lock
+from .collection_transaction import recover_collection
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,17 @@ class BackfillOutcome:
 def backfill(*, source: RankingSource, as_of: str, rankings_path: Path, state_path: Path,
              captured_at: str, apply: bool = False,
              baseline_path: Path = DEFAULT_BASELINE_PATH) -> BackfillOutcome:
+    with state_lock(state_path) if apply else nullcontext():
+        if apply:
+            recover_collection(rankings_path, state_path)
+        return _backfill(source=source, as_of=as_of, rankings_path=rankings_path,
+                         state_path=state_path, captured_at=captured_at, apply=apply,
+                         baseline_path=baseline_path)
+
+
+def _backfill(*, source: RankingSource, as_of: str, rankings_path: Path, state_path: Path,
+              captured_at: str, apply: bool = False,
+              baseline_path: Path = DEFAULT_BASELINE_PATH) -> BackfillOutcome:
     """Recover only the requested source-confirmed edition, without delivery.
 
     The qualified ITF adapter performs identity, HTTP, discipline and edition

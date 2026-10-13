@@ -71,7 +71,7 @@ class SprintIntegrationTests(unittest.TestCase):
              patch.object(update_rankings.CallMeBotProvider, "from_env", return_value=self.provider) as factory, \
              patch.dict("os.environ", {"ATP_RANKING_DELIVERY_ENABLED": "true" if enabled else "false"}), \
              redirect_stdout(output), redirect_stderr(errors):
-            result = update_rankings.main(args, clock=lambda: datetime.fromisoformat(instant.replace("Z", "+00:00")))
+            result = update_rankings.main(args, clock=lambda: datetime.fromisoformat(instant.replace("Z", "+00:00")), checkpoint=lambda: None)
         return result, output.getvalue(), errors.getvalue(), factory.call_count
 
     def test_stale_dry_run_has_no_persistence_or_provider_construction(self):

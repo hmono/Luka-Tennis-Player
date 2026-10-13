@@ -22,7 +22,7 @@ _SOURCE_FIELDS = {"source_error_code", "source_error_category"}
 # These outcomes do not establish that a provider did not accept the message.
 # Old ledgers containing retryable timeouts also remain quarantined on reload.
 _UNCERTAIN_DELIVERY_CODES = {"transport_timeout", "transport_error", "provider_error",
-                             "provider_response_ambiguous", "http_408"}
+                             "provider_response_ambiguous", "http_408"} | {f"http_{code}" for code in range(500, 600)}
 _DELIVERY_CODES = _UNCERTAIN_DELIVERY_CODES | {"provider_application_error", "invalid_message"}
 
 
@@ -218,7 +218,7 @@ def plan_recovery(ledger: IncidentLedger, *, ranking_date: str, now: str) -> Inc
 def pending_incidents(ledger: IncidentLedger) -> tuple[dict[str, Any], ...]:
     return tuple(item for item in ledger.latest().values()
                  if item["kind"] in {"created", "provider_failed"} and item["retryable"]
-                 and item["error_code"] not in _UNCERTAIN_DELIVERY_CODES)
+                 and item["error_code"] in {None, "http_429"})
 
 
 def format_stale(item: dict[str, Any]) -> str:
@@ -277,8 +277,7 @@ def deliver_incidents(*, provider: NotificationProvider, path: Path, now: str,
             ledger = ledger.append(in_flight)
             save_incidents(path, ledger)
         except StorageError as exc:
-            first_error = first_error or exc
-            continue
+            raise
         _checkpoint(checkpoint)
         try:
             receipt = provider.send(message=format_incident(item), event_id=item["incident_id"])
@@ -295,7 +294,7 @@ def deliver_incidents(*, provider: NotificationProvider, path: Path, now: str,
             attempts = exc.attempts if type(exc.attempts) is int and exc.attempts > 0 else 1
             result = {**in_flight, "kind": "provider_failed", "at": now,
                       "attempts": item["attempts"] + attempts, "error_code": code,
-                      "retryable": bool(exc.retryable) and code not in _UNCERTAIN_DELIVERY_CODES}
+                      "retryable": bool(exc.retryable) and code == "http_429"}
             first_error = first_error or DeliveryError(code, attempts, retryable=result["retryable"])
         else:
             result = {**in_flight, "kind": "provider_accepted", "at": receipt.accepted_at,
@@ -303,8 +302,7 @@ def deliver_incidents(*, provider: NotificationProvider, path: Path, now: str,
         try:
             save_incidents(path, ledger.append(result))
         except StorageError as exc:
-            first_error = first_error or exc
-            continue
+            raise
         _checkpoint(checkpoint)
         if result["kind"] == "provider_accepted":
             count += 1

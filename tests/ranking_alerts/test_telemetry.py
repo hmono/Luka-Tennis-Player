@@ -19,6 +19,11 @@ def at(value):
 
 
 class TelemetryTests(unittest.TestCase):
+    def test_thursday_check_runs_just_after_publication_cutoff(self):
+        report = schedule_timing(event="schedule", created_at=at("2026-10-15T15:06:00Z"), started_at=at("2026-10-15T15:08:00Z"))
+        self.assertEqual("2026-10-15T15:05:00Z", report.expected_at)
+        self.assertEqual(3, report.delay_minutes)
+
     def test_delayed_schedule_includes_creation_and_queue_delay(self):
         report = schedule_timing(event="schedule", created_at=at("2026-10-13T12:20:00Z"), started_at=at("2026-10-13T18:39:00Z"))
         self.assertEqual("2026-10-13T12:00:00Z", report.expected_at)

@@ -250,7 +250,9 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         )
 
         self.assertEqual("revised", revised.snapshot_status)
-        self.assertEqual(2, len(revised.state.outbox))
+        self.assertEqual(3, len(revised.state.outbox))
+        self.assertEqual(revised.state.outbox[-1].id, revised.state.outbox[-2].superseded_by)
+        self.assertFalse(revised.state.outbox[-2].retryable)
         self.assertNotEqual(first.state.outbox[-1].id, revised.state.outbox[-1].id)
         self.assertEqual(revised.snapshot.id, revised.state.outbox[-1].snapshot_id)
 
