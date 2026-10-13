@@ -274,7 +274,8 @@ class DeliveryReport:
 def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
                          checkpoint: Callable[[], None], now: Callable[[], str],
                          ops_alert: Callable[[str, str], bool] | None = None,
-                         max_sends: int = 8, max_attempts: int = 4) -> DeliveryReport:
+                         max_sends: int = 8, max_attempts: int = 4,
+                         allow_editions: bool = True) -> DeliveryReport:
     """Caller holds state_lock. Never use the sporting provider for ops alerts.
 
     Safe rejection (429) retries on later cycles with bounded persisted backoff.
@@ -325,6 +326,8 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
     for identity in queue:
         item = ledger.latest()[identity]
         if item["state"] not in {"planned", "retry_wait"}:
+            continue
+        if item["event_type"] == "edition_digest" and not allow_editions:
             continue
         if item["state"] == "retry_wait" and _time(item["next_attempt_at"]) > _time(now()):
             continue

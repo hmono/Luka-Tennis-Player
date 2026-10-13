@@ -158,6 +158,20 @@ class AutonomousRuntimeTests(unittest.TestCase):
         self.assertEqual([], self.provider.messages)
         self.assertTrue(any("provider unavailable" in text for _, text in self.alerts))
 
+    def test_source_error_holds_pending_edition_but_weekly_status_continues(self):
+        self.provider.error = DeliveryError("http_429", 1, retryable=True)
+        self.run_cycle()
+        self.provider.messages.clear()
+        self.provider.error = None
+        self.instant += timedelta(days=1)
+        self.source.error = "ranking_source_identity_mismatch"
+        self.run_cycle()
+        self.assertFalse(any(event.startswith("edition:") for _, event in self.provider.messages))
+        self.source.error = None
+        self.instant += timedelta(days=1)
+        self.run_cycle()
+        self.assertTrue(any(event.startswith("edition:") for _, event in self.provider.messages))
+
     def test_two_real_git_executors_send_only_winning_remote_claim(self):
         from ranking_alerts.durability import GitCheckpoint
         def git(root, *args):

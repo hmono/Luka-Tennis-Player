@@ -103,7 +103,7 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
     report = deliver_autonomously(path=delivery_path, provider=provider,
                                   checkpoint=checkpoint,
                                   now=lambda: now().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
-                                  ops_alert=ops_alert)
+                                  ops_alert=ops_alert, allow_editions=outcome is not None)
     from dataclasses import asdict
     result["notification"] = asdict(report)
     return result
