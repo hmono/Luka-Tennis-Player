@@ -1,7 +1,7 @@
 """Serialize local writers and checkpoint delivery reservations in Git.
 
-A successful push is required before any external delivery. An interrupted or
-ambiguous attempt remains reserved for operator review, never automatic replay.
+A successful push is required before any external delivery. Autonomous delivery
+records uncertain outcomes durably with a no-replay policy and independent alerts.
 Git failures are deliberately not rebased: another writer must not invalidate
 the state on which a notification decision was made.
 """
@@ -20,6 +20,8 @@ STATE_PATHS = (
     "data/rankings.json",
     "automation/state/ranking_alerts.json",
     "automation/state/ranking_incidents.json",
+    "automation/state/ranking_delivery.json",
+    "automation/state/ranking_runtime.json",
 )
 
 
@@ -77,6 +79,10 @@ class GitCheckpoint:
         if self._git("status", "--porcelain", "--", *STATE_PATHS[:2]):
             load_alert_state(self.root / STATE_PATHS[1], load_rankings(self.root / STATE_PATHS[0]))
         load_incidents(self.root / STATE_PATHS[2])
+        from .autonomous_delivery import load_delivery
+        from .runtime_state import load_runtime
+        load_delivery(self.root / STATE_PATHS[3])
+        load_runtime(self.root / STATE_PATHS[4])
         staged = set(self._git("diff", "--cached", "--name-only").splitlines())
         if staged - set(STATE_PATHS):
             raise StorageError("checkpoint_unrelated_staged_files")
