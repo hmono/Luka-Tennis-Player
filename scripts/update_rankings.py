@@ -506,7 +506,8 @@ def _print_outcome(outcome: CollectionOutcome, *, show_message: bool) -> None:
     if not show_message:
         return
     if outcome.outbox_status == "created":
-        print(format_message(outcome.snapshot, outcome.delta))
+        item = next(item for item in outcome.state.outbox if item.snapshot_id == outcome.snapshot.id)
+        print(_message_for_snapshot(outcome.rankings, outcome.snapshot, item.event_type))
     else:
         print("message=none (no new publication)")
 

@@ -340,6 +340,10 @@ class UpdateRankingsIntegrationTests(unittest.TestCase):
         self.assertEqual("ranking_correction", outcome.state.outbox[-1].event_type)
         message = update_rankings._message_for_snapshot(outcome.rankings, outcome.snapshot, "ranking_correction")
         self.assertTrue(message.startswith("Correção ATP Ranking — 2026-09-07"))
+        preview = StringIO()
+        with redirect_stdout(preview):
+            update_rankings._print_outcome(outcome, show_message=True)
+        self.assertIn(message, preview.getvalue())
 
     def test_raw_source_is_converted_then_enriched_before_planning(self) -> None:
         raw = RawRankingObservation(
