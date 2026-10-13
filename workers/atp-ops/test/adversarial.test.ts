@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it, vi } from 'vitest';
-import { type ActionsClient, type WorkflowRun } from '../src/github_client';
+import { GitHubActionsClient, type ActionsClient, type WorkflowRun } from '../src/github_client';
 import { GitHubError } from '../src/github_auth';
 import { runWatchdog, type WatchdogConfig } from '../src/watchdog';
 
@@ -114,6 +114,29 @@ describe('independent Ops27 adversarial regression gates', () => {
       await runWatchdog(env.DB, { ...config, recoveryEnabled: true }, { client: api });
       expect(postedAt).toEqual([instant + 240_000, instant + 2_040_000]);
     } finally { mockedClock.mockRestore(); }
+  });
+
+  it('IR-02 checks dispatch authority after token acquisition and before the external POST', async () => {
+    const keys = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']) as CryptoKeyPair;
+    const bytes = new Uint8Array(await crypto.subtle.exportKey('pkcs8', keys.privateKey) as ArrayBuffer);
+    const credentials = { appId: '1', installationId: '2',
+      privateKeyPem: `-----BEGIN PRIVATE KEY-----\n${btoa(String.fromCharCode(...bytes))}\n-----END PRIVATE KEY-----` };
+    let authority = true;
+    const fetcher = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).includes('/access_tokens')) {
+        expect(JSON.parse(String(init?.body))).toEqual({ repositories: ['repository'], permissions: { actions: 'write' } });
+        authority = false; // Token mint completes after the lease has been superseded.
+        return Response.json({ token: 'synthetic-token', expires_at: new Date(instant + 3_600_000).toISOString() });
+      }
+      return new Response(null, { status: 204 });
+    }) as typeof fetch;
+    const api = new GitHubActionsClient('synthetic/repository', 'update_rankings.yml', credentials,
+      true, fetcher, () => instant);
+    const fence = vi.fn(async () => { if (!authority) throw new GitHubError('cycle_lease_lost'); });
+    await expect(api.dispatch(fence)).rejects.toMatchObject({ code: 'cycle_lease_lost' });
+    expect(fence).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it('recovery identity and episode close roll back together on full permanent capacity', async () => {
