@@ -81,6 +81,16 @@ class ItfParserTests(unittest.TestCase):
                 parse_capture(value)
             self.assertEqual(code, raised.exception.code)
 
+    def test_title_prefix_and_different_itf_id_fail_closed(self) -> None:
+        for value, code in (
+            (capture(title="Luka Bojicic Ono Junior Tennis Player Profile | ITF"), "ranking_source_identity_mismatch"),
+            (replace(capture(), final_url=(ITF_BASE_URL + PROFILE_PATH).replace("800625103", "800625104"),
+                     dom_identity="Luka Bojicic Ono"), "ranking_source_redirect"),
+        ):
+            with self.subTest(code=code), self.assertRaises(RankingSourceError) as error:
+                parse_capture(value)
+            self.assertEqual(code, error.exception.code)
+
     def test_telemetry_redacts_arbitrary_text_urls_and_nonallowlisted_headers(self) -> None:
         value = replace(
             capture(title="secret-title"),

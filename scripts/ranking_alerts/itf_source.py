@@ -105,7 +105,7 @@ def _identity_matches(value: str | None) -> bool:
         return False
     actual = normalize_player_name(value)
     expected = normalize_player_name(PLAYER_NAME)
-    return actual == expected or actual.startswith(expected + " ")
+    return actual in {expected, expected + " tennis player profile | itf"}
 
 
 def _dom_identity_matches(value: str | None) -> bool:

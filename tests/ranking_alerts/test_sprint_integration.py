@@ -112,6 +112,10 @@ class SprintIntegrationTests(unittest.TestCase):
              edition_date="2026-10-05", clock=None, checkpoint=None):
         args = [command, "--provider" if command == "deliver" else "--source", "callmebot" if command == "deliver" else "itf",
                 "--rankings-path", str(self.rankings), "--state-path", str(self.state), "--incidents-path", str(self.incidents)]
+        # This suite preserves the pre-autonomy calendar and legacy sender
+        # contract explicitly. Publication-driven behavior has its own suite.
+        if command in {"collect", "dry-run"}:
+            args.extend(("--calendar-path", str(update_rankings.DEFAULT_CALENDAR_PATH)))
         if incidents_only:
             args.append("--incidents-only")
         if command == "deliver" and edition_date is not None:

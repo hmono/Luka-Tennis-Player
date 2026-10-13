@@ -1,4 +1,4 @@
-"""Edition expectations and SLA, without inventing sporting observations.
+"""Publication observations, with an explicit legacy calendar compatibility API.
 
 The versioned calendar describes expected publication dates, not observed
 editions. Only a verified source response may create a sporting snapshot.
@@ -31,6 +31,8 @@ class CalendarError(ValueError):
 
 class FreshnessState(str, Enum):
     FRESH = "FRESH"
+    NO_NEW_EDITION_OBSERVED = "NO_NEW_EDITION_OBSERVED"
+    SOURCE_LAG = "SOURCE_LAG"
     PENDING_PUBLICATION = "PENDING_PUBLICATION"
     STALE = "STALE"
     SOURCE_ERROR = "SOURCE_ERROR"
@@ -164,6 +166,53 @@ class FreshnessAssessment:
     calendar_version: str
     last_valid_date: str | None = None
     reason: str | None = None
+
+
+def assess_observation(
+    ranking_date: str | None,
+    *,
+    now: datetime,
+    last_valid_date: str | None = None,
+) -> FreshnessAssessment:
+    """Compare validated source dates, without predicting an ATP publication.
+
+    An old-but-repeated edition does not prove an absent ATP publication or
+    a stale ATP service. Age is diagnostic only. A strictly advancing date
+    (including an off-Monday publication) is a new edition. Regressions and
+    future dates remain source errors; no sporting facts are fabricated.
+
+    Legacy ``expected_date`` is the observed/last verified date (or the check
+    date when neither is available), and ``cutoff`` is the check timestamp.
+    Neither field is an inferred publication deadline in this mode.
+    """
+    instant = _aware(now)
+    today = instant.date()
+    actual = None
+    reason = None
+    try:
+        actual = _date(ranking_date)
+        last = _date(last_valid_date) if last_valid_date is not None else None
+        if actual > today:
+            reason = "ranking_source_future"
+        elif last is not None and actual < last:
+            reason = "ranking_source_stale"
+    except CalendarError:
+        reason = "ranking_source_schema_changed"
+    state = (FreshnessState.SOURCE_ERROR if reason else
+             FreshnessState.NO_NEW_EDITION_OBSERVED if ranking_date == last_valid_date else
+             FreshnessState.FRESH)
+    checked_at = instant.isoformat().replace("+00:00", "Z")
+    return FreshnessAssessment(
+        state=state,
+        expected_date=(last_valid_date or today.isoformat()) if reason else actual.isoformat(),
+        actual_date=actual.isoformat() if actual else None,
+        cutoff=checked_at,
+        checked_at=checked_at,
+        source_age_days=(today - actual).days if actual else None,
+        calendar_version="publication-driven-v1",
+        last_valid_date=last_valid_date,
+        reason=reason,
+    )
 
 
 def assess_publication(

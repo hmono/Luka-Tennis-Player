@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 from contextlib import nullcontext
 from uuid import uuid4
 
@@ -42,10 +42,11 @@ from ranking_alerts.freshness import (
     FreshnessAssessment,
     FreshnessState,
     assess_publication,
+    assess_observation,
     load_calendar,
     utc_now,
 )
-from ranking_alerts.telemetry import append_summary, emit_collection_summary, emit_schedule_summary, schedule_timing
+from ranking_alerts.telemetry import append_summary, emit_collection_summary, emit_schedule_summary, schedule_timing, safe_source_telemetry
 from ranking_alerts.providers import (
     CallMeBotProvider,
     ConfigurationError,
@@ -85,6 +86,7 @@ class CollectionOutcome:
     snapshot: RankingSnapshot
     delta: RankingDelta | None
     freshness: FreshnessAssessment | None = None
+    source_telemetry: dict[str, Any] | None = None
 
 
 def _latest_for_date(snapshots: Sequence[RankingSnapshot], ranking_date: str) -> RankingSnapshot | None:
@@ -146,12 +148,13 @@ def plan_collection(
         observation,
         captured_at,
         source_revision_of=latest_same_date.id if latest_same_date is not None else None,
+        chain_revision=True,
     )
 
     existing = next((item for item in rankings.snapshots if item.id == candidate.id), None)
     if existing is not None:
-        # A -> B -> A cannot select the old immutable snapshot as current.
-        # Block for explicit reconciliation instead of falsely reporting B fresh.
+        # A revision is identified by its facts and immutable predecessor.
+        # Replaying a previously persisted chain must never re-order history.
         raise RankingSourceError("ranking_source_schema_changed")
 
     snapshot_status = "revised" if latest_same_date is not None else "created"
@@ -181,7 +184,11 @@ def plan_collection(
     # the sporting facts.
     event_type: str | None = None
     if sent_for_date:
-        event_type = "ranking_correction" if changed_since_delivery else None
+        pending_for_date = any(item.status == "pending" and item.retryable
+                               and dates.get(item.snapshot_id) == candidate.ranking_date for item in outbox)
+        # A pending correction for B must be superseded when the source
+        # returns to already-delivered A. Otherwise B could still be sent.
+        event_type = "ranking_correction" if changed_since_delivery or pending_for_date else None
     else:
         event_type = "weekly_digest"
 
@@ -231,7 +238,7 @@ def collect(
     recover_collection(rankings_path, state_path, incidents_path)
     rankings = load_rankings(rankings_path)
     observation, freshness = _freshness_checked_observation(
-        source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
+        source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar
     )
     state = load_alert_state(state_path, rankings)
     try:
@@ -239,7 +246,8 @@ def collect(
     except RankingSourceError as exc:
         exc.freshness = replace(freshness, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         raise
-    outcome = replace(outcome, freshness=freshness)
+    outcome = replace(outcome, freshness=freshness,
+                      source_telemetry=safe_source_telemetry(getattr(source, "last_telemetry", None)))
     ledger = load_incidents(incidents_path) if incidents_path is not None else None
     recovered = plan_recovery(ledger, ranking_date=outcome.snapshot.ranking_date, now=freshness.checked_at) if ledger is not None else None
     if outcome.snapshot_status != "unchanged" or recovered != ledger:
@@ -346,7 +354,7 @@ def dry_run(
 ) -> CollectionOutcome:
     rankings = load_rankings(rankings_path)
     observation, freshness = _freshness_checked_observation(
-        source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar or load_calendar()
+        source, rankings, baseline_path=baseline_path, now=clock(), calendar=calendar
     )
     state = load_alert_state(state_path, rankings)
     try:
@@ -354,7 +362,8 @@ def dry_run(
     except RankingSourceError as exc:
         exc.freshness = replace(freshness, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         raise
-    return replace(outcome, freshness=freshness)
+    return replace(outcome, freshness=freshness,
+                   source_telemetry=safe_source_telemetry(getattr(source, "last_telemetry", None)))
 
 
 def _freshness_checked_observation(
@@ -363,9 +372,9 @@ def _freshness_checked_observation(
     *,
     baseline_path: Path,
     now: datetime,
-    calendar: EditionCalendar,
+    calendar: EditionCalendar | None,
 ) -> tuple[RankingObservation, FreshnessAssessment]:
-    """Only validated, non-stale publications may reach sporting persistence.
+    """Only validated observations may reach sporting persistence.
 
     PENDING may catch up an observed prior edition within the current grace
     period; it never confirms the expected edition or authorizes its delivery.
@@ -376,6 +385,10 @@ def _freshness_checked_observation(
     ``plan_collection`` rather than bypass this live-source gate silently.
     """
     last_date = max((snapshot.ranking_date for snapshot in rankings.snapshots), default=None)
+    def assess(value):
+        if calendar is not None:
+            return assess_publication(value, now=now, calendar=calendar, last_valid_date=last_date)
+        return assess_observation(value, now=now, last_valid_date=last_date)
     try:
         observation = _observation_from_source(source, rankings, baseline_path=baseline_path)
     except (RankingSourceError, DomainValidationError, AtpSourceError, TimeoutError) as exc:
@@ -386,13 +399,13 @@ def _freshness_checked_observation(
             exc = RankingSourceError(code)
         telemetry = getattr(source, "last_telemetry", None)
         actual_date = telemetry.get("source_ranking_date") if isinstance(telemetry, dict) else None
-        assessment = assess_publication(actual_date, now=now, calendar=calendar, last_valid_date=last_date)
+        assessment = assess(actual_date)
         # A response older than already-persisted facts is a source regression,
         # not evidence that the current edition missed its publication SLA.
         assessment = replace(assessment, state=FreshnessState.SOURCE_ERROR, reason=exc.code)
         exc.freshness = assessment
         raise exc from None
-    assessment = assess_publication(observation.ranking_date, now=now, calendar=calendar, last_valid_date=last_date)
+    assessment = assess(observation.ranking_date)
     if assessment.state in {FreshnessState.STALE, FreshnessState.SOURCE_ERROR}:
         error = RankingSourceError(assessment.reason or "ranking_source_stale")
         error.freshness = assessment
@@ -460,7 +473,8 @@ SOURCE_CHOICES = ("itf",)
 
 
 def _source_argument(parser: argparse.ArgumentParser, *, allow_fixture: bool = False) -> None:
-    parser.add_argument("--calendar-path", type=Path, default=DEFAULT_CALENDAR_PATH)
+    parser.add_argument("--calendar-path", type=Path, default=None,
+                        help="explicit legacy calendar assessment; omitted in autonomous operation")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--source", choices=SOURCE_CHOICES)
     if allow_fixture:
@@ -535,7 +549,7 @@ def _print_outcome(outcome: CollectionOutcome, *, show_message: bool) -> None:
 def _git_checkpoint(args: argparse.Namespace) -> GitCheckpoint:
     root = Path.cwd().resolve()
     requested = (args.rankings_path, args.state_path, args.incidents_path)
-    if tuple(path.resolve() for path in requested) != tuple(root / path for path in STATE_PATHS):
+    if tuple(path.resolve() for path in requested) != tuple(root / path for path in STATE_PATHS[:3]):
         raise ConfigurationError("checkpoint_requires_canonical_paths")
     return GitCheckpoint(root)
 
@@ -587,7 +601,7 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
                 source=source,
                 rankings_path=args.rankings_path,
                 state_path=args.state_path,
-                calendar=load_calendar(args.calendar_path),
+                calendar=load_calendar(args.calendar_path) if args.calendar_path is not None else None,
                 clock=clock,
                 incidents_path=args.incidents_path,
             )
@@ -676,7 +690,7 @@ def _main(args: argparse.Namespace, *, clock: Callable[[], datetime], checkpoint
             source=source,
             rankings_path=args.rankings_path,
             state_path=args.state_path,
-            calendar=load_calendar(args.calendar_path),
+            calendar=load_calendar(args.calendar_path) if args.calendar_path is not None else None,
             clock=clock,
         )
         assessment = outcome.freshness

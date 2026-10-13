@@ -129,7 +129,7 @@ class DeliveryStateTests(unittest.TestCase):
             update_rankings.plan_collection(rankings, state, revised, captured_at="2026-10-06T13:00:00Z")
         self.assertEqual(0, provider.calls)
 
-    def test_return_to_historical_revision_fails_closed(self):
+    def test_return_to_historical_revision_appends_new_chain(self):
         rankings = update_rankings.load_rankings(self.rankings_path)
         state = load_alert_state(self.state_path, rankings)
         old = update_rankings.RankingObservation(atp_id="B0UF", name="Luka Bojicic Ono", source="itf",
@@ -137,8 +137,10 @@ class DeliveryStateTests(unittest.TestCase):
             doubles=DisciplineRanking(rank=1417, points=None))
         b = update_rankings.plan_collection(rankings, state, replace(old, singles=DisciplineRanking(rank=2240, points=None)),
                                            captured_at="2026-10-06T13:00:00Z")
-        with self.assertRaisesRegex(update_rankings.RankingSourceError, "ranking_source_schema_changed"):
-            update_rankings.plan_collection(b.rankings, b.state, old, captured_at="2026-10-06T14:00:00Z")
+        reverted = update_rankings.plan_collection(b.rankings, b.state, old, captured_at="2026-10-06T14:00:00Z")
+        self.assertEqual(b.rankings.snapshots, reverted.rankings.snapshots[:-1])
+        self.assertEqual(b.snapshot.id, reverted.snapshot.source_revision_of)
+        self.assertNotEqual(rankings.snapshots[0].id, reverted.snapshot.id)
         save_rankings(self.rankings_path, b.rankings)
         save_alert_state(self.state_path, b.state, b.rankings)
         class Source:
@@ -146,10 +148,10 @@ class DeliveryStateTests(unittest.TestCase):
 
             def fetch(self):
                 return old
-        with self.assertRaises(update_rankings.RankingSourceError) as raised:
-            update_rankings.dry_run(source=Source(), rankings_path=self.rankings_path,
-                state_path=self.state_path, clock=lambda: datetime(2026, 10, 6, 14, tzinfo=timezone.utc))
-        self.assertEqual(update_rankings.FreshnessState.SOURCE_ERROR, raised.exception.freshness.state)
+        dry = update_rankings.dry_run(source=Source(), rankings_path=self.rankings_path,
+            state_path=self.state_path, clock=lambda: datetime(2026, 10, 6, 14, tzinfo=timezone.utc))
+        self.assertEqual("revised", dry.snapshot_status)
+        self.assertEqual(update_rankings.FreshnessState.NO_NEW_EDITION_OBSERVED, dry.freshness.state)
 
 
 if __name__ == "__main__":

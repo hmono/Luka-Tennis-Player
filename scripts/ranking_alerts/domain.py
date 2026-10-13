@@ -180,14 +180,21 @@ class RankingsData:
         ordered = tuple(sorted(self.snapshots, key=snapshot_sort_key))
         if ordered != self.snapshots or len({item.id for item in self.snapshots}) != len(self.snapshots):
             raise DomainValidationError("invalid_snapshot_order")
+        prior_by_id: dict[str, RankingSnapshot] = {}
+        latest_by_date: dict[str, RankingSnapshot] = {}
         for snapshot in self.snapshots:
             expected = snapshot_id(observation_from_snapshot(snapshot))
-            if snapshot.id != expected:
+            chained = revision_snapshot_id(observation_from_snapshot(snapshot), snapshot.source_revision_of) if snapshot.source_revision_of else None
+            if snapshot.id not in {expected, chained}:
                 raise DomainValidationError("invalid_snapshot_id")
-            if snapshot.source_revision_of is not None and snapshot.source_revision_of not in {
-                previous.id for previous in self.snapshots if previous.ranking_date == snapshot.ranking_date
-            }:
-                raise DomainValidationError("invalid_revision_reference")
+            if snapshot.source_revision_of is not None:
+                parent = prior_by_id.get(snapshot.source_revision_of)
+                if parent is None or parent.ranking_date != snapshot.ranking_date:
+                    raise DomainValidationError("invalid_revision_reference")
+                if snapshot.id == chained and latest_by_date.get(snapshot.ranking_date) != parent:
+                    raise DomainValidationError("invalid_revision_reference")
+            prior_by_id[snapshot.id] = snapshot
+            latest_by_date[snapshot.ranking_date] = snapshot
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -289,6 +296,12 @@ def snapshot_id(observation: RankingObservation) -> str:
     return _stable_hash(_canonical_observation(observation))
 
 
+def revision_snapshot_id(observation: RankingObservation, source_revision_of: str) -> str:
+    """Bind revised facts to their immutable predecessor, allowing A→B→A."""
+    return _stable_hash({"observation": _canonical_observation(observation),
+                         "source_revision_of": source_revision_of})
+
+
 def event_id(snapshot_id_value: str, event_type: str) -> str:
     return _stable_hash({"event_type": event_type, "snapshot_id": snapshot_id_value})
 
@@ -297,9 +310,11 @@ def build_snapshot(
     observation: RankingObservation,
     captured_at: str,
     source_revision_of: str | None = None,
+    *,
+    chain_revision: bool = False,
 ) -> RankingSnapshot:
     return RankingSnapshot(
-        id=snapshot_id(observation),
+        id=revision_snapshot_id(observation, source_revision_of) if chain_revision and source_revision_of else snapshot_id(observation),
         ranking_date=observation.ranking_date,
         captured_at=captured_at,
         source=observation.source,
