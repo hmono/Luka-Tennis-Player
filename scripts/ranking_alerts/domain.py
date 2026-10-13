@@ -324,13 +324,26 @@ def snapshot_sort_key(snapshot: RankingSnapshot) -> tuple[str, str, str]:
     return snapshot.ranking_date, snapshot.captured_at, snapshot.id
 
 
+def effective_snapshots(history: Iterable[RankingSnapshot]) -> tuple[RankingSnapshot, ...]:
+    """Select current facts per edition without changing immutable audit history."""
+
+    latest = {item.ranking_date: item for item in sorted(history, key=snapshot_sort_key)}
+    return tuple(latest.values())
+
+
 def _known_high(history: Iterable[RankingSnapshot], discipline: str) -> int | None:
     values: list[int] = []
-    for snapshot in history:
+    active = effective_snapshots(history)
+    first_date = active[0].ranking_date if active else None
+    for snapshot in active:
         ranking = getattr(snapshot, discipline)
         if ranking.rank is not None:
             values.append(ranking.rank)
-        if ranking.career_high_rank is not None:
+        # Highs within our observed window must be supported by current facts.
+        # A stored derived high can echo a withdrawn rank across later editions.
+        if ranking.career_high_rank is not None and (
+            ranking.career_high_date is None or ranking.career_high_date < first_date
+        ):
             values.append(ranking.career_high_rank)
     return min(values) if values else None
 

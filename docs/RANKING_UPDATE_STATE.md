@@ -97,3 +97,5 @@ estão no relatório de homologação acima.
   correto confirmado ao vivo. Causa transitória exata não comprovada;
   instrumentação distingue navegação, bloqueio, redirecionamento, estrutura,
   parcialidade e divergência de atleta, sem relaxar identidade.
+
+H2-REV-02: career highs usam baseline manual e última versão de cada edição; a revisão atual substitui os fatos anteriores da mesma data. Snapshots e CHs derivados antigos continuam na auditoria, mas não voltam ao cálculo nem ao frontend como prova independente. Nenhum dado real foi migrado.

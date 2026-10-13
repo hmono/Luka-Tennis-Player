@@ -21,6 +21,7 @@ from .domain import (
     DisciplineRanking,
     RankingObservation,
     RankingSnapshot,
+    effective_snapshots,
     normalize_player_name,
 )
 
@@ -189,8 +190,8 @@ def _history_highs(
     discipline: str,
     observation_date: str,
 ) -> tuple[_High, ...]:
-    values: list[_High] = []
-    for snapshot in history:
+    snapshots = tuple(history)
+    for snapshot in snapshots:
         if not isinstance(snapshot, RankingSnapshot) or snapshot.ranking_date > observation_date:
             _invalid()
         ranking = getattr(snapshot, discipline)
@@ -198,15 +199,19 @@ def _history_highs(
             _invalid()
         if (ranking.career_high_rank is None) != (ranking.career_high_date is None):
             _invalid()
-        if ranking.rank is not None:
-            values.append(_High(rank=ranking.rank, ranking_date=snapshot.ranking_date))
         if ranking.career_high_rank is not None:
             if ranking.career_high_date > snapshot.ranking_date:
                 _invalid()
             # Legacy career-high fields are derived data, not independent
             # observations. Validate them, but never promote them into the new
             # manually anchored calculation.
-    return tuple(values)
+    # Validate every audit version above, but use only current edition facts.
+    # The incoming observation replaces all previous versions of its own date.
+    return tuple(
+        _High(rank=getattr(snapshot, discipline).rank, ranking_date=snapshot.ranking_date)
+        for snapshot in effective_snapshots(snapshots)
+        if snapshot.ranking_date < observation_date and getattr(snapshot, discipline).rank is not None
+    )
 
 
 def _enriched_discipline(
@@ -236,6 +241,7 @@ def enrich_career_high(
     The current source-provided career-high fields are intentionally replaced.
     ``history`` must contain only snapshots at or before the observation date;
     accepting a later snapshot would make the result depend on future data.
+    Superseded versions remain in history for audit, never as independent facts.
     """
 
     if not isinstance(observation, RankingObservation) or not isinstance(baseline, CareerHighBaseline):

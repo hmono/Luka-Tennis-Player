@@ -49,6 +49,51 @@ class MockProvider:
 
 
 class SprintIntegrationTests(unittest.TestCase):
+    def test_h2_revision_retracts_high_without_rewriting_history_or_receipts(self):
+        class RevisedSource(Source):
+            def __init__(self, edition, singles, doubles):
+                self.edition, self.singles, self.doubles = edition, singles, doubles
+
+            def fetch(self):
+                return RawRankingObservation(atp_id="B0UF", name="Luka Bojicic Ono", source="itf",
+                    ranking_date=self.edition,
+                    singles=RawDisciplineRanking(status="ranked", rank=self.singles, points=None),
+                    doubles=RawDisciplineRanking(status="ranked", rank=self.doubles, points=None))
+
+        self.assertEqual(0, self.main("collect", "2026-10-13T12:00:00Z",
+            RevisedSource("2026-10-12", 1700, 1300))[0])
+        initial = load_rankings(self.rankings).snapshots[-1]
+        self.provider.accepted_at = "2026-10-13T12:01:00Z"
+        self.assertEqual(0, self.main("deliver", "2026-10-13T12:01:00Z",
+            enabled=True, edition_date="2026-10-12")[0])
+        receipt = load_alert_state(self.state, load_rankings(self.rankings)).outbox[-1]
+        corrected_source = RevisedSource("2026-10-12", 1900, 1500)
+        self.assertEqual(0, self.main("collect", "2026-10-13T12:02:00Z", corrected_source)[0])
+        rankings = load_rankings(self.rankings)
+        correction = rankings.snapshots[-1]
+        self.assertEqual(initial, rankings.snapshots[-2])
+        self.assertEqual(initial.id, correction.source_revision_of)
+        self.assertEqual((1827, 1407), (correction.singles.career_high_rank, correction.doubles.career_high_rank))
+        self.assertEqual(receipt, load_alert_state(self.state, rankings).outbox[0])
+        self.provider.accepted_at = "2026-10-13T12:03:00Z"
+        self.assertEqual(0, self.main("deliver", "2026-10-13T12:03:00Z",
+            enabled=True, edition_date="2026-10-12")[0])
+        message = self.provider.messages[-1][0]
+        self.assertIn("Correção ATP Ranking — 2026-10-12", message)
+        self.assertIn("CH #1.827 (2025-12-01)", message)
+        self.assertIn("CH #1.407 (2026-06-22)", message)
+        before = self.rankings.read_bytes(), self.state.read_bytes()
+        self.assertEqual(0, self.main("collect", "2026-10-13T12:04:00Z", corrected_source)[0])
+        self.assertEqual(before, (self.rankings.read_bytes(), self.state.read_bytes()))
+        self.assertEqual(0, self.main("collect", "2026-10-20T12:00:00Z",
+            RevisedSource("2026-10-19", 1800, 1350))[0])
+        rankings = load_rankings(self.rankings)
+        current = rankings.snapshots[-1]
+        self.assertEqual((1800, 1350), (current.singles.career_high_rank, current.doubles.career_high_rank))
+        self.assertIn("Novo career high: Singles #1.800, Doubles #1.350",
+            update_rankings._message_for_snapshot(rankings, current, "ranking_change"))
+        self.assertEqual(receipt, load_alert_state(self.state, rankings).outbox[0])
+
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)

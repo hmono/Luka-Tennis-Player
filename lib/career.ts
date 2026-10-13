@@ -1,6 +1,7 @@
 import rawCareerData from "@/data/career.json";
 import rawRankingData from "@/data/rankings.json";
-import type { CareerData, CareerEvent, RankingData, RankingDisciplineSnapshot, RankingSnapshot, SurfaceRecord } from "@/types";
+import careerHighBaseline from "@/data/ranking_career_high_baseline.json";
+import type { CareerData, CareerEvent, RankingData, RankingSnapshot, SurfaceRecord } from "@/types";
 
 const data = rawCareerData as CareerData;
 const rankingData = rawRankingData as RankingData;
@@ -28,14 +29,18 @@ export const getLatestRankings = (): Pick<RankingSnapshot, "singles" | "doubles"
 export const getCareerHighs = (): { singles: number | null; doubles: number | null } | null => {
   const snapshots = getRankingSnapshots();
   if (snapshots.length === 0) return null;
+  const active = new Map(snapshots.map((snapshot) => [snapshot.ranking_date, snapshot]));
 
   const bestRank = (discipline: keyof Pick<RankingSnapshot, "singles" | "doubles">): number | null => {
-    const candidates = snapshots
-      .flatMap((snapshot) => {
-        const ranking: RankingDisciplineSnapshot = snapshot[discipline];
-        return [ranking.rank, ranking.career_high_rank];
-      })
+    // The baseline is independently verified. Stored CH fields are derived and
+    // can still reflect withdrawn facts; retain them only in the audit history.
+    const baseline = careerHighBaseline.disciplines[discipline];
+    const candidates = [...active.values()]
+      .map((snapshot) => snapshot[discipline].rank)
       .filter((rank): rank is number => rank !== null);
+    if (baseline.ranking_date <= snapshots[snapshots.length - 1].ranking_date) {
+      candidates.push(baseline.rank);
+    }
     return candidates.length > 0 ? Math.min(...candidates) : null;
   };
 

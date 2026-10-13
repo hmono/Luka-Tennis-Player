@@ -91,6 +91,28 @@ Novos testes usam a classe CallMeBotProvider real com HTTP/sleep mock e cobrem
 virada semanal, expiração, zero requests fora do gate e um retry em nova execução
 da mesma edição com nonce novo, receipt preservado e deduplicação posterior.
 
+### H2-REV-02 — revisão preservava career high retirado
+
+O revisor reproduziu no head `427ec4c` a sequência sintética de simples
+1700 → 1900 na mesma edição: o CH 1700 era mantido e propagado porque todas
+as versões históricas eram tratadas como fatos vigentes. O coordenador
+confirmou a reprodução. Agora o enriquecimento usa a baseline manual e os
+ranks da última versão por edição, com a ordenação já usada pelo coletor
+(`ranking_date`, `captured_at`, `id`). A observação atual substitui sua própria
+edição no cálculo. Todas as versões continuam validadas e preservadas; campos
+CH derivados antigos não são promovidos a evidência independente.
+
+A comparação de novos CHs também usa versões vigentes e não reaproveita ecos
+de CH dentro da janela observada. O frontend calcula CH com a baseline e
+ranks vigentes, mantendo o histórico completo disponível. Nenhum JSON real
+foi migrado ou reescrito. Uma nova observação que corrija apenas o CH legado
+segue o fluxo explícito de revisão, sem alteração silenciosa de receipts.
+
+Regressões cobrem ambas as disciplinas, revisão para rank pior ou unranked,
+ecos derivados legados, próxima edição, mensagem de correção, novo CH,
+repetição idempotente, preservação do snapshot antigo e receipt já aceito.
+Datas e ranks desses cenários são fixtures, não publicações verificadas.
+
 ## Risco externo não removido
 
 **H2-QA-02, P1 operacional, permanece pendente:** o workflow ativo de `main`

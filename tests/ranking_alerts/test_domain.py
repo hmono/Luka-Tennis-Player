@@ -194,6 +194,18 @@ class SnapshotIdentityTests(unittest.TestCase):
 
 
 class DeltaTests(unittest.TestCase):
+    def test_withdrawn_high_and_later_derived_echo_do_not_hide_a_new_high(self) -> None:
+        from dataclasses import replace
+        first = snapshot(ranking_date="2026-09-07", singles_rank=1700, singles_high=1700)
+        first = replace(first, singles=replace(first.singles, career_high_date="2026-09-07"))
+        revised = replace(first, id="sha256:" + "a" * 64, captured_at="2026-09-08T12:00:00Z",
+                          singles=replace(first.singles, rank=1900), source_revision_of=first.id)
+        previous = snapshot(ranking_date="2026-09-14", singles_rank=1950, singles_high=1700)
+        previous = replace(previous, singles=replace(previous.singles, career_high_date="2026-09-07"))
+        current = snapshot(ranking_date="2026-09-21", singles_rank=1800, singles_high=1800)
+        delta = compare_snapshots(previous, current, (previous, revised, first))
+        self.assertEqual(1800, delta.singles.new_career_high)
+
     def test_rank_delta_sign_and_points_delta(self) -> None:
         previous = snapshot(singles_rank=2000, singles_points=4)
         current = snapshot(
