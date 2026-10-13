@@ -156,7 +156,25 @@ class AutonomousRuntimeTests(unittest.TestCase):
             ops_alert=lambda event, text: self.alerts.append((event, text)) or True)
         self.assertEqual("unavailable", result["provider_configuration"])
         self.assertEqual([], self.provider.messages)
-        self.assertTrue(any("provider unavailable" in text for _, text in self.alerts))
+        self.assertTrue(any("PROVIDER_CONFIGURATION_UNAVAILABLE" in text for _, text in self.alerts))
+
+    def test_configuration_alerts_repeat_per_episode_and_report_recovery(self):
+        from ranking_alerts.providers import ConfigurationError
+        from ranking_alerts.autonomous_delivery import load_delivery
+        configured = [True]
+        def factory():
+            if not configured[0]:
+                raise ConfigurationError("invalid_configuration")
+            return self.provider
+        for value in (True, False, False, True, True, False, False):
+            configured[0] = value
+            self.instant += timedelta(minutes=2)
+            autonomous_rankings.run_cycle(source=self.source, root=self.root,
+                now=lambda: self.instant, checkpoint=lambda: None, provider_factory=factory,
+                ops_alert=lambda event, text: self.alerts.append((event, text)) or True)
+        self.assertEqual(2, sum("PROVIDER_CONFIGURATION_UNAVAILABLE" in text for _, text in self.alerts))
+        self.assertEqual(1, sum("PROVIDER_CONFIGURED;" in text for _, text in self.alerts))
+        self.assertEqual(len(self.alerts), len({event for event, _ in self.alerts}))
 
     def test_source_error_holds_pending_edition_but_weekly_status_continues(self):
         self.provider.error = DeliveryError("http_429", 1, retryable=True)

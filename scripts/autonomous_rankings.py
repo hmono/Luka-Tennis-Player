@@ -24,7 +24,7 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
     """Caller serializes the entire cycle; dependency injection is for isolated tests."""
     from ranking_alerts.autonomous_delivery import (
         load_delivery, save_delivery, plan_digest, plan_weekly_status,
-        plan_operational, deliver_autonomously,
+        plan_operational, plan_provider_health, deliver_autonomously,
     )
     from ranking_alerts.autonomous_scheduler import weekly_period
 
@@ -65,6 +65,14 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
 
     if checkpoint is None:
         raise ConfigurationError("ranking_checkpoint_required")
+    if provider_factory is None:
+        provider_factory = lambda: CallMeBotProvider.from_env(max_attempts=1)
+    try:
+        provider = provider_factory()
+        result["provider_configuration"] = "configured"
+    except ConfigurationError:
+        provider = None
+        result["provider_configuration"] = "unavailable"
     _, episode = append_cycle(root / DEFAULT_RUNTIME_PATH, at=stamp, state=status,
                               last_valid_date=last_date, error_code=error,
                               provenance=safe_source_telemetry(getattr(source, "last_telemetry", None)))
@@ -86,20 +94,10 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
         ledger = plan_operational(ledger, event_id=episode, message=message, now=stamp)
     ledger = plan_weekly_status(ledger, period=weekly_period(instant), last_verified_date=last_date,
                                 checked_at=stamp, now=stamp, status=status)
+    ledger = plan_provider_health(ledger, configured=provider is not None,
+                                  last_verified_date=last_date, now=stamp)
     save_delivery(delivery_path, ledger)
     checkpoint()
-    if provider_factory is None:
-        provider_factory = lambda: CallMeBotProvider.from_env(max_attempts=1)
-    try:
-        provider = provider_factory()
-        result["provider_configuration"] = "configured"
-    except ConfigurationError:
-        provider = None
-        result["provider_configuration"] = "unavailable"
-        ledger = plan_operational(load_delivery(delivery_path), event_id="provider-configuration",
-                                 message=f"ATP provider unavailable; data date: {last_date or 'unknown'}; checked: {stamp}.", now=stamp)
-        save_delivery(delivery_path, ledger)
-        checkpoint()
     report = deliver_autonomously(path=delivery_path, provider=provider,
                                   checkpoint=checkpoint,
                                   now=lambda: now().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -128,7 +126,7 @@ def main(argv=None) -> int:
                                checkpoint=checkpoint, ops_alert=send_operational_alert)
         import json
         print("autonomous_cycle=" + json.dumps(result, sort_keys=True))
-        return 1 if result["error_code"] else 0
+        return 1 if result["error_code"] or result.get("provider_configuration") == "unavailable" else 0
     except Exception as exc:
         code = getattr(exc, "code", "autonomous_runtime_failed")
         print(f"error={code if isinstance(exc, (StorageError, ConfigurationError)) else 'autonomous_runtime_failed'}", file=sys.stderr)

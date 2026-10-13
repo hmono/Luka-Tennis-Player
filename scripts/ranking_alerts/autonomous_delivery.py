@@ -201,6 +201,24 @@ def plan_operational(ledger: DeliveryLedger, *, event_id: str, message: str, now
                  event_type="operational", message=message, metadata={}, now=now)
 
 
+def plan_provider_health(ledger: DeliveryLedger, *, configured: bool,
+                         last_verified_date: str | None, now: str) -> DeliveryLedger:
+    """Deduplicate configuration alerts per outage, with durable recovery."""
+    statuses = {"PROVIDER_CONFIGURED", "PROVIDER_CONFIGURATION_UNAVAILABLE"}
+    # Use creation order: later retries of an old alert are delivery transitions,
+    # not new observations of provider health.
+    observations = [event for event in ledger.events if event["state"] == "planned"
+                    and event["metadata"].get("status") in statuses]
+    status = "PROVIDER_CONFIGURED" if configured else "PROVIDER_CONFIGURATION_UNAVAILABLE"
+    if (not observations and configured) or (observations and observations[-1]["metadata"]["status"] == status):
+        return ledger
+    identity = "ops:" + hashlib.sha256(f"provider-configuration:{len(observations)}".encode()).hexdigest()
+    message = (f"ATP provider configuration: {status}; data date: {last_verified_date or 'unknown'}; "
+               f"checked: {now}. Configuration availability does not prove delivery.")
+    return _plan(ledger, identity=identity, event_type="operational", message=message,
+                 metadata={"status": status, "last_verified_date": last_verified_date, "checked_at": now}, now=now)
+
+
 def _alert(ledger: DeliveryLedger, item: dict[str, Any], now: str) -> DeliveryLedger:
     return plan_operational(ledger, event_id=f"delivery:{item['event_id']}:{item['state']}",
                             message=f"ATP delivery {item['state']}: {item['event_id']}; "
