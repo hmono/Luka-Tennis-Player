@@ -19,19 +19,19 @@ def at(value):
 
 
 class TelemetryTests(unittest.TestCase):
-    def test_thursday_check_runs_just_after_publication_cutoff(self):
-        report = schedule_timing(event="schedule", created_at=at("2026-10-15T15:06:00Z"), started_at=at("2026-10-15T15:08:00Z"))
-        self.assertEqual("2026-10-15T15:05:00Z", report.expected_at)
+    def test_daily_poll_has_no_publication_cutoff(self):
+        report = schedule_timing(event="schedule", created_at=at("2026-10-15T18:18:00Z"), started_at=at("2026-10-15T18:20:00Z"))
+        self.assertEqual("2026-10-15T18:17:00Z", report.expected_at)
         self.assertEqual(3, report.delay_minutes)
 
     def test_delayed_schedule_includes_creation_and_queue_delay(self):
         report = schedule_timing(event="schedule", created_at=at("2026-10-13T12:20:00Z"), started_at=at("2026-10-13T18:39:00Z"))
-        self.assertEqual("2026-10-13T12:00:00Z", report.expected_at)
-        self.assertEqual(399, report.delay_minutes)
+        self.assertEqual("2026-10-13T12:17:00Z", report.expected_at)
+        self.assertEqual(382, report.delay_minutes)
         self.assertTrue(report.delayed_over_60_minutes)
 
     def test_sixty_minute_boundary_and_manual_run(self):
-        report = schedule_timing(event="schedule", created_at=at("2026-10-14T12:01:00Z"), started_at=at("2026-10-14T13:00:00Z"))
+        report = schedule_timing(event="schedule", created_at=at("2026-10-14T12:18:00Z"), started_at=at("2026-10-14T13:17:00Z"))
         self.assertFalse(report.delayed_over_60_minutes)
         manual = schedule_timing(event="workflow_dispatch", created_at=at("2026-10-14T18:00:00Z"), started_at=at("2026-10-14T18:01:00Z"))
         self.assertIsNone(manual.expected_at)
@@ -39,7 +39,7 @@ class TelemetryTests(unittest.TestCase):
 
     def test_timezone_equivalence_and_delayed_run_crossing_midnight(self):
         report = schedule_timing(event="schedule", created_at=at("2026-10-14T03:00:00Z"), started_at=at("2026-10-14T04:00:00Z"))
-        self.assertEqual("2026-10-13T12:00:00Z", report.expected_at)
+        self.assertEqual("2026-10-13T18:17:00Z", report.expected_at)
         brazil = schedule_timing(event="schedule", created_at=at("2026-10-14T00:00:00-03:00"), started_at=at("2026-10-14T01:00:00-03:00"))
         self.assertEqual(report, brazil)
 
@@ -48,14 +48,14 @@ class TelemetryTests(unittest.TestCase):
         self.assertEqual(FreshnessState.PENDING_PUBLICATION, assessment.state)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "summary.md"
-            report = schedule_timing(event="schedule", created_at=at("2026-10-14T12:10:00Z"), started_at=at("2026-10-14T13:01:00Z"))
+            report = schedule_timing(event="schedule", created_at=at("2026-10-14T12:18:00Z"), started_at=at("2026-10-14T13:18:00Z"))
             with redirect_stdout(StringIO()):
                 emit_schedule_summary(report, source_age_days=9, path=path)
                 emit_collection_summary(assessment, path=path, source_telemetry={"source": "itf", "source_ranking_date": "2026-10-05", "apikey": "secret", "body": "private"})
             text = path.read_text()
             self.assertIn("DELAY >60 minutes", text)
             self.assertIn("PENDING_PUBLICATION", text)
-            self.assertIn("no publication SLA violation", text)
+            self.assertIn("No ATP publication deadline", text)
             self.assertIn("Source age: 9 days", text)
             self.assertNotIn("secret", text)
             self.assertNotIn("private", text)

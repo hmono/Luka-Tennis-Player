@@ -1,15 +1,16 @@
 name: Update ATP Rankings
+run-name: ATP rankings ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'collect-and-deliver' }}
 
-# Tuesday–Friday 09:00 BRT, plus Thursday 12:05 BRT after the publication cutoff.
-# GitHub cron is best-effort; actual scheduling delay is recorded separately.
+# Publication-driven polling every day, twice daily. No ATP calendar renewal.
+# The independent external watchdog detects missing runs; cron is best effort.
 on:
   schedule:
-    - cron: '0 12 * * 2-5'
-    - cron: '5 15 * * 4'
+    - cron: '17 12,18 * * *'
+    - cron: '0 12 * * 1'
   workflow_dispatch:
     inputs:
       mode:
-        description: 'collect-and-deliver persists and notifies; dry-run only validates the live source'
+        description: 'collect-and-deliver persists and notifies; dry-run validates without writes or sends'
         type: choice
         options:
           - collect-and-deliver
@@ -29,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      # A queued writer must see receipts pushed by the preceding run.
+      # Dry-run follows the selected branch. Production is explicitly main-only.
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
@@ -48,7 +49,7 @@ jobs:
       - name: Require explicit release for collect-and-deliver
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'collect-and-deliver' && (vars.ATP_RANKING_DELIVERY_ENABLED != 'true' || github.ref != 'refs/heads/main')
         run: |
-          echo 'Collection and delivery require main and explicit release approval via ATP_RANKING_DELIVERY_ENABLED=true.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Collection and delivery require main and explicit initial release approval via ATP_RANKING_DELIVERY_ENABLED=true.' >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: Install automation dependencies
@@ -62,36 +63,21 @@ jobs:
 
       - name: Dry run against the live ITF source
         if: inputs.mode == 'dry-run' || (github.event_name == 'schedule' && vars.ATP_RANKING_DELIVERY_ENABLED != 'true')
-        run: python scripts/update_rankings.py dry-run --source itf
+        run: python scripts/autonomous_rankings.py run --dry-run
 
-      - name: Collect ranking snapshot
-        id: collect
+      - name: Collect persist and deliver autonomous ranking cycle
         if: vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
-        run: python scripts/update_rankings.py collect --source itf
-
-      - name: Commit snapshot and pending alert intentions
-        id: persist
-        if: always() && (steps.collect.outcome == 'success' || steps.collect.outcome == 'failure') && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          python scripts/update_rankings.py checkpoint
-
-      - name: Deliver pending alerts
-        id: deliver
-        if: always() && steps.persist.outcome == 'success' && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
         env:
           ATP_RANKING_DELIVERY_ENABLED: ${{ vars.ATP_RANKING_DELIVERY_ENABLED }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
-          ATP_CONFIRMED_EDITION: ${{ steps.collect.outputs.sporting_edition_date }}
+          ATP_OPS_WEBHOOK_URL: ${{ secrets.ATP_OPS_WEBHOOK_URL }}
+          ATP_OPS_WEBHOOK_TOKEN: ${{ secrets.ATP_OPS_WEBHOOK_TOKEN }}
+          ATP_WATCHDOG_STATE_DIR: ${{ runner.temp }}/atp-ranking-ops
+        # Runtime pushes each intention/claim before network I/O and receipts
+        # afterwards. Monday 09:00 Sao Paulo weekly status is ledger-deduplicated
+        # independently of edition alerts; first subsequent poll catches up.
         run: |
-          if [ "${{ steps.collect.outputs.sporting_delivery_allowed }}" = "true" ]; then
-            python scripts/update_rankings.py deliver --provider callmebot --durable-git --edition-date "${ATP_CONFIRMED_EDITION}"
-          else
-            python scripts/update_rankings.py deliver --provider callmebot --durable-git --incidents-only
-          fi
-
-      - name: Commit delivery receipts
-        if: always() && steps.persist.outcome == 'success' && (steps.deliver.outcome == 'success' || steps.deliver.outcome == 'failure') && vars.ATP_RANKING_DELIVERY_ENABLED == 'true' && inputs.mode != 'dry-run' && github.ref == 'refs/heads/main'
-        run: python scripts/update_rankings.py checkpoint
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          python scripts/autonomous_rankings.py run

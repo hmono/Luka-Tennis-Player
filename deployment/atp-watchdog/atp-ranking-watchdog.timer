@@ -1,0 +1,11 @@
+[Unit]
+Description=Check ranking scheduler outside GitHub every ten minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/10:00 UTC
+Persistent=true
+RandomizedDelaySec=30
+Unit=atp-ranking-watchdog.service
+
+[Install]
+WantedBy=timers.target

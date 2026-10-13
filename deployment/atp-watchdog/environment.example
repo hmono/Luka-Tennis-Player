@@ -1,0 +1,16 @@
+# Install root-owned mode 0600 at /etc/atp-ranking-watchdog.env.
+# Disabled defaults: do not activate until explicit initial deployment approval.
+ATP_WATCHDOG_REPOSITORY=hmono/Luka-Tennis-Player
+ATP_WATCHDOG_STATE_DIR=/var/lib/atp-ranking-watchdog
+ATP_RANKING_DELIVERY_ENABLED=false
+ATP_WATCHDOG_ENABLED=false
+ATP_WATCHDOG_RECOVERY_ENABLED=false
+# Prefer a GitHub App: installation tokens renew automatically by the service.
+# Requires openssl and a readable protected private key provisioned once.
+ATP_WATCHDOG_APP_ID=
+ATP_WATCHDOG_APP_INSTALLATION_ID=
+ATP_WATCHDOG_APP_PRIVATE_KEY_PATH=
+# Optional fallback static token; operator must provide automated renewal.
+ATP_WATCHDOG_GITHUB_TOKEN=
+ATP_OPS_WEBHOOK_URL=
+ATP_OPS_WEBHOOK_TOKEN=

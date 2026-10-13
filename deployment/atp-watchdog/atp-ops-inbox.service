@@ -1,0 +1,24 @@
+[Unit]
+Description=Independent durable ATP operations inbox
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=atp-watchdog
+Group=atp-watchdog
+WorkingDirectory=/opt/luka-tennis
+EnvironmentFile=/etc/atp-ops-inbox.env
+ExecStart=/usr/bin/python3 -m scripts.ranking_alerts.ops_receiver
+StateDirectory=atp-ops-inbox
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
 
 from .freshness import CalendarError, FreshnessAssessment, _aware
+from .autonomous_scheduler import poll_slots
 
 
 @dataclass(frozen=True)
@@ -26,27 +27,17 @@ def _iso(instant: datetime) -> str:
 
 
 def schedule_timing(*, event: str, created_at: datetime, started_at: datetime) -> ScheduleTiming:
-    """Infer Tue–Fri 12:00 UTC / Thu 15:05 UTC slots from run creation.
+    """Infer the preceding daily 12:17 / 18:17 UTC poll slot.
 
-    GitHub's schedule payload has a cron string, but no nominal occurrence
-    timestamp. The last eligible slot at run creation is the stated estimate;
-    run_started_at comes from the Actions API. Manual runs have no delay SLA.
+    A nominal timestamp is absent in Actions metadata; delay is an estimate,
+    and independent watchdog polling detects cycles that never started.
     """
     created, started = _aware(created_at), _aware(started_at)
     if started < created:
         raise CalendarError()
     if event != "schedule":
         return ScheduleTiming(event, None, _iso(started), None, False)
-    candidates = []
-    for offset in range(8):
-        day = created - timedelta(days=offset)
-        nominal = day.replace(hour=12, minute=0, second=0, microsecond=0)
-        if day.weekday() in {1, 2, 3, 4} and nominal <= created:
-            candidates.append(nominal)
-        after_cutoff = day.replace(hour=15, minute=5, second=0, microsecond=0)
-        if day.weekday() == 3 and after_cutoff <= created:
-            candidates.append(after_cutoff)
-    expected = max(candidates)
+    expected = poll_slots(created)[-1]
     delay = (started - expected).total_seconds() / 60
     return ScheduleTiming(event, _iso(expected), _iso(started), round(delay, 2), delay > 60)
 
@@ -100,15 +91,13 @@ def emit_collection_summary(
     if assessment:
         rows.extend((
             f"- Freshness: **{assessment.state.value}**",
-            f"- Expected edition: {assessment.expected_date}",
             f"- Observed edition: {assessment.actual_date or 'unknown'}",
+            f"- Checked at: {telemetry.get('completed_at') or telemetry.get('started_at') or 'unknown'}",
             f"- Last valid persisted edition: {assessment.last_valid_date or 'none'}",
-            f"- Publication cutoff (UTC): {assessment.cutoff}",
             f"- Source age: {assessment.source_age_days if assessment.source_age_days is not None else 'unknown'} days",
-            f"- Calendar version: {assessment.calendar_version}",
         ))
         if assessment.state.value == "PENDING_PUBLICATION":
-            rows.append("- Awaiting publication within its grace period; no publication SLA violation.")
+            rows.append("- No ATP publication deadline is inferred from the polling schedule.")
     elif error_code:
         rows.append("- Freshness: **SOURCE_ERROR** (no usable observation)")
     if error_code:
