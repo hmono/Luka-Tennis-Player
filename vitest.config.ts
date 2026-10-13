@@ -13,7 +13,7 @@ export default defineConfig({
     // Component test files override to jsdom via @vitest-environment pragma.
     environment: 'node',
     globals: true,
-    exclude: [...configDefaults.exclude, 'luka-sprint/**'],
+    exclude: [...configDefaults.exclude, 'luka-sprint/**', 'workers/**'],
   },
   resolve: {
     alias: {
