@@ -1,0 +1,27 @@
+{
+  // LOCAL PoC ONLY. No account, remote resource, production secret or route.
+  "name": "atp-ops27-local-only",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "triggers": {"crons": []},
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "atp-ops27-local",
+    "database_id": "00000000-0000-0000-0000-000000000027",
+    "preview_database_id": "atp-ops27-local",
+    "migrations_dir": "migrations",
+    "remote": false
+  }],
+  "vars": {
+    "WATCHDOG_ENABLED": "false",
+    "DELIVERY_ENABLED": "false",
+    "RECOVERY_ENABLED": "false",
+    "FORWARDING_ENABLED": "false",
+    "GITHUB_REPOSITORY": "hmono/Luka-Tennis-Player",
+    "GITHUB_WORKFLOW": "update_rankings.yml"
+  }
+}

@@ -1,0 +1,39 @@
+name: ATP Ops27 Worker Checks
+
+on:
+  push:
+    branches: ['spike/atp-ops27-cloudflare-workers-d1']
+    paths: ['workers/atp-ops/**', '.github/workflows/atp_ops27_checks.yml']
+  pull_request:
+    paths: ['workers/atp-ops/**', '.github/workflows/atp_ops27_checks.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops27-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: workers/atp-ops
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: workers/atp-ops/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run migrate:local
+      - run: npm run migrate:local
+      - run: npm test
+      - run: npm run check:bundle
