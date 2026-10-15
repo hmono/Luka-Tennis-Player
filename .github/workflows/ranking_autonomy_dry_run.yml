@@ -2,6 +2,11 @@ name: ATP Autonomy Dry Run
 
 # A separate validation workflow leaves the disabled legacy workflow untouched.
 on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'tests/ranking_alerts/**'
+      - '.github/workflows/**'
   push:
     branches: ['fix/atp-ranking-freshness-*']
     paths:

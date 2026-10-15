@@ -1,12 +1,11 @@
 name: Update ATP Rankings
 run-name: ATP rankings ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'collect-and-deliver' }}
 
-# Publication-driven polling every day, twice daily. No ATP calendar renewal.
-# The independent external watchdog detects missing runs; cron is best effort.
+# Weekdays at 09:00 BRT (UTC-3). GitHub cron is best effort.
+# Diagnostics use Actions logs/summary; no external operational receiver.
 on:
   schedule:
-    - cron: '17 12,18 * * *'
-    - cron: '0 12 * * 1'
+    - cron: '0 12 * * 1-5'
   workflow_dispatch:
     inputs:
       mode:
@@ -58,9 +57,6 @@ jobs:
       - name: Install Chromium
         run: playwright install chromium --with-deps
 
-      - name: Run ranking-alert tests
-        run: python -m unittest discover -s tests/ranking_alerts
-
       - name: Dry run against the live ITF source
         if: inputs.mode == 'dry-run' || (github.event_name == 'schedule' && vars.ATP_RANKING_DELIVERY_ENABLED != 'true')
         run: python scripts/autonomous_rankings.py run --dry-run
@@ -71,9 +67,6 @@ jobs:
           ATP_RANKING_DELIVERY_ENABLED: ${{ vars.ATP_RANKING_DELIVERY_ENABLED }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
-          ATP_OPS_WEBHOOK_URL: ${{ secrets.ATP_OPS_WEBHOOK_URL }}
-          ATP_OPS_WEBHOOK_TOKEN: ${{ secrets.ATP_OPS_WEBHOOK_TOKEN }}
-          ATP_WATCHDOG_STATE_DIR: ${{ runner.temp }}/atp-ranking-ops
         # Runtime pushes each intention/claim before network I/O and receipts
         # afterwards. Monday 09:00 Sao Paulo weekly status is ledger-deduplicated
         # independently of edition alerts; first subsequent poll catches up.

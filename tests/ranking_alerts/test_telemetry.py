@@ -19,19 +19,24 @@ def at(value):
 
 
 class TelemetryTests(unittest.TestCase):
+    def test_weekend_and_monday_before_nine_brt_use_friday_slot(self):
+        for instant in ("2026-10-17T18:00:00Z", "2026-10-19T11:59:59Z"):
+            report = schedule_timing(event="schedule", created_at=at(instant), started_at=at(instant))
+            self.assertEqual("2026-10-16T12:00:00Z", report.expected_at)
+
     def test_daily_poll_has_no_publication_cutoff(self):
         report = schedule_timing(event="schedule", created_at=at("2026-10-15T18:18:00Z"), started_at=at("2026-10-15T18:20:00Z"))
-        self.assertEqual("2026-10-15T18:17:00Z", report.expected_at)
-        self.assertEqual(3, report.delay_minutes)
+        self.assertEqual("2026-10-15T12:00:00Z", report.expected_at)
+        self.assertEqual(380, report.delay_minutes)
 
     def test_delayed_schedule_includes_creation_and_queue_delay(self):
         report = schedule_timing(event="schedule", created_at=at("2026-10-13T12:20:00Z"), started_at=at("2026-10-13T18:39:00Z"))
-        self.assertEqual("2026-10-13T12:17:00Z", report.expected_at)
-        self.assertEqual(382, report.delay_minutes)
+        self.assertEqual("2026-10-13T12:00:00Z", report.expected_at)
+        self.assertEqual(399, report.delay_minutes)
         self.assertTrue(report.delayed_over_60_minutes)
 
     def test_sixty_minute_boundary_and_manual_run(self):
-        report = schedule_timing(event="schedule", created_at=at("2026-10-14T12:18:00Z"), started_at=at("2026-10-14T13:17:00Z"))
+        report = schedule_timing(event="schedule", created_at=at("2026-10-14T12:18:00Z"), started_at=at("2026-10-14T13:00:00Z"))
         self.assertFalse(report.delayed_over_60_minutes)
         manual = schedule_timing(event="workflow_dispatch", created_at=at("2026-10-14T18:00:00Z"), started_at=at("2026-10-14T18:01:00Z"))
         self.assertIsNone(manual.expected_at)
@@ -39,7 +44,7 @@ class TelemetryTests(unittest.TestCase):
 
     def test_timezone_equivalence_and_delayed_run_crossing_midnight(self):
         report = schedule_timing(event="schedule", created_at=at("2026-10-14T03:00:00Z"), started_at=at("2026-10-14T04:00:00Z"))
-        self.assertEqual("2026-10-13T18:17:00Z", report.expected_at)
+        self.assertEqual("2026-10-13T12:00:00Z", report.expected_at)
         brazil = schedule_timing(event="schedule", created_at=at("2026-10-14T00:00:00-03:00"), started_at=at("2026-10-14T01:00:00-03:00"))
         self.assertEqual(report, brazil)
 

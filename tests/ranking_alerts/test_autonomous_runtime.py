@@ -123,6 +123,49 @@ class AutonomousRuntimeTests(unittest.TestCase):
         self.assertEqual([], self.provider.messages)
         self.assertEqual([], self.checkpoints)
 
+    def test_first_activation_does_not_send_persisted_historical_edition(self):
+        # Collect-only history exists before the autonomous delivery ledger.
+        import update_rankings
+        update_rankings.collect(source=self.source,
+            rankings_path=self.root / "data/rankings.json",
+            state_path=self.root / "automation/state/ranking_alerts.json",
+            baseline_path=self.root / "data/ranking_career_high_baseline.json",
+            incidents_path=self.root / "automation/state/ranking_incidents.json",
+            clock=lambda: self.instant)
+        self.run_cycle()
+        self.assertEqual(["status:2026-10-12"], [event for _, event in self.provider.messages])
+        self.run_cycle()
+        self.source.edition = "2026-10-12"
+        self.run_cycle()
+        self.assertEqual(1, sum(event.startswith("edition:") for _, event in self.provider.messages))
+
+    def test_actions_only_source_outage_and_recovery_leave_no_ops_retry_queue(self):
+        from ranking_alerts.autonomous_delivery import load_delivery
+        for error in ("ranking_source_timeout", "ranking_source_timeout", None, None):
+            self.source.error = error
+            self.instant += timedelta(minutes=5)
+            result = autonomous_rankings.run_cycle(source=self.source, root=self.root,
+                now=lambda: self.instant, checkpoint=lambda: None,
+                provider_factory=lambda: self.provider)
+            self.assertEqual(bool(error), autonomous_rankings.cycle_failed(result))
+            self.assertEqual(0, result["notification"]["ops_pending"])
+        ops = [i for i in load_delivery(self.root / autonomous_rankings.DEFAULT_DELIVERY_PATH).latest().values()
+               if i["channel"] == "operational"]
+        self.assertEqual(2, len(ops))  # outage and recovery, both terminal
+        self.assertTrue(all(i["state"] == "suppressed" for i in ops))
+
+    def test_callmebot_failure_makes_cycle_fail_without_external_ops_sink(self):
+        for code, retryable in (("http_429", True), ("transport_timeout", False), ("http_400", False)):
+            with self.subTest(code=code):
+                self.instant += timedelta(days=7)
+                self.source.edition = self.instant.date().isoformat()
+                self.provider.error = DeliveryError(code, 1, retryable=retryable)
+                result = autonomous_rankings.run_cycle(source=self.source, root=self.root,
+                    now=lambda: self.instant, checkpoint=lambda: None,
+                    provider_factory=lambda: self.provider)
+                self.assertTrue(autonomous_rankings.cycle_failed(result))
+                self.assertEqual(0, result["notification"]["ops_pending"])
+
     def test_interrupted_checkpoint_replans_without_duplicate_digest(self):
         def interrupted():
             raise RuntimeError("mock checkpoint interruption")

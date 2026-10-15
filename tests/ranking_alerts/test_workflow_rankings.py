@@ -11,8 +11,8 @@ class RankingsWorkflowTests(unittest.TestCase):
         cls.text = WORKFLOW.read_text()
         cls.steps = cls.text.split('- name:')
 
-    def test_daily_intraday_polling_and_current_branch_dry_run(self):
-        self.assertIn("cron: '17 12,18 * * *'", self.text)
+    def test_weekday_polling_and_current_branch_dry_run(self):
+        self.assertIn("cron: '0 12 * * 1-5'", self.text)
         self.assertIn('workflow_dispatch:', self.text)
         self.assertIn('default: dry-run', self.text)
         self.assertIn('ref: ${{ github.ref_name }}', self.text)
@@ -34,7 +34,12 @@ class RankingsWorkflowTests(unittest.TestCase):
         self.assertEqual(1, len(holders))
         self.assertIn('python scripts/autonomous_rankings.py run\n', holders[0])
         self.assertIn('CALLMEBOT_API_KEY', holders[0])
-        self.assertIn('ATP_OPS_WEBHOOK_URL', holders[0])
+        self.assertNotIn('ATP_OPS_WEBHOOK_', self.text)
+        self.assertNotIn('ATP_WATCHDOG_', self.text)
+        self.assertNotIn('unittest discover', self.text)
+        runtime = (WORKFLOW.parents[2] / 'scripts/autonomous_rankings.py').read_text()
+        self.assertNotIn('send_operational_alert', runtime)
+        self.assertNotIn('ATP_OPS_WEBHOOK_', runtime)
 
     def test_shared_writer_concurrency_and_timing(self):
         self.assertIn('contents: write', self.text)
