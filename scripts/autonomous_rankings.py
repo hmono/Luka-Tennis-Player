@@ -37,6 +37,7 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
     error = None
     outcome = None
     last_date = None
+    rankings_for_status = None
     historical_dates = set()
     try:
         historical_dates = {s.ranking_date for s in load_rankings(rankings_path).snapshots}
@@ -46,6 +47,7 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
         if not dry:
             kwargs["incidents_path"] = incidents_path
         outcome = action(**kwargs)
+        rankings_for_status = outcome.rankings
         last_date = max((s.ranking_date for s in outcome.rankings.snapshots), default=None)
         status = outcome.freshness.state.value
     except Exception as exc:
@@ -56,7 +58,8 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
             error = "ranking_source_incomplete"
         status = "SOURCE_ERROR"
         try:
-            last_date = max((s.ranking_date for s in load_rankings(rankings_path).snapshots), default=None)
+            rankings_for_status = load_rankings(rankings_path)
+            last_date = max((s.ranking_date for s in rankings_for_status.snapshots), default=None)
         except StorageError:
             pass
     result = {"collection": status, "last_valid_date": last_date, "error_code": error}
@@ -98,7 +101,8 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
                    f"code: {error or 'source_recovered'}")
         ledger = plan_operational(ledger, event_id=episode, message=message, now=stamp)
     ledger = plan_weekly_status(ledger, period=weekly_period(instant), last_verified_date=last_date,
-                                checked_at=stamp, now=stamp, status=status)
+                                checked_at=stamp, now=stamp, status=status,
+                                rankings=rankings_for_status)
     ledger = plan_provider_health(ledger, configured=provider is not None,
                                   last_verified_date=last_date, now=stamp)
     save_delivery(delivery_path, ledger)

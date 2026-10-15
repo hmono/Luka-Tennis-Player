@@ -17,7 +17,10 @@ from typing import Any, Callable
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from .domain import RankingAlertState, RankingsData
+from .domain import (
+    DisciplineDelta, DisciplineRanking, RankingAlertState, RankingsData,
+    compare_snapshots, effective_snapshots,
+)
 from .providers import DeliveryError, NotificationProvider
 from .storage import StorageError, _load_json, write_json_atomic
 
@@ -274,12 +277,64 @@ def plan_digest(ledger: DeliveryLedger, *, snapshot_id: str, ranking_date: str,
     return ledger
 
 
+def _pretty_date(value: str) -> str:
+    return date.fromisoformat(_date(value)).strftime("%d/%m/%Y")
+
+
+def _weekly_position(label: str, ranking: DisciplineRanking,
+                     change: DisciplineDelta | None) -> str:
+    position = ("não classificado" if ranking.rank is None
+                else f"#{ranking.rank:,}".replace(",", "."))
+    if change is not None:
+        if change.entered_ranking:
+            position += " (entrou no ranking)"
+        elif change.left_ranking:
+            position += " (saiu do ranking)"
+        elif change.rank_delta is not None:
+            movement = change.rank_delta
+            position += (f" (subiu {movement})" if movement > 0 else
+                         f" (caiu {-movement})" if movement < 0 else
+                         " (sem mudança)")
+    if ranking.career_high_rank is not None:
+        position += " | melhor: " + f"#{ranking.career_high_rank:,}".replace(",", ".")
+    return f"{label}: {position}"
+
+
 def plan_weekly_status(ledger: DeliveryLedger, *, period: str, last_verified_date: str | None,
-                       checked_at: str, now: str, status: str = "NO_NEW_EDITION_OBSERVED") -> DeliveryLedger:
+                       checked_at: str, now: str, status: str = "NO_NEW_EDITION_OBSERVED",
+                       rankings: RankingsData | None = None) -> DeliveryLedger:
+    """Readable weekly summary of the latest verified facts; never replan a sent period."""
     _date(period)
-    message = (f"ATP status semanal ({period}): {status}. "
-               f"Última classificação verificada: {last_verified_date or 'desconhecida'}. "
-               f"Checagem: {checked_at}. Data anterior não é nova publicação.")
+    checked_local = _time(checked_at).astimezone(ZoneInfo("America/Sao_Paulo"))
+    lines = ["Ranking ATP — Luka Bojicic Ono"]
+    lines.append("Última edição: " + (_pretty_date(last_verified_date) if last_verified_date else "indisponível"))
+
+    effective = effective_snapshots(rankings.snapshots) if rankings is not None else ()
+    current = next((item for item in reversed(effective)
+                    if item.ranking_date == last_verified_date), None)
+    if current is None:
+        lines.extend(("Simples: indisponível", "Duplas: indisponível"))
+    else:
+        previous = next((item for item in reversed(effective)
+                         if item.ranking_date < current.ranking_date), None)
+        delta = compare_snapshots(previous, current, effective) if previous else None
+        lines.extend((
+            _weekly_position("Simples", current.singles, delta.singles if delta else None),
+            _weekly_position("Duplas", current.doubles, delta.doubles if delta else None),
+        ))
+        if previous:
+            lines.append("Variação desde " + _pretty_date(previous.ranking_date) + ".")
+
+    if status == "NO_NEW_EDITION_OBSERVED":
+        lines.append("Sem nova edição identificada na ITF.")
+    elif status == "FRESH":
+        lines.append("Nova edição identificada na ITF.")
+    elif status == "SOURCE_ERROR":
+        lines.append("Consulta à ITF indisponível; exibindo somente o último registro.")
+    else:
+        lines.append("Situação da atualização não confirmada.")
+    lines.append("Consulta: " + checked_local.strftime("%d/%m/%Y às %H:%M") + " (BRT).")
+    message = "\n".join(lines)
     return _plan(ledger, identity=f"status:{period}", event_type="weekly_status", message=message,
                  metadata={"period": period, "last_verified_date": last_verified_date,
                            "checked_at": checked_at, "status": status}, now=now)
