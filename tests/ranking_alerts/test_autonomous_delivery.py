@@ -180,7 +180,65 @@ class AutonomousDeliveryTests(unittest.TestCase):
         latest = load_delivery(self.path).latest()
         self.assertEqual(sum(i["event_type"] == "edition_digest" for i in latest.values()), 2)
         self.assertEqual(sum(i["event_type"] == "weekly_status" for i in latest.values()), 8)
-        self.assertIn("Última classificação verificada: 2026-10-05", provider.calls[0]["message"])
+        self.assertIn("Última edição: 05/10/2026", provider.calls[0]["message"])
+        self.assertNotIn("NO_NEW_EDITION_OBSERVED", provider.calls[0]["message"])
+
+    def test_weekly_message_contains_positions_movement_and_best_ranks_without_replay(self):
+        def snapshot(edition, singles, doubles, captured_at):
+            observation = RankingObservation(
+                atp_id="B0UF", name="Luka Bojicic Ono", source="itf",
+                ranking_date=edition,
+                singles=DisciplineRanking(rank=singles, points=None,
+                    career_high_rank=1827, career_high_date="2025-12-01"),
+                doubles=DisciplineRanking(rank=doubles, points=None,
+                    career_high_rank=1401, career_high_date="2026-09-28"),
+            )
+            return build_snapshot(observation, captured_at=captured_at)
+
+        history = RankingsData(snapshots=(
+            snapshot("2026-09-28", 2237, 1401, "2026-09-29T15:19:42Z"),
+            snapshot("2026-10-05", 2250, 1417, "2026-10-12T20:56:27Z"),
+        ))
+        self.clock = "2026-10-15T14:28:41Z"
+        ledger = plan_weekly_status(DeliveryLedger(), period="2026-10-12",
+            last_verified_date="2026-10-05", checked_at=self.clock,
+            now=self.clock, status="NO_NEW_EDITION_OBSERVED", rankings=history)
+        message = ledger.events[0]["message"]
+        self.assertIn("Ranking ATP — Luka Bojicic Ono", message)
+        self.assertIn("Última edição: 05/10/2026", message)
+        self.assertIn("Simples: #2.250 (caiu 13) | melhor: #1.827", message)
+        self.assertIn("Duplas: #1.417 (caiu 16) | melhor: #1.401", message)
+        self.assertIn("Variação desde 28/09/2026.", message)
+        self.assertIn("Sem nova edição identificada na ITF.", message)
+        self.assertIn("Consulta: 15/10/2026 às 11:28 (BRT).", message)
+        self.assertNotIn("NO_NEW_EDITION_OBSERVED", message)
+        self.assertNotIn(" pts", message)  # Missing points are never reported as zero.
+
+        save_delivery(self.path, ledger)
+        provider = MockProvider()
+        self.run_delivery(provider)
+        self.assertEqual(["status:2026-10-12"], [call["event_id"] for call in provider.calls])
+        sent = load_delivery(self.path)
+        # This same period has already been accepted by CallMeBot: no reformat
+        # and no second send, even after a later query or source failure.
+        unchanged = plan_weekly_status(sent, period="2026-10-12",
+            last_verified_date="2026-10-05", checked_at="2026-10-15T15:00:00Z",
+            now="2026-10-15T15:00:00Z", status="SOURCE_ERROR", rankings=history)
+        self.assertEqual(sent, unchanged)
+        self.run_delivery(provider)
+        self.assertEqual(1, len(provider.calls))
+
+    def test_weekly_message_has_clear_fallback_for_source_error_and_no_data(self):
+        now = "2026-10-19T12:00:00Z"
+        ledger = plan_weekly_status(DeliveryLedger(), period="2026-10-19",
+            last_verified_date=None, checked_at=now, now=now,
+            status="SOURCE_ERROR", rankings=RankingsData())
+        message = ledger.events[0]["message"]
+        self.assertIn("Última edição: indisponível", message)
+        self.assertIn("Simples: indisponível", message)
+        self.assertIn("Duplas: indisponível", message)
+        self.assertIn("Consulta à ITF indisponível", message)
+        self.assertNotIn("SOURCE_ERROR", message)
 
     def test_legacy_accepted_and_ambiguous_are_preserved_without_replay(self):
         for status, code, retryable in (("sent", None, False), ("pending", "transport_timeout", True), ("pending", "provider_outcome_unknown", False)):
