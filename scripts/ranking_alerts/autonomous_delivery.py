@@ -2,7 +2,8 @@
 
 Remote checkpoint precedes every external effect. Unknown outcomes automatically
 finish with possible loss, never replay: CallMeBot offers no idempotency/status
-contract. The independent operational sink has its own durable intentions.
+contract. Without an injected sink, operational intentions are retained as
+suppressed records and reported locally; they never become a retry backlog.
 Historical sporting outbox and receipts are read, never rewritten.
 """
 from __future__ import annotations
@@ -228,7 +229,8 @@ def _alert(ledger: DeliveryLedger, item: dict[str, Any], now: str) -> DeliveryLe
 
 def plan_digest(ledger: DeliveryLedger, *, snapshot_id: str, ranking_date: str,
                 message: str, now: str, legacy_state: RankingAlertState | None = None,
-                legacy_rankings: RankingsData | None = None) -> DeliveryLedger:
+                legacy_rankings: RankingsData | None = None,
+                historical: bool = False) -> DeliveryLedger:
     identity = f"edition:{ranking_date}"
     existing = tuple(item for item in ledger.latest().values()
                      if item["event_type"] == "edition_digest" and item["metadata"]["ranking_date"] == ranking_date)
@@ -266,6 +268,9 @@ def plan_digest(ledger: DeliveryLedger, *, snapshot_id: str, ranking_date: str,
         ledger = _transition(ledger, item, state="delivery_unknown", now=now, provider=uncertain.provider,
                              error_code="legacy_outcome_unknown", risk="possible_loss")
         ledger = _alert(ledger, ledger.latest()[identity], now)
+    elif historical:
+        ledger = _transition(ledger, item, state="suppressed", now=now,
+                             error_code="historical_backlog")
     return ledger
 
 
@@ -299,7 +304,9 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
     Safe rejection (429) retries on later cycles with bounded persisted backoff.
     Checkpoint failure propagates before sending. After a crashed reservation,
     recovery chooses possible loss over duplication without a manual gate.
-    Operational sink returns True only after durably persisting the event_id.
+    The MVP supplies no operational sink: local diagnostics and terminal audit
+    records replace external retries. An explicitly injected legacy sink
+    returns True only after durably persisting the event_id.
     Its receiver deduplicates retries, so ops retry indefinitely with capped
     backoff, including interrupted calls; acceptance is not device delivery.
     """
@@ -311,6 +318,21 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
     def persist(updated: DeliveryLedger) -> None:
         save_delivery(path, updated)
         checkpoint()
+
+    def record_operations(updated: DeliveryLedger) -> DeliveryLedger:
+        if ops_alert is not None:
+            return updated
+        for entry in tuple(updated.latest().values()):
+            if entry["channel"] == "operational" and entry["state"] not in _TERMINAL:
+                print(f"operational_event={entry['event_id']} disposition=actions_only")
+                # Reserved legacy ops calls may have reached the old sink. Do
+                # not assert acceptance or replay them; retain their history.
+                state = "delivery_unknown" if entry["state"] == "reserved" else "suppressed"
+                updated = _transition(updated, entry, state=state, now=now(),
+                    error_code="actions_only", risk="possible_loss" if state == "delivery_unknown" else None)
+        return updated
+
+    ledger = record_operations(ledger)
 
     # Finish interrupted requests before deciding what fresh work to send.
     for item in tuple(ledger.latest().values()):
@@ -336,6 +358,7 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
         obsolete = (item["event_type"] == "edition_digest" and item["metadata"]["ranking_date"] < newest_date) or (item["event_type"] == "weekly_status" and item["metadata"]["period"] < current_period)
         if obsolete:
             ledger = _transition(ledger, item, state="suppressed", now=now(), error_code="superseded_backlog")
+    ledger = record_operations(ledger)
     persist(ledger)
     sends = {"sporting": 0, "operational": 0}
     # Separate budgets prevent an unavailable channel from starving the other.
@@ -357,6 +380,7 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
             ledger = _transition(ledger, item, state="rejected", now=now(), error_code="retry_exhausted")
             if item["channel"] == "sporting":
                 ledger = _alert(ledger, ledger.latest()[identity], now())
+            ledger = record_operations(ledger)
             persist(ledger)
             counts["rejected"] += 1
             continue
@@ -397,6 +421,7 @@ def deliver_autonomously(*, path: Path, provider: NotificationProvider | None,
                              risk=risk, next_attempt_at=next_at, http_status=http_status)
         if state in {"delivery_unknown", "rejected"} and item["channel"] == "sporting":
             ledger = _alert(ledger, ledger.latest()[identity], now())
+        ledger = record_operations(ledger)
         persist(ledger)
         queue.extend(key for key, value in ledger.latest().items()
                      if value["channel"] == "operational" and key not in queue)

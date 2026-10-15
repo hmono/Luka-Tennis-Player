@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from .freshness import CalendarError, FreshnessAssessment, _aware
-from .autonomous_scheduler import poll_slots
+from .autonomous_scheduler import ranking_poll_slots
 
 
 @dataclass(frozen=True)
@@ -27,17 +27,17 @@ def _iso(instant: datetime) -> str:
 
 
 def schedule_timing(*, event: str, created_at: datetime, started_at: datetime) -> ScheduleTiming:
-    """Infer the preceding daily 12:17 / 18:17 UTC poll slot.
+    """Infer the preceding weekday 12:00 UTC poll slot.
 
     A nominal timestamp is absent in Actions metadata; delay is an estimate,
-    and independent watchdog polling detects cycles that never started.
+    and this telemetry cannot detect cycles that never started.
     """
     created, started = _aware(created_at), _aware(started_at)
     if started < created:
         raise CalendarError()
     if event != "schedule":
         return ScheduleTiming(event, None, _iso(started), None, False)
-    expected = poll_slots(created)[-1]
+    expected = ranking_poll_slots(created)[-1]
     delay = (started - expected).total_seconds() / 60
     return ScheduleTiming(event, _iso(expected), _iso(started), round(delay, 2), delay > 60)
 

@@ -14,7 +14,7 @@ from ranking_alerts.durability import GitCheckpoint, state_lock
 from ranking_alerts.providers import CallMeBotProvider, ConfigurationError
 from ranking_alerts.runtime_state import DEFAULT_RUNTIME_PATH, append_cycle
 from ranking_alerts.storage import StorageError, load_alert_state, load_rankings
-from ranking_alerts.telemetry import safe_source_telemetry
+from ranking_alerts.telemetry import append_summary, emit_collection_summary, safe_source_telemetry
 
 DEFAULT_DELIVERY_PATH = Path("automation/state/ranking_delivery.json")
 
@@ -37,7 +37,9 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
     error = None
     outcome = None
     last_date = None
+    historical_dates = set()
     try:
+        historical_dates = {s.ranking_date for s in load_rankings(rankings_path).snapshots}
         action = legacy.dry_run if dry else legacy.collect
         kwargs = dict(source=source, rankings_path=rankings_path, state_path=state_path,
                       baseline_path=root / legacy.DEFAULT_BASELINE_PATH, clock=lambda: instant)
@@ -58,6 +60,8 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
         except StorageError:
             pass
     result = {"collection": status, "last_valid_date": last_date, "error_code": error}
+    emit_collection_summary(outcome.freshness if outcome else None,
+                            source_telemetry=getattr(source, "last_telemetry", None), error_code=error)
     if dry:
         result["writes"] = False
         result["provider_requests"] = 0
@@ -87,7 +91,8 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
         for snapshot in latest.values():
             ledger = plan_digest(ledger, snapshot_id=snapshot.id, ranking_date=snapshot.ranking_date,
                                  message=legacy._message_for_snapshot(outcome.rankings, snapshot, "weekly_digest"),
-                                 now=stamp, legacy_state=state, legacy_rankings=outcome.rankings)
+                                 now=stamp, legacy_state=state, legacy_rankings=outcome.rankings,
+                                 historical=snapshot.ranking_date in historical_dates)
     if episode:
         message = (f"ATP monitor {status}; data date: {last_date or 'unknown'}; checked: {stamp}; "
                    f"code: {error or 'source_recovered'}")
@@ -107,6 +112,12 @@ def run_cycle(*, source, root: Path, now: Callable[[], datetime], dry: bool = Fa
     return result
 
 
+def cycle_failed(result: dict) -> bool:
+    report = result.get("notification", {})
+    return bool(result["error_code"] or result.get("provider_configuration") == "unavailable"
+                or any(report.get(key, 0) for key in ("unknown", "rejected", "retrying")))
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("run",))
@@ -118,18 +129,21 @@ def main(argv=None) -> int:
             raise ConfigurationError("ranking_delivery_disabled")
         checkpoint = None if args.dry_run else GitCheckpoint(root)
         from ranking_alerts.itf_source import ItfRankingSource
-        from ranking_alerts.autonomous_scheduler import send_operational_alert
         from contextlib import nullcontext
         with nullcontext() if args.dry_run else state_lock(root / legacy.DEFAULT_STATE_PATH):
             result = run_cycle(source=ItfRankingSource(), root=root,
                                now=lambda: datetime.now(timezone.utc), dry=args.dry_run,
-                               checkpoint=checkpoint, ops_alert=send_operational_alert)
+                               checkpoint=checkpoint)
         import json
         print("autonomous_cycle=" + json.dumps(result, sort_keys=True))
-        return 1 if result["error_code"] or result.get("provider_configuration") == "unavailable" else 0
+        append_summary("### ATP ranking — cycle\n\n```json\n" + json.dumps(result, sort_keys=True) + "\n```\n"
+                       "Operational diagnostics are recorded in Actions and Git; no external sink. "
+                       "provider_accepted does not prove delivery to the device.\n")
+        return 1 if cycle_failed(result) else 0
     except Exception as exc:
         code = getattr(exc, "code", "autonomous_runtime_failed")
         print(f"error={code if isinstance(exc, (StorageError, ConfigurationError)) else 'autonomous_runtime_failed'}", file=sys.stderr)
+        append_summary("### ATP ranking — cycle failed\n\nSee sanitized error code in Actions logs.\n")
         return 1
 
 

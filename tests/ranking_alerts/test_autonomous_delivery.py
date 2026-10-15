@@ -56,6 +56,45 @@ class AutonomousDeliveryTests(unittest.TestCase):
                                     checkpoint=lambda: self.checkpoints.append(self.path.read_text()),
                                     now=lambda: self.clock, **kwargs)
 
+    def test_no_sink_closes_legacy_ops_backlog_without_network_or_rewriting_history(self):
+        ledger = DeliveryLedger()
+        for n in range(3):
+            ledger = plan_operational(ledger, event_id=f"old-{n}", message="source incident", now=self.clock)
+        # Preserve an interrupted legacy sink reservation and a rejected attempt
+        # waiting for retry as well as an unattempted intention.
+        from ranking_alerts.autonomous_delivery import _transition
+        first, second, _ = ledger.latest().values()
+        ledger = _transition(ledger, first, state="reserved", now=self.clock,
+                             attempts=1, attempt_id="a" * 32, provider="independent-ops")
+        ledger = _transition(ledger, second, state="reserved", now=self.clock,
+                             attempts=1, attempt_id="b" * 32, provider="independent-ops")
+        ledger = _transition(ledger, ledger.latest()[second["event_id"]], state="retry_wait",
+                             now=self.clock, next_attempt_at="2026-10-13T13:00:00Z",
+                             error_code="ops_sink_unavailable")
+        save_delivery(self.path, ledger)
+        provider = MockProvider()
+        report = self.run_delivery(provider)
+        updated = load_delivery(self.path)
+        self.assertEqual(ledger.events, updated.events[:len(ledger.events)])
+        self.assertEqual({"suppressed", "delivery_unknown"}, {i["state"] for i in updated.latest().values()})
+        self.assertEqual(0, report.ops_pending)
+        self.assertEqual(0, report.retrying)
+        self.assertEqual([], provider.calls)
+        self.run_delivery(provider)
+        self.assertEqual(updated, load_delivery(self.path))
+
+    def test_no_sink_timeout_is_audited_and_never_replayed(self):
+        save_delivery(self.path, self.plan())
+        provider = MockProvider(DeliveryError("transport_timeout", 1))
+        report = self.run_delivery(provider)
+        self.assertEqual(1, report.unknown)
+        self.assertEqual(0, report.ops_pending)
+        self.assertEqual(0, report.retrying)
+        self.run_delivery(provider)
+        self.assertEqual(1, len(provider.calls))
+        ops = [i for i in load_delivery(self.path).latest().values() if i["channel"] == "operational"]
+        self.assertEqual(["suppressed"], [i["state"] for i in ops])
+
     def test_remote_reservation_before_send_acceptance_not_device_delivery(self):
         save_delivery(self.path, self.plan())
         def before_send():

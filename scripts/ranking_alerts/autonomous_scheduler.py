@@ -63,6 +63,14 @@ def poll_slots(now: datetime, days: int = 2) -> list[datetime]:
     return sorted(set(slot for slot in slots if slot <= now))
 
 
+def ranking_poll_slots(now: datetime) -> list[datetime]:
+    """MVP schedule: weekdays at 12:00 UTC, including the prior Friday."""
+    now = aware(now)
+    slots = [(now - timedelta(days=offset)).replace(hour=12, minute=0, second=0, microsecond=0)
+             for offset in range(8)]
+    return sorted(slot for slot in slots if slot.weekday() < 5 and slot <= now)
+
+
 def weekly_period(now: datetime) -> str:
     """ID of the latest Monday 09:00 Sao Paulo, independent of editions.
 
