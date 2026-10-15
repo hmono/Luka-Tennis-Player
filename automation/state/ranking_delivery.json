@@ -133,6 +133,28 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "status:2026-10-12",
+      "channel": "sporting",
+      "event_type": "weekly_status",
+      "state": "provider_accepted",
+      "at": "2026-10-15T14:28:49.984202Z",
+      "message": "ATP status semanal (2026-10-12): NO_NEW_EDITION_OBSERVED. Última classificação verificada: 2026-10-05. Checagem: 2026-10-15T14:28:41.022606Z. Data anterior não é nova publicação.",
+      "metadata": {
+        "period": "2026-10-12",
+        "last_verified_date": "2026-10-05",
+        "checked_at": "2026-10-15T14:28:41.022606Z",
+        "status": "NO_NEW_EDITION_OBSERVED"
+      },
+      "attempts": 1,
+      "attempt_id": "10326aa66be54759b81456d6e32ae947",
+      "provider": "callmebot",
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": 200,
+      "delivered_to_device": false
     }
   ]
 }
