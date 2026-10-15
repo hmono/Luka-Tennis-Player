@@ -134,7 +134,13 @@ class AutonomousRuntimeTests(unittest.TestCase):
             clock=lambda: self.instant)
         self.run_cycle()
         self.assertEqual(["status:2026-10-12"], [event for _, event in self.provider.messages])
+        status_message = self.provider.messages[0][0]
+        self.assertIn("Última edição: 05/10/2026", status_message)
+        self.assertIn("Simples: #2.250", status_message)
+        self.assertIn("Duplas: #1.417", status_message)
+        self.assertIn("Sem nova edição identificada na ITF.", status_message)
         self.run_cycle()
+        self.assertEqual(1, len(self.provider.messages))  # Existing accepted period never resends.
         self.source.edition = "2026-10-12"
         self.run_cycle()
         self.assertEqual(1, sum(event.startswith("edition:") for _, event in self.provider.messages))
