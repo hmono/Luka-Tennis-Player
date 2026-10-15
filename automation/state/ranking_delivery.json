@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "atp_id": "B0UF",
+  "events": [
+    {
+      "event_id": "edition:2026-09-28",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "planned",
+      "at": "2026-10-15T14:28:41.022606Z",
+      "message": "ATP Ranking — 2026-09-28\nSingles: #2.237 | CH #1.827 (2025-12-01)\nDoubles: #1.401 | CH #1.401 (2026-09-28)",
+      "metadata": {
+        "snapshot_id": "sha256:ed9b8245b117081ebde6b2943f422a4c9983ec30449cab63bec170d4f40518e0",
+        "ranking_date": "2026-09-28",
+        "period": "2026-10-12",
+        "legacy_event_id": "sha256:95f6e641b630584a87f31a087a2a7507280b1107ec87212ff58544b9ddfe816e",
+        "legacy_attempt_id": null
+      },
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "edition:2026-09-28",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "provider_accepted",
+      "at": "2026-10-15T14:28:41.022606Z",
+      "message": "ATP Ranking — 2026-09-28\nSingles: #2.237 | CH #1.827 (2025-12-01)\nDoubles: #1.401 | CH #1.401 (2026-09-28)",
+      "metadata": {
+        "snapshot_id": "sha256:ed9b8245b117081ebde6b2943f422a4c9983ec30449cab63bec170d4f40518e0",
+        "ranking_date": "2026-09-28",
+        "period": "2026-10-12",
+        "legacy_event_id": "sha256:95f6e641b630584a87f31a087a2a7507280b1107ec87212ff58544b9ddfe816e",
+        "legacy_attempt_id": null
+      },
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": "callmebot",
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "edition:2026-10-05",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "planned",
+      "at": "2026-10-15T14:28:41.022606Z",
+      "message": "ATP Ranking — 2026-10-05\nSingles: #2.250 (-13) | CH #1.827 (2025-12-01)\nDoubles: #1.417 (-16) | CH #1.401 (2026-09-28)",
+      "metadata": {
+        "snapshot_id": "sha256:ba2dc4801aa342d5d15755788ad4a5e1177de5642ac056e896778a2d3ccef92b",
+        "ranking_date": "2026-10-05",
+        "period": "2026-10-12"
+      },
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "edition:2026-10-05",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "suppressed",
+      "at": "2026-10-15T14:28:41.022606Z",
+      "message": "ATP Ranking — 2026-10-05\nSingles: #2.250 (-13) | CH #1.827 (2025-12-01)\nDoubles: #1.417 (-16) | CH #1.401 (2026-09-28)",
+      "metadata": {
+        "snapshot_id": "sha256:ba2dc4801aa342d5d15755788ad4a5e1177de5642ac056e896778a2d3ccef92b",
+        "ranking_date": "2026-10-05",
+        "period": "2026-10-12"
+      },
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": "historical_backlog",
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "status:2026-10-12",
+      "channel": "sporting",
+      "event_type": "weekly_status",
+      "state": "planned",
+      "at": "2026-10-15T14:28:41.022606Z",
+      "message": "ATP status semanal (2026-10-12): NO_NEW_EDITION_OBSERVED. Última classificação verificada: 2026-10-05. Checagem: 2026-10-15T14:28:41.022606Z. Data anterior não é nova publicação.",
+      "metadata": {
+        "period": "2026-10-12",
+        "last_verified_date": "2026-10-05",
+        "checked_at": "2026-10-15T14:28:41.022606Z",
+        "status": "NO_NEW_EDITION_OBSERVED"
+      },
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    }
+  ]
+}
