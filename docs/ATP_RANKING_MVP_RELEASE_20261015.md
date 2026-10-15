@@ -72,7 +72,7 @@ Após ativação, verificar primeiros runs pelo GitHub; não exigir validação 
 | ITF indisponível ou atrasada | Alertar pelo Actions quando executar; preservar última edição com data, sem inventar dados |
 | GitHub Actions/CallMeBot indisponíveis prolongadamente | Sem resiliência multi-cloud no MVP; reavaliar apenas após incidente concreto |
 
-**Explicitamente fora:** Cloudflare Workers/D1 [PR #34](https://github.com/hmono/Luka-Tennis-Player/pull/34), watchdog/inbox Linux [PR #32](https://github.com/hmono/Luka-Tennis-Player/pull/32), sprints de infraestrutura [#26](https://github.com/hmono/Luka-Tennis-Player/issues/26), [#33](https://github.com/hmono/Luka-Tennis-Player/issues/33), [#35](https://github.com/hmono/Luka-Tennis-Player/issues/35). Permanecem arquivadas como referências, sem merge ou mudanças no host.
+**Explicitamente fora:** Cloudflare Workers/D1 [PR #34](https://github.com/hmono/Luka-Tennis-Player/pull/34), watchdog/inbox Linux [PR #32](https://github.com/hmono/Luka-Tennis-Player/pull/32), sprints de infraestrutura [#26](https://github.com/hmono/Luka-Tennis-Player/issues/26), [#33](https://github.com/hmono/Luka-Tennis-Player/issues/33), [#35](https://github.com/hmono/Luka-Tennis-Player/issues/35). Permanecem **suspensas e preservadas** como referências, sem merge ou mudanças no host.
 
 ## 7. Definição de concluído
 
