@@ -177,6 +177,27 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "edition:2026-10-19",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "planned",
+      "at": "2026-10-20T16:31:51.847081Z",
+      "message": "ATP Ranking — 2026-10-19\nSingles: #2.241 (+9) | CH #1.827 (2025-12-01)\nDoubles: #1.396 (+21) | CH #1.396 (2026-10-19)\nNovo career high: Doubles #1.396",
+      "metadata": {
+        "snapshot_id": "sha256:56b51dcd7fa9d084fbae1462de0402212666a5dbfa722e2fb3e188ab657cc71e",
+        "ranking_date": "2026-10-19",
+        "period": "2026-10-19"
+      },
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
     }
   ]
 }
