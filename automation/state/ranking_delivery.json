@@ -297,6 +297,61 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "edition:2026-10-19",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "delivery_unknown",
+      "at": "2026-10-20T16:32:02.653990Z",
+      "message": "ATP Ranking — 2026-10-19\nSingles: #2.241 (+9) | CH #1.827 (2025-12-01)\nDoubles: #1.396 (+21) | CH #1.396 (2026-10-19)\nNovo career high: Doubles #1.396",
+      "metadata": {
+        "snapshot_id": "sha256:56b51dcd7fa9d084fbae1462de0402212666a5dbfa722e2fb3e188ab657cc71e",
+        "ranking_date": "2026-10-19",
+        "period": "2026-10-19"
+      },
+      "attempts": 1,
+      "attempt_id": "2c4a3c32377a4fec82ce4eb1c535c66a",
+      "provider": "callmebot",
+      "error_code": "provider_response_ambiguous",
+      "next_attempt_at": null,
+      "risk": "possible_loss",
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:3432deabdfeeab816d6ee61f0548f6fe2891202c49406d956254b2dbea3899a7",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "planned",
+      "at": "2026-10-20T16:32:02.654362Z",
+      "message": "ATP delivery delivery_unknown: edition:2026-10-19; code=provider_response_ambiguous; device delivery unknown. Automatic at-most-once policy: possible loss; no ambiguous replay.",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:3432deabdfeeab816d6ee61f0548f6fe2891202c49406d956254b2dbea3899a7",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "suppressed",
+      "at": "2026-10-20T16:32:02.654605Z",
+      "message": "ATP delivery delivery_unknown: edition:2026-10-19; code=provider_response_ambiguous; device delivery unknown. Automatic at-most-once policy: possible loss; no ambiguous replay.",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": "actions_only",
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
     }
   ]
 }
