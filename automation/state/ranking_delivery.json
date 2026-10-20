@@ -220,6 +220,62 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "status:2026-10-19",
+      "channel": "sporting",
+      "event_type": "weekly_status",
+      "state": "delivery_unknown",
+      "at": "2026-10-20T16:31:59.862390Z",
+      "message": "Ranking ATP — Luka Bojicic Ono\nÚltima edição: 05/10/2026\nSimples: #2.250 (caiu 13) | melhor: #1.827\nDuplas: #1.417 (caiu 16) | melhor: #1.401\nVariação desde 28/09/2026.\nSem nova edição identificada na ITF.\nConsulta: 19/10/2026 às 15:29 (BRT).",
+      "metadata": {
+        "period": "2026-10-19",
+        "last_verified_date": "2026-10-05",
+        "checked_at": "2026-10-19T18:29:38.522856Z",
+        "status": "NO_NEW_EDITION_OBSERVED"
+      },
+      "attempts": 1,
+      "attempt_id": "cc104595fbc84eb097543d084c164044",
+      "provider": "callmebot",
+      "error_code": "provider_response_ambiguous",
+      "next_attempt_at": null,
+      "risk": "possible_loss",
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:b845e6827548b16868d9f229d6036ceac4f155cb9c0941c3cdcf2e333fdb88b6",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "planned",
+      "at": "2026-10-20T16:31:59.862623Z",
+      "message": "ATP delivery delivery_unknown: status:2026-10-19; code=provider_response_ambiguous; device delivery unknown. Automatic at-most-once policy: possible loss; no ambiguous replay.",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:b845e6827548b16868d9f229d6036ceac4f155cb9c0941c3cdcf2e333fdb88b6",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "suppressed",
+      "at": "2026-10-20T16:31:59.862846Z",
+      "message": "ATP delivery delivery_unknown: status:2026-10-19; code=provider_response_ambiguous; device delivery unknown. Automatic at-most-once policy: possible loss; no ambiguous replay.",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": "actions_only",
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
     }
   ]
 }
