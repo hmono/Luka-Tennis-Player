@@ -494,6 +494,61 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "edition:2026-10-26",
+      "channel": "sporting",
+      "event_type": "edition_digest",
+      "state": "delivery_unknown",
+      "at": "2026-10-27T17:40:59.914715Z",
+      "message": "ATP Ranking — 2026-10-26\nSingles: #2.239 (+2) | CH #1.827 (2025-12-01)\nDoubles: #1.283 (+113) | CH #1.283 (2026-10-26)\nNovo career high: Doubles #1.283",
+      "metadata": {
+        "snapshot_id": "sha256:ababa2882b130f7b3b3192a90db37186c5ada83f3d7c5c6c8811fda5ee33b047",
+        "ranking_date": "2026-10-26",
+        "period": "2026-10-26"
+      },
+      "attempts": 1,
+      "attempt_id": "9554bbbd0abc46ce9835ac2e4136eda7",
+      "provider": "callmebot",
+      "error_code": "provider_response_ambiguous",
+      "next_attempt_at": null,
+      "risk": "possible_loss",
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:ce9535cc0fd64ab3e7877d89893767a177a3aa83b769301e552850dec0ed3bac",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "planned",
+      "at": "2026-10-27T17:40:59.914982Z",
+      "message": "ATP delivery delivery_unknown: edition:2026-10-26; code=provider_response_ambiguous; device delivery unknown. Automatic at-most-once policy: possible loss; no ambiguous replay.",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:ce9535cc0fd64ab3e7877d89893767a177a3aa83b769301e552850dec0ed3bac",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "suppressed",
+      "at": "2026-10-27T17:40:59.915169Z",
+      "message": "ATP delivery delivery_unknown: edition:2026-10-26; code=provider_response_ambiguous; device delivery unknown. Automatic at-most-once policy: possible loss; no ambiguous replay.",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": "actions_only",
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
     }
   ]
 }
