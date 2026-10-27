@@ -22,6 +22,17 @@
       "sent_at": null,
       "provider": "callmebot",
       "last_error_code": null
+    },
+    {
+      "id": "sha256:d889b48f14f8d630f7517502f635a30d531b7c930301fda429b5357b3aae6c5b",
+      "snapshot_id": "sha256:ababa2882b130f7b3b3192a90db37186c5ada83f3d7c5c6c8811fda5ee33b047",
+      "event_type": "weekly_digest",
+      "status": "pending",
+      "attempts": 0,
+      "created_at": "2026-10-27T17:40:48.351347Z",
+      "sent_at": null,
+      "provider": "callmebot",
+      "last_error_code": null
     }
   ]
 }
