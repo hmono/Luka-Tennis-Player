@@ -432,6 +432,54 @@
           "rank": 1283
         }
       }
+    },
+    {
+      "at": "2026-10-28T18:02:11.256924Z",
+      "state": "NO_NEW_EDITION_OBSERVED",
+      "last_valid_date": "2026-10-26",
+      "error_code": null,
+      "provenance": {
+        "atp_id": "B0UF",
+        "started_at": "2026-10-28T18:02:11.411769Z",
+        "itf_player_id": "800625103",
+        "page_kind": "athlete_profile",
+        "navigation_error": null,
+        "final_url": "https://www.itftennis.com/en/players/luka-bojicic-ono/800625103/bra/mt/s/overview/",
+        "page_title": "Luka Bojicic Ono Tennis Player Profile | ITF",
+        "source": "itf",
+        "dom_identity": "Luka Bojicic Ono",
+        "cache_headers": {
+          "Date": "Wed, 28 Oct 2026 18:02:16 GMT",
+          "Cache-Control": "max-age=300"
+        },
+        "navigation_status": 200,
+        "source_ranking_date": "2026-10-26",
+        "completed_at": "2026-10-28T18:02:17.914515Z",
+        "singles": {
+          "http_status": 200,
+          "retrieved_at": "2026-10-28T18:02:17.746629Z",
+          "ranking_date": "2026-10-26",
+          "cache_headers": {
+            "Date": "Wed, 28 Oct 2026 18:02:17 GMT",
+            "Cache-Control": "max-age=0",
+            "Last-Modified": "Wed, 28 Oct 2026 18:02:17 GMT"
+          },
+          "json_object": true,
+          "rank": 2239
+        },
+        "doubles": {
+          "http_status": 200,
+          "retrieved_at": "2026-10-28T18:02:17.914396Z",
+          "ranking_date": "2026-10-26",
+          "cache_headers": {
+            "Date": "Wed, 28 Oct 2026 18:02:17 GMT",
+            "Cache-Control": "max-age=0",
+            "Last-Modified": "Wed, 28 Oct 2026 18:02:17 GMT"
+          },
+          "json_object": true,
+          "rank": 1283
+        }
+      }
     }
   ]
 }
