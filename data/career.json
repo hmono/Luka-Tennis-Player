@@ -8,8 +8,8 @@
     },
     {
       "surface": "Clay",
-      "w": 19,
-      "l": 54
+      "w": 21,
+      "l": 55
     },
     {
       "surface": "Grass",
@@ -23,6 +23,36 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-10-26",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 João Pessoa Q-1R vs G. Schenekenberg",
+      "location": "João Pessoa",
+      "round": "Q-1R",
+      "source_note": "Lost 6-1 2-6 6-10",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-10-26",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 João Pessoa QF doubles vs G. Branchetti/b. de la Pena",
+      "location": "João Pessoa",
+      "round": "QF",
+      "source_note": "Won 6-4 6-2 (w/ V. Pagotto)",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-10-26",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M15 João Pessoa 1R doubles vs V. Bini/V. Braga",
+      "location": "João Pessoa",
+      "round": "1R",
+      "source_note": "Won 6-1 7-6(1) (w/ V. Pagotto)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-10-19",
       "season": "2026",
@@ -1115,7 +1145,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-10-25",
+  "last_updated": "2026-11-01",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
