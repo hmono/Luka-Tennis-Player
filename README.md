@@ -1,7 +1,7 @@
 # Luka Ono Analytics
 
 **Domínio:** Luka · **Proprietário GitHub:** `hmono` · **Estado:** Aberto para manutenção.  
-**Fonte canônica:** [docs](https://github.com/hmono/Luka-Tennis-Player/tree/main/docs).
+**Referência principal:** [docs](https://github.com/hmono/Luka-Tennis-Player/tree/main/docs).
 
 [![Deploy to Cloudflare Pages](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml/badge.svg)](https://github.com/hmono/Luka-Tennis-Player/actions/workflows/deploy.yml)
 
