@@ -588,6 +588,23 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "ops:89eb5b517662c50ab595a9c43dead8e6b04396f77649838bbcc27ae1cbcde0d6",
+      "channel": "operational",
+      "event_type": "operational",
+      "state": "suppressed",
+      "at": "2026-11-03T19:15:01.420971Z",
+      "message": "ATP monitor SOURCE_ERROR; data date: 2026-10-26; checked: 2026-11-02T21:30:15.580200Z; code: ranking_source_redirect",
+      "metadata": {},
+      "attempts": 0,
+      "attempt_id": null,
+      "provider": null,
+      "error_code": "actions_only",
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
     }
   ]
 }
