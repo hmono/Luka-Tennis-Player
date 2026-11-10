@@ -865,6 +865,54 @@
           "rank": 1292
         }
       }
+    },
+    {
+      "at": "2026-11-10T19:27:15.618948Z",
+      "state": "SOURCE_ERROR",
+      "last_valid_date": "2026-10-26",
+      "error_code": "ranking_source_redirect",
+      "provenance": {
+        "page_kind": "athlete_profile",
+        "error_code": "ranking_source_redirect",
+        "page_title": "Luka Bojicic Ono Tennis Player Profile | ITF",
+        "atp_id": "B0UF",
+        "itf_player_id": "800625103",
+        "navigation_error": null,
+        "dom_identity": "Luka Bojicic Ono",
+        "final_url": "[unexpected URL redacted]",
+        "navigation_status": 200,
+        "started_at": "2026-11-10T19:27:15.764181Z",
+        "cache_headers": {
+          "Date": "Tue, 10 Nov 2026 19:27:32 GMT",
+          "Cache-Control": "max-age=300"
+        },
+        "source": "itf",
+        "completed_at": "2026-11-10T19:27:53.006618Z",
+        "singles": {
+          "http_status": 200,
+          "retrieved_at": "2026-11-10T19:27:44.973509Z",
+          "ranking_date": "2026-11-09",
+          "cache_headers": {
+            "Date": "Tue, 10 Nov 2026 19:27:44 GMT",
+            "Cache-Control": "max-age=900, public",
+            "Last-Modified": "Tue, 10 Nov 2026 19:27:44 GMT"
+          },
+          "json_object": true,
+          "rank": 2239
+        },
+        "doubles": {
+          "http_status": 200,
+          "retrieved_at": "2026-11-10T19:27:52.935608Z",
+          "ranking_date": "2026-11-09",
+          "cache_headers": {
+            "Date": "Tue, 10 Nov 2026 19:27:52 GMT",
+            "Cache-Control": "no-cache",
+            "Last-Modified": "Tue, 10 Nov 2026 19:27:52 GMT"
+          },
+          "json_object": true,
+          "rank": 1194
+        }
+      }
     }
   ]
 }
