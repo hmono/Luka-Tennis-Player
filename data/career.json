@@ -8,8 +8,8 @@
     },
     {
       "surface": "Clay",
-      "w": 21,
-      "l": 55
+      "w": 22,
+      "l": 58
     },
     {
       "surface": "Grass",
@@ -23,6 +23,46 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-11-09",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Santa Cruz do Sul 1R vs G. Renner",
+      "location": "Santa Cruz do Sul",
+      "round": "1R",
+      "source_note": "Lost 3-6 4-6",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-11-09",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Santa Cruz do Sul Q-2R vs A. Land",
+      "location": "Santa Cruz do Sul",
+      "round": "Q-2R",
+      "source_note": "Lost 6-2 2-6 8-10",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-11-09",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Santa Cruz do Sul Q-1R vs R. Char",
+      "location": "Santa Cruz do Sul",
+      "round": "Q-1R",
+      "source_note": "Won 6-4 6-3",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-11-09",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Santa Cruz do Sul 1R doubles vs M. Alves/S. Rodriguez Taverna",
+      "location": "Santa Cruz do Sul",
+      "round": "1R",
+      "source_note": "Lost 2-6 4-6 (w/ A. Souza)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-10-26",
       "season": "2026",
@@ -1145,7 +1185,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-11-01",
+  "last_updated": "2026-11-15",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
