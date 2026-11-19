@@ -1,3 +1,23 @@
+> **ATUALIZAÇÃO DE TESE — 19/11/2026 · MEMO v2.0.** As prioridades abaixo substituem a shortlist preliminar preservada no histórico deste documento. Ver [Information Memorandum atualizado](../reports/Luka_Analise_Raquetes_2027.html).
+
+## Decisões e dados confirmados em 19/11/2026
+
+- **Decisão fechada:** Luka mudará de raquete em janeiro de 2027. A VCORE 98 será usada apenas como `baseline`, não como opção de continuidade.
+- **Encordoamento atual confirmado:** Yonex PolyTour Spin, **1,25 mm**, **54 lb nas principais e 52 lb nas transversais** (aprox. 24,5 / 23,6 kg). A referência anterior de corda/tensão desconhecidas fica superada; continuam pendentes peso, equilíbrio, SW e geração exata da VCORE.
+- **Estilo declarado:** agressivo de fundo, forehand e backhand de duas mãos predominantemente chapados, contato antecipado muito à frente. Produzir spin exige ajuste voluntário da mecânica. Sobe à rede para encerrar pontos.
+- **Principal erro relatado:** erros não forçados na rede predominam. Não foi fornecida contagem nem denominador; trata-se de informação qualitativa, ainda não auditada por vídeo/point-by-point.
+- **Objetivo do equipamento:** preservar agressividade, antecipação e precisão, elevando margem sobre a rede e profundidade sem aumentar erros longos ou deteriorar segundo saque.
+- **Hipótese técnica:** combinação VCORE 98 16×19 + PolyTour Spin firme + 54/52 lb pode estar contribuindo para trajetória curta/baixa; hipótese não causal, também depende de golpe, timing e seleção de bola.
+- **Prioridade revisada para DEMO:** 1. Gravity Tour 98 2025; 2. T-Fight 305S 2025; 3. Yonex Percept 100D; 4. HEAD Speed Pro 2026; 5. Wilson Blade 98 18×20 v10; 6. HEAD Gravity Pro 2025. Esta é **ordem de teste provisória**, não notas medidas nem decisão de compra.
+- **Corda inicial em todos os quadros:** PolyTour Spin 1.25 a 54/52 lb, observada a faixa de fabricante e mesma máquina. **Após selecionar os dois melhores quadros**, comparar Spin vs PolyTour Pro 1.25 e 54/52 vs 51/49 lb em plano 2×2; Strike/Hyper-G Soft somente se necessário.
+- **Regra de GO:** reduzir erros na rede com profundidade e velocidade preservadas; controlar erros longos, segundo saque, devolução, timing e conforto; avaliar pelo menos duas superfícies.
+- **Evidência externa não individual:** Tennis Warehouse comparou sete cordas Yonex 1.25 a 52 lb em VCORE 100 e um avaliador: PolyTour Spin 19,0 pol (~48,3 cm) de altura de passagem, PolyTour Strike 23,6 pol (~59,9 cm), PolyTour Pro 25,4 pol (~64,5 cm). Não extrapolar diretamente para Luka. Fonte: https://www.tennis-warehouse.com/learning_center/gear_guides/yonex-poly-string-comparative-review.html
+- **Fontes técnicas:** PolyTour Spin 1.25 laboratório ~213,7 lb/in, perda de tensão 27,2%; PolyTour Strike 1.25 ~199,5 lb/in, perda 27,9% (TWU, ensaio a 51 lb). Referências: https://tennistensionlab.com/pt-BR/strings/yonex-polytour-spin e https://tennistensionlab.com/pt-BR/strings/yonex-polytour-strike
+
+> **Status do relatório:** v2.0, HTML completo. Preserva 135 partidas históricas, 55 partidas individuais de 2026 e 28 modelos pesquisados. Metodologia e ressalvas de amostragem mantidas.
+
+---
+
 # Luka Bojicic Ono — Findings de desempenho e seleção de raquete 2027
 
 **Data de referência:** 19/11/2026  
