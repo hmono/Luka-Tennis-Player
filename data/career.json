@@ -8,8 +8,8 @@
     },
     {
       "surface": "Clay",
-      "w": 22,
-      "l": 58
+      "w": 24,
+      "l": 60
     },
     {
       "surface": "Grass",
@@ -23,6 +23,46 @@
     }
   ],
   "career_events": [
+    {
+      "date": "2026-11-16",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Lajeado Q-1R vs E. Heineberg",
+      "location": "Lajeado",
+      "round": "Q-1R",
+      "source_note": "Lost 4-6 1-6",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-11-16",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Lajeado SF doubles vs L. Rodriguez/P. Sakamoto",
+      "location": "Lajeado",
+      "round": "SF",
+      "source_note": "Lost 4-6 3-6 (w/ A. Souza)",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-11-16",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Lajeado QF doubles vs W. Leite/J. Pereira",
+      "location": "Lajeado",
+      "round": "QF",
+      "source_note": "Won 7-5 6-3 (w/ A. Souza)",
+      "surface": "Clay"
+    },
+    {
+      "date": "2026-11-16",
+      "season": "2026",
+      "category": "tournament",
+      "title": "M25 Lajeado 1R doubles vs E. Almeida Junior/L. Silva",
+      "location": "Lajeado",
+      "round": "1R",
+      "source_note": "Won 6-7(8) 6-3 10-3 (w/ A. Souza)",
+      "surface": "Clay"
+    },
     {
       "date": "2026-11-09",
       "season": "2026",
@@ -1185,7 +1225,7 @@
       "season_end_rank": 1870
     }
   ],
-  "last_updated": "2026-11-15",
+  "last_updated": "2026-11-22",
   "surface_breakdown_baseline": [
     {
       "surface": "Hard (outdoor)",
