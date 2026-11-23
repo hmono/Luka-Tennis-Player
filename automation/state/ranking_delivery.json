@@ -905,6 +905,28 @@
       "risk": null,
       "http_status": null,
       "delivered_to_device": false
+    },
+    {
+      "event_id": "status:2026-11-23",
+      "channel": "sporting",
+      "event_type": "weekly_status",
+      "state": "reserved",
+      "at": "2026-11-23T23:33:32.143188Z",
+      "message": "Ranking ATP — Luka Bojicic Ono\nÚltima edição: 26/10/2026\nSimples: #2.239 (subiu 2) | melhor: #1.827\nDuplas: #1.283 (subiu 113) | melhor: #1.283\nVariação desde 19/10/2026.\nConsulta à ITF indisponível; exibindo somente o último registro.\nConsulta: 23/11/2026 às 20:33 (BRT).",
+      "metadata": {
+        "period": "2026-11-23",
+        "last_verified_date": "2026-10-26",
+        "checked_at": "2026-11-23T23:33:25.670353Z",
+        "status": "SOURCE_ERROR"
+      },
+      "attempts": 1,
+      "attempt_id": "12bbf57ce4ce425c99c1b61d308d28e7",
+      "provider": "callmebot",
+      "error_code": null,
+      "next_attempt_at": null,
+      "risk": null,
+      "http_status": null,
+      "delivered_to_device": false
     }
   ]
 }
