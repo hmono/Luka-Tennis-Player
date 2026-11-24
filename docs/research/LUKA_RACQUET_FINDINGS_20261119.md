@@ -1,3 +1,34 @@
+> **ATUALIZAÇÃO v3.0 — 24/11/2026.** [Information Memorandum responsivo](../reports/Luka_Analise_Raquetes_2027.html) · [Teaser responsivo (5 slides)](../reports/Luka_Teaser_Raquetes_2027.html). A lista anterior permanece abaixo como trilha histórica, mas está supersedida por esta decisão de shortlist.
+
+## Seis raquetes finalistas · três Pro Stock e três comerciais
+
+| Grupo | Modelo | Padrão | Tese | Risco decisivo |
+|---|---|---|---|---|
+| Pro Stock | HEAD Gravity Tour 98 TGT373.1 | 16×19 | Margem + controle | SW final e dispersão |
+| Pro Stock | Wilson H22 | 16×19 | Feel + estabilidade | Customização/inércia |
+| Pro Stock | HEAD Prestige TGT293.1 | 16×19 | Direcionamento clássico | Profundidade e potência |
+| Comercial | Tecnifibre T-Fight 305S | 18×19 | Controle intermediário | Altura sobre rede |
+| Comercial | Yonex Percept 100D | 18×19 | Timing + tolerância | Estabilidade em bolas pesadas |
+| Comercial | HEAD Speed Pro 2026 | 18×20 | Controle denso | Trajetória baixa / SW |
+
+**Nota:** especificações físicas Pro Stock são de exemplares particulares; são necessárias medições do quadro concreto antes de comparações com SW de varejo encordoada.
+
+## Cinco cordas no protocolo · calibre 1,25 mm
+
+| Corda | Papel | Rigidez TWU lb/in | Perda de tensão TWU | Spin potencial |
+|---|---|---:|---:|---:|
+| HEAD Lynx Tour | Feel aprovado pelo atleta; candidata 1 | 217,7 | 24,6% | 7,1 |
+| HEAD Hawk Power | Teste de maior saída/profundidade | 203,5 | 48,3% | 7,5 |
+| Yonex PolyTour Pro (Yellow 16L) | Teste de menor rigidez | 181,2 | 46,3% | N/D |
+| Solinco Hyper-G | Comparadora de controle/spin | 218,3 | 24,7% | 6,1 |
+| Yonex PolyTour Spin | Controle: 54/52 lb na VCORE atual | 213,7 | 27,2% | 6,3 |
+
+**Fonte:** Tennis Warehouse University, 51 lb, impacto rápido, 1,25 mm; resultados de laboratório não equivalem ao desempenho do Luka.
+
+**Plano atualizado:** (0) baseline VCORE/Spin; (1) triagem seis quadros com mesma corda e tensão, se permitida pelo fabricante; (2) cinco cordas nas duas melhores raquetes com tensão nominal constante; (3) ajuste 54/52 versus 51/49 lb nas melhores 1–2 cordas; (4) sets replicados em quadra dura e saibro. Medir erros na rede e erros longos/100 ataques, profundidade, 2º saque, devolução, timing e feel. A troca de raquete JAN/2027 continua decidida; **quadro + corda + tensão** permanecem em homologação.
+
+---
+
 > **ATUALIZAÇÃO DE TESE — 19/11/2026 · MEMO v2.0.** As prioridades abaixo substituem a shortlist preliminar preservada no histórico deste documento. Ver [Information Memorandum atualizado](../reports/Luka_Analise_Raquetes_2027.html).
 
 ## Decisões e dados confirmados em 19/11/2026
