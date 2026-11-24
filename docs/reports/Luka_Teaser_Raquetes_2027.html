@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light" name="color-scheme"/>
+<title>Luka | Teaser executivo 2027 — 6 raquetes + 5 cordas · v3.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800;900&display=swap');
+:root{--navy:#132c43;--navy2:#0d2337;--ink:#193047;--slate:#536477;--muted:#7f8d9a;--accent:#a33334;--light:#f5f6f6;--line:#d9e0e4;--green:#2f7669;--white:#fff;--paper:#fcfcfb}
+*{box-sizing:border-box} html,body{margin:0;padding:0;height:100%;background:#111b27;color:var(--ink);font-family:Roboto,'Helvetica Neue',Arial,sans-serif;overflow:hidden} button{font-family:inherit;cursor:pointer}
+#viewer{width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden}
+#stage{width:1280px;height:720px;position:absolute;top:50%;left:50%;transform-origin:center;transform:translate(-50%,-50%) scale(var(--scale,1));overflow:hidden;box-shadow:0 20px 55px #0005;background:var(--paper)}
+.slide{position:absolute;inset:0;display:none;background:var(--paper);overflow:hidden;}.slide.active{display:block}.slide--navy{background:var(--navy);color:#fff}
+.header{position:absolute;top:0;left:58px;right:58px;height:75px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d8dee3;z-index:5}.slide--navy .header{border-color:#ffffff40}.brand{font-size:16px;font-weight:800;letter-spacing:.13em}.brand span{font-weight:300;color:#6b7c89;letter-spacing:.07em}.slide--navy .brand span{color:#c2ccd6}.headmeta{font-size:10.5px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:#7a8792}.slide--navy .headmeta{color:#bbc9d5}.rule-accent{position:absolute;left:58px;right:58px;top:75px;height:3px;background:linear-gradient(90deg,var(--accent) 0 82px,transparent 82px);z-index:6}
+.content{position:absolute;left:58px;right:58px;top:108px;bottom:74px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.20em;font-weight:800;color:var(--accent);margin-bottom:13px}.slide--navy .eyebrow{color:#e5a3a5}h1,h2,h3,p{margin:0}h1{font-size:49px;letter-spacing:-.045em;line-height:1.13;font-weight:800}h2{font-size:35px;line-height:1.13;letter-spacing:-.032em;font-weight:700}h3{font-size:17px;font-weight:800;line-height:1.2}.lead{font-size:18px;line-height:1.5;color:#4e6072;font-weight:400}.slide--navy .lead{color:#e1e8ed}.sml{font-size:12px;line-height:1.47;color:var(--slate)}.slide--navy .sml{color:#bbc9d4}
+.footer{position:absolute;left:58px;right:58px;bottom:0;height:48px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);color:#718091;font-size:10px;z-index:4;letter-spacing:.025em}.slide--navy .footer{border-color:#ffffff35;color:#b4c2ce}.page{font-size:11px;font-weight:700;letter-spacing:.13em;color:var(--ink)}.slide--navy .page{color:#f4f6f7}.kicker{color:var(--accent);text-transform:uppercase;letter-spacing:.14em;font-weight:800;font-size:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:3px;font-size:10px;line-height:1.15;letter-spacing:.08em;text-transform:uppercase;font-weight:800;padding:8px 9px;background:#edf0f1;color:#435667}.pill--light{background:#e8edee;color:#1f4b59}.pill--red{background:#f3e5e5;color:#8e373b}.pill--dark{background:#ffffff23;color:#f2f7fa}.subtle-line{height:1px;background:var(--line)}
+/* cover */
+.cover-left{position:absolute;left:58px;top:136px;width:660px;z-index:2}.cover-left h1{font-size:57px;line-height:1.09;max-width:645px;letter-spacing:-.05em}.cover-left .lead{font-size:18px;line-height:1.45;max-width:640px;margin-top:22px}.cover-decision{display:flex;gap:8px;margin-top:28px}.cover-metrics{display:flex;gap:36px;position:absolute;top:506px;left:58px;z-index:2}.cover-metric{border-top:2px solid #aebcc8;min-width:160px;padding-top:13px}.cover-metric strong{font-size:38px;font-weight:800;display:block;letter-spacing:-.045em}.cover-metric em{font-size:11px;line-height:1.3;color:#becbd5;font-style:normal;display:block;letter-spacing:.03em}.hero-right{position:absolute;top:77px;right:0;width:430px;height:595px;background:linear-gradient(140deg,#173f5a,#102b43);overflow:hidden}.hero-right::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 16% 80%,#5e96a32e,transparent 48%)}.hero-side{position:absolute;right:24px;bottom:30px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#bdd5de;z-index:2}.hero-art{width:440px;height:575px;position:absolute;left:-10px;top:10px;opacity:.88}
+/* slide 2 */
+.profile-layout{display:grid;grid-template-columns:442px 1fr;gap:48px;margin-top:30px}.profile-left{padding-right:34px;border-right:1px solid var(--line)}.profiles{margin-top:30px;display:grid;gap:14px}.profileitem{display:flex;gap:18px;align-items:flex-start}.profileitem .tick{width:4px;background:var(--accent);height:32px;margin-top:1px}.profileitem b{display:block;font-size:16px;line-height:1.3}.profileitem span{display:block;color:#647687;font-size:12px;line-height:1.45;margin-top:3px}.subhead{font-size:11px;font-weight:800;color:var(--slate);letter-spacing:.12em;text-transform:uppercase;margin-bottom:18px}.chart-block{background:#f5f7f7;padding:19px 22px 16px;border-left:3px solid #cad6dd}.chart-block + .chart-block{margin-top:14px}.chart-title{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:800;margin-bottom:14px}.chart-title span{font-size:10px;color:#718496;font-weight:500}.barrow{display:grid;grid-template-columns:90px 1fr 70px;gap:10px;align-items:center;margin-bottom:10px}.barrow:last-child{margin-bottom:0}.barrow label{font-size:12px;font-weight:700}.rail{background:#e0e6e8;height:13px;position:relative}.rail .bar{height:100%;background:#234c66}.rail .bar.red{background:var(--accent)}.barrow strong{font-size:13px;text-align:right}.stat-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.statbox{padding:14px 18px;background:#f5f7f7;border-bottom:3px solid #cad6dd}.statbox.red{border-color:var(--accent)}.statbox strong{font-size:33px;font-weight:800;letter-spacing:-.04em;display:block}.statbox span{font-size:11px;line-height:1.35;color:var(--slate)}
+/* slide 3 */
+.baseline-top{display:grid;grid-template-columns:480px 1fr;gap:42px;margin-top:26px}.base-card{border:1px solid var(--line);background:#fff;padding:22px 25px 20px;min-height:260px}.base-card h3{font-size:22px;letter-spacing:-.02em}.base-tag{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:10px}.base-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:25px}.base-stats div{padding-top:12px;border-top:1px solid var(--line)}.base-stats strong{font-size:26px;letter-spacing:-.04em;display:block}.base-stats span{font-size:10px;color:var(--slate)}.base-bottom{margin-top:21px;background:#f5f7f7;border-left:4px solid var(--accent);padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:32px}.base-bottom h3{font-size:15px;margin-bottom:7px}.base-bottom p{font-size:12px;line-height:1.48;color:var(--slate)}.court-diagram{height:264px;background:#ebf0f3;position:relative;padding:12px}.court-diagram svg{width:100%;height:100%}.court-note{font-size:10px;color:#627583;margin-top:7px;text-align:right}
+/* slide 4 */
+.shortlist-head{display:grid;grid-template-columns:1fr 320px;align-items:end;gap:20px}.shortlist-head .lead{font-size:14px;line-height:1.4}.shortlist-table{margin-top:14px;border-collapse:collapse;width:100%;table-layout:fixed}.shortlist-table th{font-size:10px;text-transform:uppercase;letter-spacing:.10em;color:#7a8895;text-align:left;padding:8px 10px 9px;border-bottom:2px solid #263e52}.shortlist-table td{font-size:13px;line-height:1.35;padding:9px 10px;border-bottom:1px solid #dce3e6;vertical-align:middle}.shortlist-table tbody tr:first-child{background:#eef2f2}.shortlist-table tbody tr:nth-child(2),.shortlist-table tbody tr:nth-child(3){background:#f7f8f7}.shortlist-table .rank{font-size:12px;color:var(--accent);font-weight:900}.shortlist-table .model{font-size:14px;font-weight:800}.shortlist-table .sm{font-size:11px;color:#6d7e8c;display:block;margin-top:4px}.shortlist-table .spec{font-size:12px;font-weight:700;white-space:nowrap}.shortlist-table .text{font-size:12px;color:#44596a}.shortlist-table .risk{font-size:11px;color:#6c7a86}.legend-line{font-size:11px;color:#657686;margin-top:8px;display:flex;gap:8px;align-items:center}
+/* slide 5 */
+.protocol{display:grid;grid-template-columns:660px 1fr;gap:37px;margin-top:25px}.phase-list{display:grid;gap:10px}.phase{display:grid;grid-template-columns:65px 1fr;gap:16px;align-items:center;border:1px solid #dce3e5;background:#fff;min-height:80px;padding:11px 14px}.phase .phase-num{font-weight:800;font-size:26px;color:var(--accent);border-right:1px solid #cfd8dc;padding-right:12px}.phase b{font-size:15px;display:block}.phase span{font-size:11.5px;color:#657685;line-height:1.4;display:block;margin-top:4px}.score-panel{padding:20px;background:#f2f5f5;min-height:340px}.score-panel h3{font-size:16px;margin-bottom:14px}.score-row{display:grid;grid-template-columns:160px 1fr 42px;align-items:center;gap:8px;margin-bottom:13px}.score-row span{font-size:11px;line-height:1.25;font-weight:600}.score-row .thin{height:7px;background:#d8dfe2}.score-row i{display:block;height:7px;background:var(--navy)}.score-row strong{font-size:12px;text-align:right}.decision-strip{display:flex;align-items:center;justify-content:space-between;margin-top:18px;background:var(--navy);color:white;padding:15px 19px}.decision-strip span{font-size:12px;line-height:1.35}.decision-strip b{font-size:12px;letter-spacing:.11em;text-transform:uppercase}
+/* controls */
+.controls{position:absolute;right:8px;bottom:6px;z-index:9;display:flex;align-items:center;gap:10px;background:#132c43e8;border-radius:5px;padding:8px 9px;box-shadow:0 5px 20px #0003;opacity:.38;transition:opacity .15s}.controls:hover,.controls:focus-within{opacity:1}.controls button{border:1px solid #ffffff3d;background:#ffffff0c;color:white;min-width:32px;height:31px;border-radius:3px;font-size:15px}.controls button:hover{background:#fff3}.controls button:focus-visible{outline:2px solid #fff;outline-offset:1px}.slide-count{font-size:11px;color:#fff;min-width:36px;text-align:center;letter-spacing:.09em}.dots{display:flex;gap:5px;align-items:center}.dot{width:6px;height:6px;border-radius:50%;background:#ffffff55;cursor:pointer}.dot.active{background:#fff;width:18px;border-radius:10px}.progress{position:absolute;left:0;right:0;bottom:0;height:3px;background:#ebe7e6;z-index:5}.progress span{display:block;height:100%;width:20%;background:var(--accent);transition:width .15s}
+@media print{@page{size:landscape;margin:0}html,body{overflow:visible;height:auto;background:white}#viewer{display:block;width:auto;height:auto;overflow:visible}#stage{position:static;transform:none!important;width:1280px;height:auto;box-shadow:none;overflow:visible}.slide,.slide.active{display:block!important;position:relative;width:1280px;height:720px;break-after:page;page-break-after:always}.controls,.progress{display:none!important}}
+</style>
+<style id="teaser-mobile-extension">
+/* Responsive teaser: native mobile panels; original 1280x720 stage retained for desktop/print. */
+#mobile-deck{display:none}
+@media screen and (max-width:900px){
+  html{height:auto;min-height:100%;scroll-behavior:smooth;scroll-padding-top:88px;-webkit-text-size-adjust:100%}
+  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto;background:#f0f3f4}
+  #viewer{display:none!important}
+  #mobile-deck{display:block;width:100%;max-width:100%;min-height:100vh;font-size:14px;line-height:1.52;color:var(--ink);background:#f0f3f4;overflow:clip}
+  #mobile-deck *{box-sizing:border-box}
+  #mobile-deck .m-head{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:14px 18px 9px;background:#fff}
+  #mobile-deck .m-brand{font-weight:900;font-size:13px;letter-spacing:.105em;color:var(--navy)}
+  #mobile-deck .m-brand span{font-size:10px;font-weight:400;color:#778d9b;letter-spacing:.04em}
+  #mobile-deck .m-meta{font-size:10px;color:#798a95;letter-spacing:.07em;font-weight:700;white-space:nowrap}
+  #mobile-deck .m-nav{position:sticky;z-index:100;top:0;display:grid;grid-template-columns:repeat(5,1fr);height:50px;background:#fff;box-shadow:0 2px 8px #18344816;border-bottom:1px solid #d6dfe4}
+  #mobile-deck .m-nav a{height:50px;display:flex;justify-content:center;align-items:center;font-weight:800;letter-spacing:.1em;color:#687b88;font-size:11px;text-decoration:none;border-bottom:3px solid transparent;touch-action:manipulation}
+  #mobile-deck .m-nav a.active{border-bottom-color:var(--accent);color:var(--navy);background:#f9faf9}
+  #mobile-deck .m-nav a:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+  #mobile-deck .m-slide{padding:32px 20px 35px;background:var(--paper);border-bottom:14px solid #eef1f2;min-height:0;scroll-margin-top:50px;overflow-wrap:break-word}
+  #mobile-deck .m-slide h1,#mobile-deck .m-slide h2{font-size:clamp(30px,8.4vw,43px);line-height:1.09;letter-spacing:-.046em;margin:12px 0 21px;color:var(--navy);font-weight:750}
+  #mobile-deck .m-slide h3{font-size:17px;line-height:1.28;letter-spacing:-.018em;margin:0 0 8px;color:#17384e}
+  #mobile-deck em{font-style:normal;color:var(--accent)}
+  #mobile-deck .m-counter{font-size:10px;color:var(--accent);font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  #mobile-deck .m-lead{font-size:15px;line-height:1.61;color:#496170;margin:0 0 22px}
+  #mobile-deck p{margin-top:0}
+  #mobile-deck .m-src{font-size:11px;line-height:1.52;color:#718390;border-top:1px solid #dce3e7;padding-top:14px;margin:17px 0 0}
+  #mobile-deck .m-cover{background:var(--navy);color:white}
+  #mobile-deck .m-cover h1{color:white;font-size:clamp(36px,10vw,47px)}
+  #mobile-deck .m-cover .m-counter{color:#f0b7b4}
+  #mobile-deck .m-cover .m-lead{color:#dae4ea;font-size:16px}
+  #mobile-deck .m-cover em{color:#e8b2ae}
+  #mobile-deck .m-cover .m-src{border-color:#547184;color:#b6c7d0}
+  #mobile-deck .m-tags{display:flex;flex-wrap:wrap;gap:8px;margin:19px 0 26px}
+  #mobile-deck .m-tags span{padding:8px 10px;border:1px solid #ffffff70;color:#eff5f8;font-size:10px;font-weight:800;letter-spacing:.045em}
+  #mobile-deck .m-three-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid #d3dee55c;border-bottom:1px solid #d3dee55c;margin:25px 0 12px}
+  #mobile-deck .m-three-metrics>div{padding:16px 7px 15px;min-width:0;border-right:1px solid #d3dee55c}
+  #mobile-deck .m-three-metrics>div:first-child{padding-left:0}
+  #mobile-deck .m-three-metrics>div:last-child{border-right:0}
+  #mobile-deck .m-three-metrics strong{font-size:clamp(25px,7vw,35px);line-height:1.05;letter-spacing:-.035em;font-weight:800;display:block}
+  #mobile-deck .m-three-metrics small{display:block;font-size:10px;line-height:1.37;margin-top:8px;color:inherit;opacity:.76}
+  #mobile-deck .m-facts{display:grid;gap:8px;margin:20px 0}
+  #mobile-deck .m-facts>div{border-left:3px solid #42738b;padding:10px 12px;background:#f4f7f8}
+  #mobile-deck .m-facts b{display:block;font-size:13px;line-height:1.32;color:#1d3c4f}
+  #mobile-deck .m-facts p{margin:6px 0 0;color:#506777;font-size:12px;line-height:1.5}
+  #mobile-deck .m-panel{border:1px solid #dce4e8;background:#fff;padding:17px 15px;margin:19px 0 16px;min-width:0}
+  #mobile-deck .m-panel h3{font-size:16px}
+  #mobile-deck .m-caption{font-size:11px;color:#738491;margin-bottom:13px}
+  #mobile-deck .m-bar{display:grid;grid-template-columns:42px minmax(0,1fr) 51px;gap:10px;align-items:center;margin:13px 0;font-size:12px}
+  #mobile-deck .m-bar>div{height:12px;background:#e6ecef}
+  #mobile-deck .m-bar i{height:100%;display:block;background:#2d6079}
+  #mobile-deck .m-bar:last-of-type i{background:var(--accent)}
+  #mobile-deck .m-bar b{text-align:right;font-size:12px}
+  #mobile-deck .m-statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:17px 0}
+  #mobile-deck .m-statgrid>div{background:#f3f6f7;border-top:3px solid #9eb0b8;padding:13px 11px;min-width:0}
+  #mobile-deck .m-statgrid>div:nth-child(2),#mobile-deck .m-statgrid>div:nth-child(3){border-color:var(--accent)}
+  #mobile-deck .m-statgrid strong{font-size:25px;letter-spacing:-.04em;line-height:1.2;display:block;color:#183f55}
+  #mobile-deck .m-statgrid small{font-size:11px;color:#657987;line-height:1.4;display:block;margin-top:5px}
+  #mobile-deck .m-baseline{border:1px solid #dce4e8;padding:17px 15px;background:#fff}
+  #mobile-deck .m-baseline p{font-size:13px;line-height:1.6;color:#536b79}
+  #mobile-deck .m-baseline .m-three-metrics{border-color:#d7e1e6;margin-top:17px}
+  #mobile-deck .m-baseline .m-three-metrics>div{border-color:#d7e1e6}
+  #mobile-deck .m-baseline .m-three-metrics strong{font-size:24px;color:#163950}
+  #mobile-deck .m-baseline .m-three-metrics small{color:#5c7382;opacity:1}
+  #mobile-deck .m-mutedtitle{font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:900;margin-bottom:9px}
+  #mobile-deck .m-court-note{margin:14px 0;background:#edf2f3;padding:13px;color:#5e7381;display:flex;flex-direction:column;gap:7px;font-size:10px;font-weight:700;letter-spacing:.06em}
+  #mobile-deck .m-court-line{display:flex;gap:10px;align-items:center}
+  #mobile-deck .m-court-line i{height:3px;background:var(--accent);flex:1;transform:skewY(5deg)}
+  #mobile-deck .m-court-line i.ok{background:var(--green);transform:skewY(-5deg)}
+  #mobile-deck .m-court-line b{height:28px;display:flex;align-items:center;border-left:4px solid #28445b;padding-left:8px;color:#28445b}
+  #mobile-deck .m-diagnosis{display:grid;gap:11px}
+  #mobile-deck .m-diagnosis article{border-left:3px solid #b1c1c9;padding:12px 14px;background:#f8fafb}
+  #mobile-deck .m-diagnosis p{font-size:12px;line-height:1.6;color:#5b6f7e;margin:0}
+  #mobile-deck .m-racket{background:#fff;border:1px solid #dce4e8;padding:14px;margin:11px 0;min-width:0}
+  #mobile-deck .m-racket:nth-child(-n+3){border-left:4px solid var(--accent)}
+  #mobile-deck .m-racket-top{display:flex;align-items:flex-start;gap:12px}
+  #mobile-deck .m-rank{display:block;font-size:19px;color:var(--accent);font-weight:800;line-height:1.2;min-width:26px}
+  #mobile-deck .m-racket-top h3{margin:0 0 2px;font-size:16px;color:#15394f}
+  #mobile-deck .m-racket-top p{font-size:11px;color:#738693;margin:0}
+  #mobile-deck .m-spec{font-size:12px;letter-spacing:.03em;color:#37586a;font-weight:800;margin:12px 0;padding:10px 12px;background:#edf2f4;line-height:1.5}
+  #mobile-deck .m-racket-cols{display:grid;gap:10px}
+  #mobile-deck .m-racket-cols p{font-size:12px;line-height:1.5;color:#4e6574;margin:0}
+  #mobile-deck .m-racket-cols b{display:block;text-transform:uppercase;color:#7b8b96;font-size:10px;letter-spacing:.09em;margin-bottom:3px}
+  #mobile-deck .m-racket-cols p:nth-child(2) b{color:#a15b57}
+  #mobile-deck .m-phases{display:grid;gap:9px;margin:22px 0}
+  #mobile-deck .m-phase{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:14px;background:#fff;border:1px solid #dce4e8}
+  #mobile-deck .m-phase>span{font-size:22px;font-weight:800;color:var(--accent);line-height:1.1}
+  #mobile-deck .m-phase b{font-size:13px;color:#193b50;line-height:1.35;display:block}
+  #mobile-deck .m-phase p{font-size:12px;line-height:1.54;color:#637a88;margin:5px 0 0}
+  #mobile-deck .m-score-row{display:grid;grid-template-columns:minmax(0,142px) minmax(0,1fr) 35px;gap:8px;align-items:center;margin:12px 0}
+  #mobile-deck .m-score-row span{font-size:11px;line-height:1.34;color:#4e6371}
+  #mobile-deck .m-score-track{height:8px;background:#d9e4e7}
+  #mobile-deck .m-score-track i{height:100%;display:block;background:#264c62}
+  #mobile-deck .m-score-row b{font-size:11px;text-align:right}
+  #mobile-deck .m-decision{padding:19px;background:var(--navy);color:#fff;margin-top:18px}
+  #mobile-deck .m-decision>span{display:block;font-size:10px;letter-spacing:.12em;color:#b8ced8;margin-bottom:9px}
+  #mobile-deck .m-decision strong{display:block;font-size:16px;color:#fff;line-height:1.3}
+  #mobile-deck .m-decision p{font-size:13px;line-height:1.55;margin:9px 0}
+  #mobile-deck .m-decision small{font-size:11px;color:#ccdce3}
+  #mobile-deck .m-footer{padding:24px 20px 36px;background:#0f273b;color:#b4cbd6;font-size:10px;line-height:1.5;letter-spacing:.04em}
+}
+@media screen and (max-width:360px){
+  #mobile-deck .m-slide{padding-left:16px;padding-right:16px}
+  #mobile-deck .m-slide h1{font-size:33px}
+  #mobile-deck .m-three-metrics strong{font-size:24px}
+  #mobile-deck .m-brand span{font-size:9px}
+  #mobile-deck .m-meta{font-size:9px}
+  #mobile-deck .m-score-row{grid-template-columns:minmax(0,108px) minmax(0,1fr) 35px}
+}
+@media print{#mobile-deck{display:none!important}}
+
+/* teaser v3.0: 6 raquetes + 5 cordas, preservando 5 slides 16:9 */
+.v3-shortlist{margin-top:15px}
+.v3-shortlist th{padding:7px 9px 8px;font-size:9px}
+.v3-shortlist td{padding:8px 9px;font-size:11px;line-height:1.23}
+.v3-shortlist .model{font-size:12px;line-height:1.2}
+.v3-shortlist .sm{font-size:9px;color:#697b89}
+.v3-shortlist .spec{font-size:11px}
+.v3-shortlist .rank{font-size:15px}
+.v3-slide5-content h2{font-size:32px}
+.v3-desc{font-size:12.5px;color:#5c6f7d;margin:9px 0 12px;max-width:900px}
+.v3-string-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.v3-string-table th{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#667a88;background:#edf2f4;padding:7px 8px;text-align:left;border-bottom:2px solid #193a51}
+.v3-string-table td{font-size:10.5px;line-height:1.27;padding:8px;border-bottom:1px solid #e0e6e9;vertical-align:top}
+.v3-string-table tr:nth-child(odd){background:#f9fafb}
+.v3-string-table td b{font-size:12px;color:#1b364b}
+.v3-string-table .v3-sub{display:block;color:#a2695c;font-size:8px;text-transform:uppercase;margin-top:3px;letter-spacing:.04em}
+.v3-string-table th:nth-child(1){width:19%}.v3-string-table th:nth-child(2){width:8%}.v3-string-table th:nth-child(3){width:9%}.v3-string-table th:nth-child(4){width:7%}.v3-string-table th:nth-child(5){width:27%}.v3-string-table th:nth-child(6){width:30%}
+.v3-string-table .num{text-align:center;font-weight:800;font-variant-numeric:tabular-nums;font-size:12px;color:#254759}
+.v3-string-table .v3-risk{color:#6d5452}
+.v3-roadmap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.v3-roadmap>div{background:#eef2f4;padding:10px 12px;min-height:66px;border-top:3px solid #7c96a5}
+.v3-roadmap span{font-size:9px;font-weight:800;color:#a46b55;display:block;letter-spacing:.06em}
+.v3-roadmap b{font-size:12px;color:#1e3d52;display:block;margin:4px 0}
+.v3-roadmap small{font-size:10px;color:#657885}
+.v3-go-line{margin-top:10px;background:#1b3449;color:#eff4f8;font-size:11px;padding:10px 12px;line-height:1.35}
+.v3-go-line b{color:#e6ada0;margin-right:12px}
+.m-racket-goal{border-top:1px solid #dce4e8;margin-top:10px;padding-top:10px;color:#3b5567;font-size:12px;line-height:1.5}
+.m-racket-goal b{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#a46b55;display:block}
+.m-string-grid{display:grid;gap:12px;margin:20px 0}
+.m-string-card{background:#fff;border:1px solid #dce4e8;padding:15px;border-radius:5px}
+.m-string-title{display:flex;gap:12px;align-items:flex-start}
+.m-string-title>span{font-size:24px;color:#9aadb8;font-weight:900}
+.m-string-title h3{margin:0 0 3px;color:#1d3d52}
+.m-string-title small{font-size:10px;color:#a87562;font-weight:800;letter-spacing:.07em}
+.m-string-spec{background:#edf2f4;padding:9px;margin:10px 0;font-size:12px;font-weight:700;color:#355a70}
+.m-string-card p{font-size:12px;line-height:1.45;margin:7px 0 0}
+.m-string-card p b{color:#1f475f}
+.m-v3-roadmap>div{border-top:1px solid #dbe4e8;padding:10px 0}
+.m-v3-roadmap>div:first-child{border-top:0}
+.m-v3-roadmap b{color:#17455c;font-size:12px}
+.m-v3-roadmap p{font-size:12px;color:#526d7f;line-height:1.45;margin:4px 0 0}
+@media print{.v3-string-table td{font-size:10.5px}.v3-roadmap>div{break-inside:avoid}}
+</style></head>
+<body>
+<div id="viewer"><main aria-label="Teaser de decisão de equipamento 2027 — 5 slides" id="stage">
+<!-- SLIDE 1 -->
+<section class="slide slide--navy active" data-index="0">
+<div class="header"><div class="brand">LUKA <span>/ PERFORMANCE</span></div><div class="headmeta">EQUIPMENT SHORTLIST · 3 PRO STOCK + 3 OTC · 5 STRINGS</div></div><div class="rule-accent"></div>
+<div class="cover-left">
+<div class="eyebrow">TEASER EXECUTIVO · JANEIRO 2027</div>
+<h1>A troca é certa.<br/>O melhor conjunto<br/>ainda precisa ser <span style="color:#e7afb0">provado.</span></h1>
+<p class="lead">Decisão fechada de mudar de raquete em janeiro. A escolha deve reduzir os erros na rede sem sacrificar o jogo agressivo, a profundidade e a qualidade do segundo saque.</p>
+<div class="cover-decision"><span class="pill pill--dark">TROCA CONFIRMADA</span><span class="pill pill--dark">MODELO EM HOMOLOGAÇÃO</span></div>
+</div>
+<div class="cover-metrics"><div class="cover-metric"><strong>135</strong><em>partidas registradas<br/>2024–2026</em></div><div class="cover-metric"><strong>28</strong><em>modelos analisados<br/>8 marcas</em></div><div class="cover-metric"><strong>06</strong><em>raquetes finalistas<br/>para testes</em></div></div>
+<div aria-hidden="true" class="hero-right">
+<svg class="hero-art" viewbox="0 0 430 580" xmlns="http://www.w3.org/2000/svg">
+<defs><lineargradient id="cgrad" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#1c566b"></stop><stop offset="1" stop-color="#0e2e48"></stop></lineargradient></defs>
+<path d="M56 25 389 9 423 570 10 550Z" fill="url(#cgrad)"></path>
+<g fill="none" stroke="#eaf4f4" stroke-opacity=".7" stroke-width="3" transform="translate(40 105) rotate(-8 172 183)"><rect height="365" width="345"></rect><path d="M0 183H345M172 0V365M0 93H345M0 274H345M115 93V274M230 93V274"></path><path d="M0 183H345" stroke-opacity=".38" stroke-width="7"></path></g>
+<path d="M110 470 Q185 388 263 275 Q296 217 332 145" fill="none" stroke="#f2a8a9" stroke-dasharray="0" stroke-linecap="round" stroke-width="4.2"></path>
+<path d="M326 148l7-12 2 16" fill="none" stroke="#f2a8a9" stroke-linecap="round" stroke-width="4"></path>
+<circle cx="110" cy="470" fill="#e5f09b" r="10" stroke="#fafce5" stroke-width="3"></circle>
+<circle cx="333" cy="147" fill="#e5f09b" r="6"></circle>
+</svg>
+<div class="hero-side">JOGO AGRESSIVO · CONTATO ANTECIPADO</div>
+</div>
+<div class="footer"><span>Fonte: Information Memorandum v3.0 · 24/11/2026</span><span class="page">01 / 05</span></div>
+</section>
+<!-- SLIDE 2 -->
+<section class="slide" data-index="1">
+<div class="header"><div class="brand">LUKA <span>/ PERFORMANCE</span></div><div class="headmeta">ATHLETE PROFILE &amp; COMPETITIVE RECORD</div></div><div class="rule-accent"></div>
+<div class="content">
+<div class="eyebrow">01 / ATLETA &amp; HISTÓRICO</div>
+<h2>O jogo nasce na base. <span style="color:var(--accent)">A rede conclui.</span></h2>
+<div class="profile-layout">
+<div class="profile-left">
+<p class="lead" style="font-size:16px">Aggressive baseliner, com golpes predominantemente chapados, contato antecipado à frente do corpo e backhand de duas mãos.</p>
+<div class="profiles">
+<div class="profileitem"><div class="tick"></div><div><b>Contato antecipado e aceleração linear</b><span>Busca direção e velocidade; aumentar spin exige adaptação voluntária do swing.</span></div></div>
+<div class="profileitem"><div class="tick"></div><div><b>Forehand e backhand de duas mãos chapados</b><span>Precisão na mudança de direção e preparação rápida são fundamentais.</span></div></div>
+<div class="profileitem"><div class="tick"></div><div><b>Transição ofensiva à rede</b><span>Sobe para finalizar, mas o principal diferencial segue sendo a pressão do fundo.</span></div></div>
+</div>
+<p class="sml" style="margin-top:28px;border-top:1px solid var(--line);padding-top:14px"><b>Base 2024–2026:</b> 94 jogos de simples (33 W) e 41 de duplas (14 W). Compilação sujeita a reconciliação ITF/ATP.</p>
+</div>
+<div>
+<div class="chart-block"><div class="chart-title">Simples · aproveitamento anual <span>W / jogos</span></div>
+<div class="barrow"><label>2024</label><div class="rail"><div class="bar" style="width:41.7%"></div></div><strong>41,7%</strong></div>
+<div class="barrow"><label>2025</label><div class="rail"><div class="bar" style="width:33.3%"></div></div><strong>33,3%</strong></div>
+<div class="barrow"><label>2026</label><div class="rail"><div class="bar red" style="width:32.4%"></div></div><strong>32,4%</strong></div>
+</div>
+<div class="chart-block"><div class="chart-title">2026 · simples por piso <span>n=34 jogos</span></div>
+<div class="barrow"><label>Dura · 4/7</label><div class="rail"><div class="bar" style="width:57.1%"></div></div><strong>57,1%</strong></div>
+<div class="barrow"><label>Saibro · 7/27</label><div class="rail"><div class="bar red" style="width:25.9%"></div></div><strong>25,9%</strong></div>
+</div>
+<div class="stat-two"><div class="statbox red"><strong>31,4%</strong><span>pontos ganhos no 2º saque</span></div><div class="statbox"><strong>41,2%</strong><span>pontos ganhos na devolução</span></div></div>
+<p class="sml" style="font-size:10px;margin-top:9px">Saque/devolução: amostra parcial de 20 partidas; percentuais por piso não isolam o efeito da superfície.</p>
+</div>
+</div>
+</div>
+<div class="footer"><span>Fontes do memorando: Tennis Explorer / Tennis Database API / PythiaTennis · amostras diferentes</span><span class="page">02 / 05</span></div>
+</section>
+<!-- SLIDE 3 -->
+<section class="slide" data-index="2">
+<div class="header"><div class="brand">LUKA <span>/ PERFORMANCE</span></div><div class="headmeta">CURRENT SETUP &amp; PERFORMANCE HYPOTHESIS</div></div><div class="rule-accent"></div>
+<div class="content">
+<div class="eyebrow">02 / DIAGNÓSTICO DO EQUIPAMENTO ATUAL</div>
+<h2>O risco não é apenas a bola longa.<br/><span style="color:var(--accent)">É não ultrapassar a rede.</span></h2>
+<div class="baseline-top">
+<div class="base-card">
+<div class="base-tag">BASELINE · NÃO É OPÇÃO FINAL</div>
+<h3>Yonex VCORE 98<br/>+ PolyTour Spin 1.25</h3>
+<p class="sml" style="margin-top:10px">Tensão elevada para buscar <i>feel</i> e controle; corda pentagonal orientada ao spin. Pode limitar a resposta de um swing predominantemente linear — hipótese ainda não testada.</p>
+<div class="base-stats"><div><strong>54/52</strong><span>lb · principais / transversais</span></div><div><strong>16×19</strong><span>padrão de cordas</span></div><div><strong>~318</strong><span>SW comercial da VCORE*</span></div></div>
+</div>
+<div>
+<div class="court-diagram">
+<svg aria-label="Diagrama conceitual de trajetórias de bola: uma baixa atingindo a rede e outra com maior margem" role="img" viewbox="0 0 610 245">
+<rect fill="#ebf0f3" height="245" width="610"></rect>
+<path d="M20 205H590" stroke="#9eabb5" stroke-width="3"></path><rect fill="#314c61" height="114" width="4" x="314" y="91"></rect><path d="M316 91H394" stroke="#314c61" stroke-width="3"></path><path d="M30 154Q178 160 316 168" fill="none" stroke="#a33334" stroke-dasharray="8 6" stroke-width="4"></path>
+<path d="M30 154Q186 -16 414 99Q493 121 570 189" fill="none" stroke="#2f7669" stroke-width="5"></path>
+<circle cx="30" cy="154" fill="#d5aa56" r="7"></circle><circle cx="316" cy="168" fill="#a33334" r="7"></circle><circle cx="420" cy="102" fill="#2f7669" r="7"></circle>
+<text fill="#506476" font-size="15" x="33" y="231">CONTATO ANTECIPADO</text>
+<text fill="#a33334" font-size="15" font-weight="700" x="230" y="81">ERRO NA REDE</text>
+<text fill="#2f7669" font-size="15" font-weight="700" x="404" y="45">MAIOR MARGEM</text>
+<text fill="#617584" font-size="14" x="395" y="229">ZONA PROFUNDA</text>
+</svg>
+</div>
+<p class="court-note">Trajetórias esquemáticas · não são medições biomecânicas do Luka.</p>
+</div>
+</div>
+<div class="base-bottom">
+<div><h3>Observação reportada</h3><p>Erros não forçados na rede predominam, mas ainda sem contagem ou denominador auditado. A altura de passagem deve ser medida por golpe e situação.</p></div>
+<div><h3>Implicação para a troca</h3><p>Não escolher um 18×20 apenas pelo controle direcional. A nova configuração precisa elevar a margem mantendo profundidade, potência e segundo saque.</p></div>
+</div>
+<p class="sml" style="margin-top:8px;font-size:10px">* SW da VCORE de referência comercial, não medido no exemplar do atleta. A corda/tensão nominal não define isoladamente a trajetória.</p>
+</div>
+<div class="footer"><span>Fonte: informações do atleta + hipóteses técnicas do Information Memorandum v3.0</span><span class="page">03 / 05</span></div>
+</section>
+<!-- SLIDE 4 -->
+<section class="slide" data-index="3">
+<div class="header"><div class="brand">LUKA <span>/ PERFORMANCE</span></div><div class="headmeta">MODEL SHORTLIST · PRIORITY OF TESTING</div></div><div class="rule-accent"></div>
+<div class="content">
+<div class="eyebrow">03 / SHORTLIST DE RAQUETES · 3 PRO STOCK + 3 OTC</div>
+<div class="shortlist-head"><h2>Seis candidatas. <span style="color:var(--accent)">Duas arquiteturas de decisão.</span></h2><p class="lead">Os moldes Pro Stock exigem especificação individual. Os comerciais usam médias de ensaio. <b>A ordem é de teste, não nota de desempenho.</b></p></div>
+<table aria-label="Seis raquetes finalistas" class="shortlist-table v3-shortlist"><colgroup><col style="width:4%"/><col style="width:28%"/><col style="width:19%"/><col style="width:25%"/><col style="width:24%"/></colgroup><thead><tr><th>#</th><th>Raquete</th><th>Spec</th><th>Principal benefício</th><th>Risco</th></tr></thead><tbody><tr><td class="rank">01</td><td><span class="model">Gravity Tour 98</span><span class="sm">PRO STOCK · PRIORITÁRIA</span></td><td class="spec">98” · 16×19<br/><span class="sm">SW 295* / sem cordas*</span></td><td class="text">Potencial de facilitar margem sobre a rede e spin de 2º saque, mantendo precisão e feel.</td><td class="risk">SW final elevado pode atrasar preparação; maior ângulo de lançamento não garante menos erros totais.</td></tr><tr><td class="rank">02</td><td><span class="model">Wilson H22</span><span class="sm">PRO STOCK · CONCORRENTE DIRETA</span></td><td class="spec">98” · 16×19<br/><span class="sm">SW 296* / sem cordas*</span></td><td class="text">Estabilidade/feel para antecipação, devolução, redirecionamento e voleio de conclusão.</td><td class="risk">Variação elevada entre exemplares; uma H22 pesada perde vantagem de preparação rápida.</td></tr><tr><td class="rank">03</td><td><span class="model">Prestige TGT293.1</span><span class="sm">PRO STOCK · CONTROLE CLÁSSICO</span></td><td class="spec">98” · 16×19<br/><span class="sm">SW 290* / sem cordas*</span></td><td class="text">Toque e controle para forehand/backhand chapados e mudanças de direção.</td><td class="risk">Pode exigir maior energia para ultrapassar a rede e manter profundidade; SW do exemplar pode variar muito.</td></tr><tr><td class="rank">04</td><td><span class="model">T-Fight 305S</span><span class="sm">COMERCIAL / OTC · CONTROLE INTERMEDIÁRIO</span></td><td class="spec">98” · 305 g<br/><span class="sm">18×19 · SW 324**</span></td><td class="text">Precisa em backhand chapado de duas mãos e devolução agressiva, mantendo inércia moderada.</td><td class="risk">Trajetória baixa com poliéster rígido/tensão alta; margem sobre a rede a provar.</td></tr><tr><td class="rank">05</td><td><span class="model">Percept 100D</span><span class="sm">COMERCIAL / OTC · MANOBRABILIDADE</span></td><td class="spec">100” · 305 g<br/><span class="sm">18×19 · SW 319**</span></td><td class="text">Timing, tolerância e preparação rápida em contatos antecipados; ajuda a devolver cedo.</td><td class="risk">Estabilidade em bolas pesadas e potencial de trajetória curta, conforme customização.</td></tr><tr><td class="rank">06</td><td><span class="model">Speed Pro 2026</span><span class="sm">COMERCIAL / OTC · CONTROLE 18×20</span></td><td class="spec">100” · 310 g<br/><span class="sm">18×20 · SW 328**</span></td><td class="text">Direcionamento no backhand, devolução bloqueada e saque +1; estabilidade na rede.</td><td class="risk">Padrão 18×20 e SW elevado podem reduzir margem vertical e atrasar preparação.</td></tr></tbody></table>
+<div class="legend-line"><span class="pill pill--red">TOP 3 · Gravity TGT373.1 · H22 · T-Fight</span><span>* Pro Stock SW sem cordas = exemplo de exemplar; ** OTC SW encordoada = referência. Não comparar SW absolutos de bases distintas.</span></div>
+</div>
+<div class="footer"><span>Fonte: fichas comerciais e exemplares Pro Stock; análise completa no Information Memorandum v3.0</span><span class="page">04 / 05</span></div>
+</section>
+<!-- SLIDE 5 -->
+<section class="slide" data-index="4">
+<div class="header"><div class="brand">LUKA <span>/ PERFORMANCE</span></div><div class="headmeta">VALIDATION ROADMAP · JANUARY 2027</div></div><div class="rule-accent"></div>
+<div class="content v3-slide5-content">
+<div class="eyebrow">04 / 5 CORDAS + PROTOCOLO DE HOMOLOGAÇÃO</div>
+<h2>A sensação importa. <span style="color:var(--accent)">A trajetória decide.</span></h2>
+<p class="v3-desc">Quatro alternativas e a PolyTour Spin como controle. Rigidez, perda de tensão e spin potencial são ensaios de laboratório, não resultados do Luka.</p>
+<table aria-label="Cinco cordas com métricas e hipóteses" class="v3-string-table"><thead><tr><th>Corda · 1,25 mm</th><th>Rigidez<br/>lb/in</th><th>Perda<br/>ensaio</th><th>Spin<br/>índice</th><th>Objetivo</th><th>Principal risco</th></tr></thead><tbody><tr><td><b>HEAD Lynx Tour</b><span class="v3-sub">FEEL PREFERIDO</span></td><td class="num">217,7</td><td class="num">24,6%</td><td class="num">7,1</td><td>Preservar sensação de controle e ganhar consistência sem aumentar erros na rede.</td><td class="v3-risk">Rigidez alta; não presumir ganho de net clearance. Pode manter bola curta.</td></tr><tr><td><b>HEAD Hawk Power</b><span class="v3-sub">SAÍDA DE BOLA</span></td><td class="num">203,5</td><td class="num">48,3%</td><td class="num">7,5</td><td>Elevar margem e profundidade sem perder controle direcional.</td><td class="v3-risk">Maior perda de tensão em bancada; controlar erros longos e estabilidade após uso.</td></tr><tr><td><b>Yonex PolyTour Pro</b><span class="v3-sub">FLEXIBILIDADE</span></td><td class="num">181,2</td><td class="num">46,3%</td><td class="num">N/D</td><td>Identificar se maior elasticidade facilita a passagem da rede.</td><td class="v3-risk">Pode reduzir feel firme preferido; a resposta pode mudar com a perda de tensão.</td></tr><tr><td><b>Solinco Hyper-G</b><span class="v3-sub">CONTROLE + SPIN</span></td><td class="num">218,3</td><td class="num">24,7%</td><td class="num">6,1</td><td>Avaliar alternativa de feel e spin mantendo precisão.</td><td class="v3-risk">Rigidez praticamente igual à Lynx; não oferece solução automática ao erro na rede.</td></tr><tr><td><b>Yonex PolyTour Spin</b><span class="v3-sub">BASELINE ATUAL</span></td><td class="num">213,7</td><td class="num">27,2%</td><td class="num">6,3</td><td>Isolar efeitos de novo quadro, de outra corda e de tensão.</td><td class="v3-risk">Conjunto atual VCORE + Spin a 54/52 lb pode exigir maior esforço para obter altura/profundidade; causa não demonstrada.</td></tr></tbody></table>
+<div class="v3-roadmap"><div><span>00 · REFERÊNCIA</span><b>VCORE + Spin 54/52 lb</b><small>Medir conjunto real</small></div><div><span>01 · QUADROS</span><b>6 modelos · corda igual</b><small>Selecionar top 2</small></div><div><span>02 · CORDAS</span><b>5 opções · tensão igual</b><small>Preservar feel e profundidade</small></div><div><span>03 · TENSÃO + GO</span><b>54/52 vs 51/49 lb</b><small>Sets em dura e saibro</small></div></div>
+<div class="v3-go-line"><b>GO POR CONFIGURAÇÃO</b> Menos erros na rede / 100 ataques comparáveis, sem aumentar erros longos nem prejudicar 2º saque, timing e devolução.</div>
+</div>
+<div class="footer"><span>Fontes TWU · 51 lb, impacto rápido; PolyTour Pro = Yellow 16L. Protocolo completo: IM v3.0.</span><span class="page">05 / 05</span></div>
+</section>
+<div aria-hidden="true" class="progress"><span id="progress"></span></div>
+</main>
+<div aria-label="Navegação da apresentação" class="controls"><button aria-label="Slide anterior" id="prev">‹</button><div class="dots" id="dots"></div><div class="slide-count" id="counter">01 / 05</div><button aria-label="Próximo slide" id="next">›</button><button aria-label="Imprimir ou salvar como PDF" id="print" title="Imprimir / PDF">⎙</button></div>
+</div>
+<script>
+(function(){
+ const stage=document.getElementById('stage');const slides=[...document.querySelectorAll('.slide')];const dots=document.getElementById('dots');let curr=0;
+ function fit(){const sc=Math.min(window.innerWidth/1280,window.innerHeight/720);stage.style.setProperty('--scale',String(sc));}
+ function show(n){curr=Math.max(0,Math.min(slides.length-1,n));slides.forEach((x,i)=>x.classList.toggle('active',i===curr));document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===curr));document.getElementById('counter').textContent=String(curr+1).padStart(2,'0')+' / 05';document.getElementById('progress').style.width=((curr+1)/slides.length*100)+'%';document.getElementById('prev').disabled=curr===0;document.getElementById('next').disabled=curr===slides.length-1;try{history.replaceState(null,'',location.pathname+'?slide='+(curr+1));}catch(e){}}
+ slides.forEach((_,i)=>{const b=document.createElement('span');b.className='dot';b.setAttribute('role','button');b.setAttribute('aria-label','Abrir slide '+(i+1));b.tabIndex=0;b.addEventListener('click',()=>show(i));b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(i)}});dots.appendChild(b)});
+ document.getElementById('prev').addEventListener('click',()=>show(curr-1));document.getElementById('next').addEventListener('click',()=>show(curr+1));document.getElementById('print').addEventListener('click',()=>window.print());
+ document.addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key)){if(e.target.tagName!=='BUTTON'){e.preventDefault();show(curr+1)}}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(curr-1)}else if(e.key==='Home'){show(0)}else if(e.key==='End'){show(slides.length-1)}else if(e.key.toLowerCase()==='f'&&document.fullscreenEnabled){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}});
+ window.addEventListener('resize',fit);fit();let n=Number(new URLSearchParams(location.search).get('slide'));show(Number.isFinite(n)&&n>=1&&n<=5?n-1:0);
+})();
+</script>
+<main aria-label="Teaser Luka — versão para celular, cinco capítulos" id="mobile-deck">
+<header class="m-head"><div class="m-brand">LUKA <span>/ PERFORMANCE</span></div><div class="m-meta">TEASER · JAN/2027</div></header>
+<nav aria-label="Navegar pelos cinco slides" class="m-nav" id="mobileDeckNav">
+<a aria-current="step" aria-label="Slide 1: Tese" class="active" href="#m-slide-1">01</a>
+<a aria-label="Slide 2: Perfil e dados" href="#m-slide-2">02</a>
+<a aria-label="Slide 3: Diagnóstico" href="#m-slide-3">03</a>
+<a aria-label="Slide 4: Raquetes" href="#m-slide-4">04</a>
+<a aria-label="Slide 5: cinco cordas e protocolo" href="#m-slide-5">05</a>
+</nav>
+<section class="m-slide m-cover" id="m-slide-1" tabindex="-1">
+<div class="m-counter">01 / 05 · TESE EXECUTIVA</div>
+<h1>A troca é certa.<br/>O melhor conjunto ainda precisa ser <em>provado.</em></h1>
+<p class="m-lead">Decisão fechada de mudar de raquete em janeiro. A escolha deve reduzir os erros na rede sem sacrificar o jogo agressivo, a profundidade e a qualidade do segundo saque.</p>
+<div class="m-tags"><span>TROCA CONFIRMADA</span><span>MODELO EM HOMOLOGAÇÃO</span></div>
+<div class="m-three-metrics"><div><strong>135</strong><small>partidas registradas<br/>2024–2026</small></div><div><strong>28</strong><small>modelos analisados<br/>8 marcas</small></div><div><strong>06</strong><small>raquetes finalistas<br/>para testes</small></div></div>
+<p class="m-src">Fonte: Information Memorandum v3.0 · 24/11/2026</p>
+</section>
+<section class="m-slide" id="m-slide-2" tabindex="-1">
+<div class="m-counter">02 / 05 · PERFIL E DESEMPENHO</div>
+<h2>O fundo constrói.<br/><em>A rede conclui.</em></h2>
+<p class="m-lead">Aggressive baseliner, com golpes predominantemente chapados, contato antecipado à frente do corpo e backhand de duas mãos.</p>
+<div class="m-facts">
+<div><b>Contato antecipado e aceleração linear</b><p>Busca direção e velocidade; aumentar spin exige adaptação voluntária do swing.</p></div>
+<div><b>Forehand e backhand de duas mãos chapados</b><p>Precisão na mudança de direção e preparação rápida são fundamentais.</p></div>
+<div><b>Transição ofensiva à rede</b><p>Sobe para finalizar, mas o principal diferencial segue sendo a pressão do fundo.</p></div>
+</div>
+<div class="m-panel"><h3>Aproveitamento em simples</h3><div class="m-caption">Vitórias / partidas por ano · base 2024–2026</div><div class="m-bar"><span>2024</span><div><i style="width:41.7%"></i></div><b>41.7%</b></div><div class="m-bar"><span>2025</span><div><i style="width:33.3%"></i></div><b>33.3%</b></div><div class="m-bar"><span>2026</span><div><i style="width:32.4%"></i></div><b>32.4%</b></div><p class="m-caption">2026: 11 vitórias em 34 partidas.</p></div>
+<div class="m-statgrid"><div><strong>57,1%</strong><small>Dura · simples 2026</small></div><div><strong>25,9%</strong><small>Saibro · simples 2026</small></div><div><strong>31,4%</strong><small>Pontos ganhos no 2º saque</small></div><div><strong>41,2%</strong><small>Pontos ganhos na devolução</small></div></div>
+<p class="m-src">Saque/devolução: amostra parcial de 20 partidas. Percentuais por piso não isolam o efeito da superfície. Fontes: Tennis Explorer / Tennis Database API / PythiaTennis.</p>
+</section>
+<section class="m-slide" id="m-slide-3" tabindex="-1">
+<div class="m-counter">03 / 05 · DIAGNÓSTICO</div>
+<h2>O problema não é a bola longa.<br/><em>É não ultrapassar a rede.</em></h2>
+<div class="m-baseline"><div class="m-mutedtitle">CONFIGURAÇÃO ATUAL</div><h3>Yonex VCORE 98 + PolyTour Spin 1.25</h3><p>Tensão elevada para buscar feel e controle; corda pentagonal orientada ao spin. Pode limitar a resposta de um swing predominantemente linear — hipótese ainda não testada.</p>
+<div class="m-three-metrics"><div><strong>54/52</strong><small>lb · principais / transversais</small></div><div><strong>16×19</strong><small>padrão de cordas</small></div><div><strong>~318</strong><small>SW comercial*</small></div></div>
+</div>
+<div class="m-court-note"><span>TRAJETÓRIA ATUAL</span><div class="m-court-line"><i></i><b>REDE</b><i class="ok"></i></div><span>MARGEM A INVESTIGAR</span></div>
+<div class="m-diagnosis"><article><h3>Observação reportada</h3><p>Erros não forçados na rede predominam, mas ainda sem contagem ou denominador auditado. A altura de passagem deve ser medida por golpe e situação.</p></article><article><h3>Implicação para a troca</h3><p>Não escolher um 18×20 apenas pelo controle direcional. A nova configuração precisa elevar a margem mantendo profundidade, potência e segundo saque.</p></article></div>
+<p class="m-src">* SW da VCORE de referência comercial, não medido no exemplar do atleta. A corda/tensão nominal não define isoladamente a trajetória. Trajetórias ilustrativas, não medidas.</p>
+</section>
+<section class="m-slide" id="m-slide-4" tabindex="-1">
+<div class="m-counter">04 / 05 · 3 PRO STOCK + 3 OTC</div><h2>Seis raquetes.<br/><em>Três moldes profissionais.</em></h2>
+<p class="m-lead">A ordem é uma prioridade de teste. Nas Pro Stock, peso e SW são do exemplar; nos modelos OTC, são referências de ensaio.</p>
+<div class="m-shortlist"><article class="m-racket"><div class="m-racket-top"><span class="m-rank">01</span><div><h3>HEAD Gravity Tour 98 — TGT373.1</h3><p>PRO STOCK · PRIORITÁRIA</p></div></div><div class="m-spec">98 pol² · 16×19 · aro ~22 mm; exemplar: 310 g, SW 295 sem cordas, RA ~61</div><div class="m-racket-cols"><p><b>Benefício em teste</b>Potencial de facilitar margem sobre a rede e spin de 2º saque, mantendo precisão e feel.</p><p><b>Risco a monitorar</b>SW final elevado pode atrasar preparação; maior ângulo de lançamento não garante menos erros totais.</p></div><div class="m-racket-goal"><b>Objetivo</b>Reduzir erros na rede mantendo bola pesada, profundidade e timing do backhand chapado.</div></article><article class="m-racket"><div class="m-racket-top"><span class="m-rank">02</span><div><h3>Wilson H22 — 16×19</h3><p>PRO STOCK · CONCORRENTE DIRETA</p></div></div><div class="m-spec">98 pol² · 16×19 · aro ~22 mm; exemplar: 301 g, SW 296 sem cordas, RA ~60</div><div class="m-racket-cols"><p><b>Benefício em teste</b>Estabilidade/feel para antecipação, devolução, redirecionamento e voleio de conclusão.</p><p><b>Risco a monitorar</b>Variação elevada entre exemplares; uma H22 pesada perde vantagem de preparação rápida.</p></div><div class="m-racket-goal"><b>Objetivo</b>Combinar controle direcional e feel sem sacrificar a execução à frente do corpo.</div></article><article class="m-racket"><div class="m-racket-top"><span class="m-rank">03</span><div><h3>HEAD Prestige — TGT293.1</h3><p>PRO STOCK · CONTROLE CLÁSSICO</p></div></div><div class="m-spec">98 pol² · 16×19; exemplar: 300 g, SW 290 sem cordas, RA ~64</div><div class="m-racket-cols"><p><b>Benefício em teste</b>Toque e controle para forehand/backhand chapados e mudanças de direção.</p><p><b>Risco a monitorar</b>Pode exigir maior energia para ultrapassar a rede e manter profundidade; SW do exemplar pode variar muito.</p></div><div class="m-racket-goal"><b>Objetivo</b>Verificar se feedback mais direto reduz erro direcional sem encurtar a bola.</div></article><article class="m-racket"><div class="m-racket-top"><span class="m-rank">04</span><div><h3>Tecnifibre T-Fight 305S</h3><p>COMERCIAL / OTC · CONTROLE INTERMEDIÁRIO</p></div></div><div class="m-spec">98 pol² · 305 g sem cordas · 18×19 · SW ~324 encordoada · RA ~63</div><div class="m-racket-cols"><p><b>Benefício em teste</b>Precisa em backhand chapado de duas mãos e devolução agressiva, mantendo inércia moderada.</p><p><b>Risco a monitorar</b>Trajetória baixa com poliéster rígido/tensão alta; margem sobre a rede a provar.</p></div><div class="m-racket-goal"><b>Objetivo</b>Aumentar precisão em golpes lineares sem ampliar erros na rede.</div></article><article class="m-racket"><div class="m-racket-top"><span class="m-rank">05</span><div><h3>Yonex Percept 100D</h3><p>COMERCIAL / OTC · MANOBRABILIDADE</p></div></div><div class="m-spec">100 pol² · 305 g sem cordas · 18×19 · SW ~319 encordoada · RA ~66</div><div class="m-racket-cols"><p><b>Benefício em teste</b>Timing, tolerância e preparação rápida em contatos antecipados; ajuda a devolver cedo.</p><p><b>Risco a monitorar</b>Estabilidade em bolas pesadas e potencial de trajetória curta, conforme customização.</p></div><div class="m-racket-goal"><b>Objetivo</b>Diminuir erros de contato e aumentar consistência sob pressão.</div></article><article class="m-racket"><div class="m-racket-top"><span class="m-rank">06</span><div><h3>HEAD Speed Pro 2026</h3><p>COMERCIAL / OTC · CONTROLE 18×20</p></div></div><div class="m-spec">100 pol² · 310 g sem cordas · 18×20 · SW ~328 encordoada · RA ~61</div><div class="m-racket-cols"><p><b>Benefício em teste</b>Direcionamento no backhand, devolução bloqueada e saque +1; estabilidade na rede.</p><p><b>Risco a monitorar</b>Padrão 18×20 e SW elevado podem reduzir margem vertical e atrasar preparação.</p></div><div class="m-racket-goal"><b>Objetivo</b>Testar se o ganho direcional compensa possível maior dificuldade de elevar a trajetória.</div></article></div><p class="m-src">* Swingweight de exemplar Pro Stock sem cordas; ** SW comercial encordoada. Comparar apenas após medir os quadros finais.</p></section>
+<section class="m-slide" id="m-slide-5" tabindex="-1">
+<div class="m-counter">05 / 05 · 5 CORDAS + DECISÃO</div><h2>Feel aprovado.<br/><em>Resultado a comprovar.</em></h2>
+<p class="m-lead">Lynx Tour é a primeira referência subjetiva. Hawk Power testa resposta diferente; PolyTour Spin continua como controle.</p><div class="m-string-grid"><article class="m-string-card"><div class="m-string-title"><span>01</span><div><h3>HEAD Lynx Tour</h3><small>FEEL PREFERIDO</small></div></div><div class="m-string-spec">1,25 mm · rigidez 217,7 lb/in · perda 24,6% · spin 7,1</div><p><b>Vantagem</b> Feel que o Luka já aprovou; precisão em aceleração linear e boa retenção de resposta.</p><p><b>Risco</b> Rigidez alta; não presumir ganho de net clearance. Pode manter bola curta.</p><p><b>Objetivo</b> Preservar sensação de controle e ganhar consistência sem aumentar erros na rede.</p></article><article class="m-string-card"><div class="m-string-title"><span>02</span><div><h3>HEAD Hawk Power</h3><small>SAÍDA DE BOLA</small></div></div><div class="m-string-spec">1,25 mm · rigidez 203,5 lb/in · perda 48,3% · spin 7,5</div><p><b>Vantagem</b> Alternativa funcional para investigar profundidade e altura com swing mais linear.</p><p><b>Risco</b> Maior perda de tensão em bancada; controlar erros longos e estabilidade após uso.</p><p><b>Objetivo</b> Elevar margem e profundidade sem perder controle direcional.</p></article><article class="m-string-card"><div class="m-string-title"><span>03</span><div><h3>Yonex PolyTour Pro</h3><small>FLEXIBILIDADE</small></div></div><div class="m-string-spec">1,25 mm · rigidez 181,2 lb/in · perda 46,3% · spin N/D</div><p><b>Vantagem</b> Investigar facilidade de profundidade e conforto, inclusive quando Luka não acelera plenamente.</p><p><b>Risco</b> Pode reduzir feel firme preferido; a resposta pode mudar com a perda de tensão.</p><p><b>Objetivo</b> Identificar se maior elasticidade facilita a passagem da rede.</p></article><article class="m-string-card"><div class="m-string-title"><span>04</span><div><h3>Solinco Hyper-G</h3><small>CONTROLE + SPIN</small></div></div><div class="m-string-spec">1,25 mm · rigidez 218,3 lb/in · perda 24,7% · spin 6,1</div><p><b>Vantagem</b> Comparador da Lynx Tour para equilíbrio entre spin e conexão no impacto.</p><p><b>Risco</b> Rigidez praticamente igual à Lynx; não oferece solução automática ao erro na rede.</p><p><b>Objetivo</b> Avaliar alternativa de feel e spin mantendo precisão.</p></article><article class="m-string-card"><div class="m-string-title"><span>05</span><div><h3>Yonex PolyTour Spin</h3><small>BASELINE ATUAL</small></div></div><div class="m-string-spec">1,25 mm · rigidez 213,7 lb/in · perda 27,2% · spin 6,3</div><p><b>Vantagem</b> Referência com sensação, trajetória e timing já conhecidos pelo atleta.</p><p><b>Risco</b> Conjunto atual VCORE + Spin a 54/52 lb pode exigir maior esforço para obter altura/profundidade; causa não demonstrada.</p><p><b>Objetivo</b> Isolar efeitos de novo quadro, de outra corda e de tensão.</p></article></div>
+<div class="m-panel"><h3>Sequência de homologação</h3><div class="m-v3-roadmap"><div><b>00 · Baseline</b><p>VCORE + Spin 1.25 a 54/52 lb; medir SW, peso, profundidade e erros na rede.</p></div><div><b>01 · Quadro</b><p>Seis raquetes com a mesma corda/tensão; selecionar duas finalistas.</p></div><div><b>02 · Corda</b><p>Cinco cordas nas melhores raquetes, inicialmente na mesma tensão; avaliar feel e desempenho.</p></div><div><b>03 · Tensão</b><p>Comparar 54/52 e 51/49 lb nas melhores 1–2 cordas; homologar em quadra dura e saibro.</p></div></div></div>
+<div class="m-decision"><span>CRITÉRIO DE GO</span><strong>MENOS ERROS NA REDE</strong><p>Sem aumentar erros longos nem prejudicar profundidade, segundo saque, devolução ou timing.</p></div>
+<p class="m-src">Fonte: TWU, 51 lb, impacto rápido, 1,25 mm; PolyTour Pro = amostra Yellow 16L. São hipóteses de adequação, não testes de Luka.</p></section>
+<footer class="m-footer">LUKA / PERFORMANCE LAB · INFORMATION MEMORANDUM v3.0 · USO TÉCNICO</footer>
+</main>
+<script id="teaser-mobile-script">
+(function(){
+  const links=[...document.querySelectorAll('#mobileDeckNav a')];
+  const sections=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  if(!links.length||!sections.length)return;
+  const setActive=id=>links.forEach(a=>{const active=a.getAttribute('href')==='#'+id;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','step');else a.removeAttribute('aria-current');});
+  if('IntersectionObserver' in window){
+    const obs=new IntersectionObserver(entries=>{
+      const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio);
+      if(visible.length)setActive(visible[0].target.id);
+    },{rootMargin:'-14% 0px -58% 0px',threshold:[0,.1,.3,.6]});
+    sections.forEach(el=>obs.observe(el));
+  }
+  links.forEach(a=>a.addEventListener('click',()=>setActive(a.getAttribute('href').slice(1))));
+})();
+</script>
+</body></html>
